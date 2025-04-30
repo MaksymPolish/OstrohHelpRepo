@@ -1,0 +1,11 @@
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/bin/Debug/net8.0/Domain.deps.json
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/bin/Debug/net8.0/Domain.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/bin/Debug/net8.0/Domain.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.AssemblyInfoInputs.cache
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.AssemblyInfo.cs
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.csproj.CoreCompileInputs.cache
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/refint/Domain.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/Domain.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Domain/obj/Debug/net8.0/ref/Domain.dll

@@ -1,0 +1,17 @@
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Infrastructure.deps.json
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Infrastructure.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Infrastructure.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Application.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Domain.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Application.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/bin/Debug/net8.0/Domain.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.csproj.AssemblyReference.cache
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.AssemblyInfoInputs.cache
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.AssemblyInfo.cs
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.csproj.CoreCompileInputs.cache
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.csproj.CopyComplete
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/refint/Infrastructure.dll
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/Infrastructure.pdb
+/Users/bohdankrasiuk/Documents/oa/dotnet_course/repo/Lecture2/Infrastructure/obj/Debug/net8.0/ref/Infrastructure.dll
