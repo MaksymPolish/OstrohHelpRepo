@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "v775aa3P98A=",
+  "dgSpecHash": "DuoZn15LPtU=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
+  "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Maks\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.11\\microsoft.netcore.app.ref.8.0.11.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.11\\microsoft.windowsdesktop.app.ref.8.0.11.nupkg.sha512",

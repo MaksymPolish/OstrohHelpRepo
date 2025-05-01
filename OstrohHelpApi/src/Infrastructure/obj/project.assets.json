@@ -952,11 +952,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj",
+      "projectUniqueName": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj",
       "projectName": "Infrastructure",
-      "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj",
+      "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj",
       "packagesPath": "C:\\Users\\Maks\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Infrastructure\\obj\\",
+      "outputPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Maks\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -971,11 +971,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Application\\Application.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Application\\Application.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Application\\Application.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Application\\Application.csproj"
             },
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj"
             }
           }
         }

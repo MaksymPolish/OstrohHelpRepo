@@ -8803,11 +8803,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj",
+      "projectUniqueName": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj",
       "projectName": "Tests.Common",
-      "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj",
+      "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj",
       "packagesPath": "C:\\Users\\Maks\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Common\\obj\\",
+      "outputPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Maks\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -8822,17 +8822,17 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Api\\Api.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Api\\Api.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Api\\Api.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Api\\Api.csproj"
             },
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Application\\Application.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Application\\Application.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Application\\Application.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Application\\Application.csproj"
             },
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj"
             },
-            "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj"
+            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {
+              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj"
             }
           }
         }

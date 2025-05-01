@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {}
+    "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
+    "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj",
+        "projectUniqueName": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj",
         "projectName": "Domain",
-        "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj",
+        "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj",
         "packagesPath": "C:\\Users\\Maks\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\obj\\",
+        "outputPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Maks\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -77,14 +77,14 @@
         }
       }
     },
-    "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {
+    "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
+        "projectUniqueName": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
         "projectName": "Tests.Data",
-        "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
+        "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\Tests.Data.csproj",
         "packagesPath": "C:\\Users\\Maks\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\tests\\Tests.Data\\obj\\",
+        "outputPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Data\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Maks\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -99,8 +99,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
-                "projectPath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Domain\\Domain.csproj"
+              "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj": {
+                "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Domain\\Domain.csproj"
               }
             }
           }

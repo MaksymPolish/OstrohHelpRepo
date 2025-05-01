@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "pXbrkyvbHn8=",
+  "dgSpecHash": "wzNIosd4o4M=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Maks\\Desktop\\Курсач\\OstrohHelpApi\\src\\Api\\Api.csproj",
+  "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Api\\Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Maks\\.nuget\\packages\\efcore.namingconventions\\8.0.3\\efcore.namingconventions.8.0.3.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512",
