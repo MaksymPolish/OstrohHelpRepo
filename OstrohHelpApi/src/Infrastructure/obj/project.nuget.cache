@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Ws5tFCevfKw=",
+  "dgSpecHash": "hzTuOS49jHI=",
   "success": true,
   "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Infrastructure\\Infrastructure.csproj",
   "expectedPackageFiles": [
@@ -24,21 +24,7 @@
     "C:\\Users\\Maks\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\npgsql\\8.0.3\\npgsql.8.0.3.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\npgsql.entityframeworkcore.postgresql\\8.0.4\\npgsql.entityframeworkcore.postgresql.8.0.4.nupkg.sha512",
-    "C:\\Users\\Maks\\.nuget\\packages\\optional\\4.0.0\\optional.4.0.0.nupkg.sha512",
-    "C:\\Users\\Maks\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.11\\microsoft.netcore.app.ref.8.0.11.nupkg.sha512",
-    "C:\\Users\\Maks\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.11\\microsoft.windowsdesktop.app.ref.8.0.11.nupkg.sha512",
-    "C:\\Users\\Maks\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.11\\microsoft.aspnetcore.app.ref.8.0.11.nupkg.sha512"
+    "C:\\Users\\Maks\\.nuget\\packages\\optional\\4.0.0\\optional.4.0.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1903",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'Microsoft.Extensions.Caching.Memory' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj",
-      "libraryId": "Microsoft.Extensions.Caching.Memory",
-      "targetGraphs": [
-        "net8.0"
-      ]
-    }
-  ]
+  "logs": []
 }

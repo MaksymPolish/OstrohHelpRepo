@@ -1,4 +1,5 @@
-﻿using Domain.Questionnaires.Statuses;
+﻿using Domain.Questionnaires;
+using Domain.Questionnaires.Statuses;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Configurations;
@@ -10,6 +11,9 @@ public class QuestionnaireStatusConfiguration : IEntityTypeConfiguration<Questio
         builder.ToTable("QuestionnaireStatuses");
 
         builder.HasKey(qs => qs.Id);
+
+        builder.Property(qs => qs.Id)
+            .HasConversion(id => id.Value, value => new QuestionnaireStatusesId(value));
 
         builder.Property(qs => qs.Name)
             .IsRequired()

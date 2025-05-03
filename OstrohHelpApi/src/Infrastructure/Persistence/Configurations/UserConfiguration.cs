@@ -13,6 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
 
         builder.HasKey(u => u.Id);
+        builder.Property(u => u.Id).HasConversion(u => u.Value, u => new UserId(u));
 
         builder.Property(u => u.GoogleId)
             .HasMaxLength(255);
@@ -24,7 +25,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(100);
 
         builder.Property(u => u.Course)
-            .HasColumnType("string");
+            .HasColumnType("text");
 
         builder.Property(u => u.Email)
             .IsRequired()
@@ -37,12 +38,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(255);
 
         builder.Property(u => u.TokenExpiration)
-            .HasColumnType("datetime2")
+            .HasDefaultValueSql("timezone('utc', now())")
             .HasConversion<DateTimeUtcConverter>();
 
         builder.Property(u => u.CreatedAt)
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
+            .HasDefaultValueSql("timezone('utc', now())")
             .HasConversion<DateTimeUtcConverter>();
 
         // Foreign Key

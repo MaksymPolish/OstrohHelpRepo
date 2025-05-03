@@ -1,0 +1,16 @@
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\bin\Debug\net8.0\Tests.Data.deps.json
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\bin\Debug\net8.0\Tests.Data.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\bin\Debug\net8.0\Tests.Data.pdb
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\bin\Debug\net8.0\Domain.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\bin\Debug\net8.0\Domain.pdb
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.csproj.AssemblyReference.cache
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.AssemblyInfoInputs.cache
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.AssemblyInfo.cs
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.csproj.CoreCompileInputs.cache
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.sourcelink.json
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.csproj.Up2Date
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\refint\Tests.Data.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\Tests.Data.pdb
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Data\obj\Debug\net8.0\ref\Tests.Data.dll

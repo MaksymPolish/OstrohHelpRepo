@@ -15,13 +15,17 @@ public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionnaire
         builder.ToTable("Questionnaires");
 
         builder.HasKey(q => q.Id);
+        builder.Property(q => q.Id)
+            .HasConversion(id => id.Value, value => new QuestionnaireId(value));
 
         builder.Property(q => q.Description)
             .HasColumnType("text");
 
         builder.Property(q => q.SubmittedAt)
-            .HasColumnType("datetime2")
+            .HasDefaultValueSql("timezone('utc', now())")
             .HasConversion<DateTimeUtcConverter>();
+        
+        
         // FK
         builder.HasOne<User>(q => q.User)
             .WithMany()
