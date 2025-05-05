@@ -11,7 +11,6 @@ public class User
     public string LastName { get; set; }
     public string? Course { get; set; }
     public string Email { get; set; }
-    public string PasswordHash { get; set; }
     public bool IsLoggedIn { get; set; }
     public string AuthToken { get; set; }
     public DateTime? TokenExpiration { get; set; }
@@ -19,8 +18,8 @@ public class User
    
     public User() => CreatedAt = DateTime.UtcNow;
 
-    User(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email,
-        string passwordHash, bool isLoggedIn, string authToken, DateTime? tokenExpiration)
+    User(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email, 
+        bool isLoggedIn, string authToken, DateTime? tokenExpiration)
     {
         Id = userId;
         RoleId = roleId;
@@ -29,14 +28,13 @@ public class User
         LastName = lastName;
         Course = course;
         Email = email;
-        PasswordHash = passwordHash;
         IsLoggedIn = isLoggedIn;
         AuthToken = authToken;
         TokenExpiration = tokenExpiration;
         CreatedAt = DateTime.UtcNow;
     }
     
-    new User Create(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email,
-        string passwordHash, bool isLoggedIn, string authToken, DateTime? tokenExpiration) =>
-        new(userId, roleId, googleId, firstName, lastName, course, email, passwordHash, isLoggedIn, authToken, tokenExpiration);
+    new User Create(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email, 
+        bool isLoggedIn, string authToken, DateTime? tokenExpiration) =>
+        new(userId, roleId, googleId, firstName, lastName, course, email, isLoggedIn, authToken, tokenExpiration);
 }

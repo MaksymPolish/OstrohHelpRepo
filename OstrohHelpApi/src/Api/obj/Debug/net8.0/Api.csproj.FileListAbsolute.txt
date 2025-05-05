@@ -240,3 +240,10 @@ C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\obj\Debug\net8.
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\obj\Debug\net8.0\Api.pdb
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\obj\Debug\net8.0\Api.genruntimeconfig.cache
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\obj\Debug\net8.0\ref\Api.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\Google.Apis.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\Google.Apis.Auth.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\Google.Apis.Core.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\System.Management.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Management.dll
+C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\src\Api\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Google.dll

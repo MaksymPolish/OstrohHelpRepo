@@ -31,9 +31,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(255);
 
-        builder.Property(u => u.PasswordHash)
-            .HasMaxLength(255);
-
         builder.Property(u => u.AuthToken)
             .HasMaxLength(255);
 

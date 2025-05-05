@@ -52,11 +52,19 @@
               "target": "Package",
               "version": "[11.9.2, )"
             },
+            "Google.Apis.Auth": {
+              "target": "Package",
+              "version": "[1.69.0, )"
+            },
             "MediatR": {
               "target": "Package",
               "version": "[12.4.1, )"
             },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
               "version": "[8.0.0, )"
             },
@@ -124,6 +132,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Google.Apis.Auth": {
+              "target": "Package",
+              "version": "[1.69.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -194,6 +208,10 @@
             "EFCore.NamingConventions": {
               "target": "Package",
               "version": "[8.0.3, )"
+            },
+            "Google.Apis.Auth": {
+              "target": "Package",
+              "version": "[1.69.0, )"
             },
             "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
