@@ -1,4 +1,5 @@
 using Domain.Users.Roles;
+using Domain.Users.Tockens;
 
 namespace Domain.Users;
 
@@ -7,34 +8,33 @@ public class User
     public UserId Id { get; set; }
     public RoleId RoleId { get; set; }
     public string GoogleId { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    public string FullName { get; set; }
     public string? Course { get; set; }
     public string Email { get; set; }
     public bool IsLoggedIn { get; set; }
-    public string AuthToken { get; set; }
-    public DateTime? TokenExpiration { get; set; }
     public DateTime CreatedAt { get; set; }
+    
+    //Звязок з токенами
+    private readonly List<UserToken> _tokens = new();
+    public IReadOnlyCollection<UserToken> Tokens => _tokens.AsReadOnly();
    
     public User() => CreatedAt = DateTime.UtcNow;
 
-    User(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email, 
-        bool isLoggedIn, string authToken, DateTime? tokenExpiration)
+    User(UserId userId, RoleId roleId, string googleId, string fullName, string course, string email, 
+        bool isLoggedIn)
     {
         Id = userId;
         RoleId = roleId;
         GoogleId = googleId;
-        FirstName = firstName;
-        LastName = lastName;
+        FullName = fullName;
         Course = course;
+        _tokens = new List<UserToken>();
         Email = email;
         IsLoggedIn = isLoggedIn;
-        AuthToken = authToken;
-        TokenExpiration = tokenExpiration;
         CreatedAt = DateTime.UtcNow;
     }
     
-    new User Create(UserId userId, RoleId roleId, string googleId, string firstName, string lastName, string course, string email, 
-        bool isLoggedIn, string authToken, DateTime? tokenExpiration) =>
-        new(userId, roleId, googleId, firstName, lastName, course, email, isLoggedIn, authToken, tokenExpiration);
+    new User Create(UserId userId, RoleId roleId, string googleId, string firstName, string course, string email, 
+        bool isLoggedIn) =>
+        new(userId, roleId, googleId, firstName, course, email, isLoggedIn);
 }

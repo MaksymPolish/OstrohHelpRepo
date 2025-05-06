@@ -24,7 +24,8 @@ public class AuthController : ControllerBase
         {
             Id = user.Id,
             Email = user.Email,
-            FullName = user.FullName,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
             GoogleId = user.GoogleId,
             RoleId = user.RoleId
         };

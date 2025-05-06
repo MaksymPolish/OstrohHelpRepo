@@ -25,14 +25,12 @@ public class UserGoogleAuthenticationHandler(IUserRepository _userRepository, IR
 
         var googleId = payload.Subject;
         var email = payload.Email;
-        var firstName = payload.Name;
-        var lastName = payload.FamilyName;
+        var fullName = payload.Name;
 
         var user = await _userRepository.GetByGoogleIdOrEmailAsync(googleId, email, ct);
 
         if (user == null)
         {
-            // 🔍 Отримуємо роль "student"
             var studentRoleId = await _roleQuery.GetRoleIdByNameAsync("Студент", ct);
             if (studentRoleId is null)
                 throw new RoleNotFoundException("Студент");
@@ -42,8 +40,7 @@ public class UserGoogleAuthenticationHandler(IUserRepository _userRepository, IR
                 Id = UserId.New(),
                 GoogleId = googleId,
                 Email = email,
-                FirstName = firstName,
-                LastName = lastName,
+                FullName = fullName,
                 RoleId = studentRoleId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -52,8 +49,7 @@ public class UserGoogleAuthenticationHandler(IUserRepository _userRepository, IR
         }
         else
         {
-            user.FirstName = firstName;
-            user.LastName = lastName;
+            user.FullName = fullName;
             await _userRepository.UpdateAsync(user, ct);
         }
 
