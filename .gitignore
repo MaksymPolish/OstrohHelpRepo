@@ -4,7 +4,7 @@
 
 # EF Core Migrations
 **/Persistence/Migrations/
-
+OstrohHelpApi/src/Api/appsettings.Development.json
 # Visual Studio files
 *.suo
 *.user
@@ -29,3 +29,4 @@ docker-compose-build/
 
 # Environment variables
 .env
+

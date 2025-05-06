@@ -31,17 +31,12 @@ public class UserGoogleAuthenticationHandler(
         var googleId = payload.Subject;
         var email = payload.Email;
         var fullName = payload.Name;
-        
 
         var user = await _userRepository.GetByGoogleIdOrEmailAsync(googleId, email, ct);
 
         if (user == null)
         {
-            var jwtToken = _authService.GenerateJwtToken(user);
-            var refreshToken = _authService.GenerateRefreshToken();
-            
             var studentRoleId = await _roleQuery.GetRoleIdByNameAsync("Студент", ct);
-            
             if (studentRoleId is null)
                 throw new RoleNotFoundException("Студент");
 

@@ -1,5 +1,7 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
+using Application.Common.Services;
+using Application.Services.Interface;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -45,5 +47,7 @@ public static class ConfigurePersistence
 
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IRoleQuery, RoleRepository>();
+        
+        services.AddSingleton<IAuthService, AuthService>();
     }
 }
