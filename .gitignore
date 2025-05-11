@@ -30,3 +30,4 @@ docker-compose-build/
 # Environment variables
 .env
 
+OstrohHelpApi/src/Api/appsettings.Development.json

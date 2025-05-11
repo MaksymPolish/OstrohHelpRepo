@@ -34,7 +34,6 @@
       <Folder Include="QuestionnaireStatus\Exceptions\" />
       <Folder Include="Questionnaire\Commands\" />
       <Folder Include="Questionnaire\Exceptions\" />
-      <Folder Include="Roles\Exceptions\" />
     </ItemGroup>
 
 </Project>

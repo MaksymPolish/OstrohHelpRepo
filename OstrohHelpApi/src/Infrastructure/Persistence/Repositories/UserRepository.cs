@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Repositories;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Optional;
 
 namespace Infrastructure.Persistence.Repositories;
 
@@ -23,5 +24,31 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
     {
         context.Users.Update(user);
         await context.SaveChangesAsync(ct);
+    }
+
+    public async Task<User> DeleteAsync(User user, CancellationToken ct)
+    {
+        context.Users.Remove(user);
+        
+        await context.SaveChangesAsync(ct); 
+        
+        return user;
+    }
+
+    public async Task<Option<User>> GetByIdAsync(UserId userId, CancellationToken ct)
+    {
+        var entity = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == userId, ct);
+
+        return entity == null ? Option.None<User>() : Option.Some(entity);
+    }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct)
+    {
+        return await context
+            .Users
+            .AsNoTracking()
+            .ToListAsync(ct); 
     }
 }

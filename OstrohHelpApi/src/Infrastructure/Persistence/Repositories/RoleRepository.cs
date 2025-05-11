@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Repositories;
 using Domain.Users.Roles;
 using Microsoft.EntityFrameworkCore;
+using Optional;
 
 namespace Infrastructure.Persistence.Repositories;
 
@@ -13,9 +14,13 @@ public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRep
         return await context.Roles.ToListAsync(ct);
     }
 
-    public async Task<Role?> GetByIdAsync(RoleId roleId, CancellationToken ct)
+    public async Task<Option<Role>> GetByIdAsync(RoleId roleId, CancellationToken ct)
     {
-        return await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId, ct);
+        var entity = await context.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == roleId, ct);
+
+        return entity == null ? Option.None<Role>() : Option.Some(entity);
     }
     
     public async Task<RoleId?> GetRoleIdByNameAsync(string roleName, CancellationToken ct)
@@ -34,19 +39,18 @@ public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRep
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateAsync(Role role, CancellationToken ct)
+    public async Task<Role> UpdateAsync(Role role, CancellationToken ct)
     {
         context.Roles.Update(role);
         await context.SaveChangesAsync(ct);
+
+        return role; 
     }
 
-    public async Task DeleteAsync(RoleId roleId, CancellationToken ct)
+    public async Task<Role> DeleteAsync(Role role, CancellationToken ct)
     {
-        var existing = await context.Roles.FindAsync(new object[] { roleId }, ct);
-        if (existing is not null)
-        {
-            context.Roles.Remove(existing);
-            await context.SaveChangesAsync(ct);
-        }
+        context.Roles.Remove(role);
+        await context.SaveChangesAsync(ct);
+        return role;
     }
 }

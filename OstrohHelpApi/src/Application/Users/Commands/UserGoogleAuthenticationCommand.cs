@@ -5,7 +5,6 @@ using Application.Users.Exceptions;
 using Domain.Users;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Auth;
 
 namespace Application.Users.Commands;
@@ -37,8 +36,6 @@ public class UserGoogleAuthenticationHandler(
 
         if (user == null)
         {
-            var jwtToken = _authService.GenerateJwtToken(user);
-            var refreshToken = _authService.GenerateRefreshToken();
             
             var studentRoleId = await _roleQuery.GetRoleIdByNameAsync("Студент", ct);
             
@@ -56,11 +53,17 @@ public class UserGoogleAuthenticationHandler(
             };
 
             await _userRepository.AddAsync(user, ct);
+            
+            var jwtToken = _authService.GenerateJwtToken(user);
+            var refreshToken = _authService.GenerateRefreshToken();
         }
         else
         {
             user.FullName = fullName;
             await _userRepository.UpdateAsync(user, ct);
+            
+            var jwtToken = _authService.GenerateJwtToken(user);
+            var refreshToken = _authService.GenerateRefreshToken();
         }
 
         return user;

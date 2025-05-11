@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Roles.Exceptions;
+using Application.Users.Exceptions;
 using Domain.Users.Roles;
 using MediatR;
 
