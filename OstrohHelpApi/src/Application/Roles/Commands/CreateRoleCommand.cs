@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces.Repositories;
+using Application.Roles.Exceptions;
 using Domain.Users.Roles;
 using MediatR;
 
@@ -7,15 +8,21 @@ public record CreateRoleCommand(string Name) : IRequest<Role>;
 
 public class CreateRoleCommandHandler(IRoleRepository _roleRepository) : IRequestHandler<CreateRoleCommand, Role>
 {
-
     public async Task<Role> Handle(CreateRoleCommand request, CancellationToken ct)
     {
-        var roleId = RoleId.New(); 
+        try
+        {
+            var roleId = RoleId.New(); 
 
-        var role = Role.Create(roleId, request.Name);
+            var role = Role.Create(roleId, request.Name);
 
-        await _roleRepository.AddAsync(role, ct);
+            await _roleRepository.AddAsync(role, ct);
 
-        return role;
+            return role;
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Something go wrong with creating role", e);
+        }
     }
 }

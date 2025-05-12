@@ -31,3 +31,4 @@ docker-compose-build/
 .env
 
 OstrohHelpApi/src/Api/appsettings.Development.json
+OstrohHelpApi/src/Api/appsettings.Development.json

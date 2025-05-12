@@ -41,8 +41,7 @@ public class DeleteRoleCommandHandler(IRoleRepository _roleRepository, IRoleQuer
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            throw new Exception("Something go wrong with deleting role", e);
         }
     }
 }

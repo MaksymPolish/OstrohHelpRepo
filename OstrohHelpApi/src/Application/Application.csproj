@@ -30,8 +30,6 @@
       <Folder Include="Consultations\Exceptions\" />
       <Folder Include="Messages\Commands\" />
       <Folder Include="Messages\Exceptions\" />
-      <Folder Include="QuestionnaireStatus\Commands\" />
-      <Folder Include="QuestionnaireStatus\Exceptions\" />
       <Folder Include="Questionnaire\Commands\" />
       <Folder Include="Questionnaire\Exceptions\" />
     </ItemGroup>

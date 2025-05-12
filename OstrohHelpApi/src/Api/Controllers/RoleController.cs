@@ -14,7 +14,7 @@ public class RoleController(IMediator _mediator, IRoleQuery _roleQuery, IRoleRep
     [HttpPost("Create-Role")]
     public async Task<IActionResult> Create([FromBody] CreateRoleCommand command, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct); // ❌ NullReference тут
+        var result = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(Create), new { id = result.Id }, result);
     }
     
