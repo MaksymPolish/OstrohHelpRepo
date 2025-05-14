@@ -1,12 +1,11 @@
 ﻿using Application.QuestionnaireStatus.Exceptions;
-using Domain.Questionnaires.Statuses;
-using MediatR;
+using Domain.Inventory.Statuses;
 
 namespace Application.Common.Interfaces.Repositories;
 
 public interface IQuestionnaireStatusRepository
 {
-    Task AddAsync(QuestionnaireStatuses status, CancellationToken ct);
-    Task<Result<QuestionnaireStatuses, QuestionnaireException>> UpdateAsync(QuestionnaireStatuses status, CancellationToken ct);
-    Task<Result<QuestionnaireStatuses, QuestionnaireException>> DeleteAsync(QuestionnaireStatuses status, CancellationToken ct);
+    Task AddAsync(QuestionaryStatuses status, CancellationToken ct);
+    Task<Result<QuestionaryStatuses, QuestionnaireStatusException>> UpdateAsync(QuestionaryStatuses status, CancellationToken ct);
+    Task<Result<QuestionaryStatuses, QuestionnaireStatusException>> DeleteAsync(QuestionaryStatuses status, CancellationToken ct);
 }

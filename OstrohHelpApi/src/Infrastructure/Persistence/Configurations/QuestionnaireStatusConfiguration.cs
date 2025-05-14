@@ -1,19 +1,18 @@
-﻿using Domain.Questionnaires;
-using Domain.Questionnaires.Statuses;
+﻿using Domain.Inventory.Statuses;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Configurations;
 
-public class QuestionnaireStatusConfiguration : IEntityTypeConfiguration<QuestionnaireStatuses>
+public class QuestionnaireStatusConfiguration : IEntityTypeConfiguration<QuestionaryStatuses>
 {
-    public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<QuestionnaireStatuses> builder)
+    public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<QuestionaryStatuses> builder)
     {
         builder.ToTable("QuestionnaireStatuses");
 
         builder.HasKey(qs => qs.Id);
 
         builder.Property(qs => qs.Id)
-            .HasConversion(id => id.Value, value => new QuestionnaireStatusesId(value));
+            .HasConversion(id => id.Value, value => new questionaryStatusId(value));
 
         builder.Property(qs => qs.Name)
             .IsRequired()

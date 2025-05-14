@@ -1,7 +1,7 @@
 ﻿using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.QuestionnaireStatus.Commands;
-using Domain.Questionnaires;
+using Domain.Inventory.Statuses;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +38,7 @@ public class QuestionaryStController(IMediator _mediator,
     [HttpGet("{id}Get-By-Id")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var statusId = new QuestionnaireStatusesId(id);
+        var statusId = new questionaryStatusId(id);
         var role = await _questionnaireStatusQuery.GetByIdAsync(statusId, ct);
         
         return role.Match<IActionResult>(

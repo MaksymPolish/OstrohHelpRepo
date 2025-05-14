@@ -2,8 +2,7 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.QuestionnaireStatus.Exceptions;
-using Domain.Questionnaires;
-using Domain.Questionnaires.Statuses;
+using Domain.Inventory.Statuses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Optional;
@@ -12,13 +11,13 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQuestionnaireStatusRepository, IQuestionnaireStatusQuery
 {
-    public async Task AddAsync(QuestionnaireStatuses status, CancellationToken ct)
+    public async Task AddAsync(QuestionaryStatuses status, CancellationToken ct)
     {
         await _context.QuestionnaireStatuses.AddAsync(status, ct);
         await _context.SaveChangesAsync(ct);
     }
 
-    public async Task<Result<QuestionnaireStatuses, QuestionnaireException>> UpdateAsync(QuestionnaireStatuses status, CancellationToken ct)
+    public async Task<Result<QuestionaryStatuses, QuestionnaireStatusException>> UpdateAsync(QuestionaryStatuses status, CancellationToken ct)
     {
         _context.QuestionnaireStatuses.Update(status);
         await _context.SaveChangesAsync(ct);
@@ -26,7 +25,7 @@ public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQue
         return status;
     }
 
-    public async Task<Result<QuestionnaireStatuses, QuestionnaireException>> DeleteAsync(QuestionnaireStatuses status, CancellationToken ct)
+    public async Task<Result<QuestionaryStatuses, QuestionnaireStatusException>> DeleteAsync(QuestionaryStatuses status, CancellationToken ct)
     {
         _context.QuestionnaireStatuses.Remove(status);
         await _context.SaveChangesAsync(ct);
@@ -34,16 +33,16 @@ public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQue
         return status;
     }
 
-    public async Task<Option<QuestionnaireStatuses>> GetByIdAsync(QuestionnaireStatusesId id, CancellationToken ct)
+    public async Task<Option<QuestionaryStatuses>> GetByIdAsync(questionaryStatusId id, CancellationToken ct)
     {
         var entity = await _context.QuestionnaireStatuses
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         
-        return entity == null ? Option.None<QuestionnaireStatuses>() : Option.Some(entity);
+        return entity == null ? Option.None<QuestionaryStatuses>() : Option.Some(entity);
     }
 
-    public async Task<IEnumerable<QuestionnaireStatuses>> GetAllAsync(CancellationToken ct)
+    public async Task<IEnumerable<QuestionaryStatuses>> GetAllAsync(CancellationToken ct)
     {
         return await _context
             .QuestionnaireStatuses

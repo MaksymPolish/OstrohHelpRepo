@@ -1,5 +1,5 @@
 ﻿using Domain.Consultations;
-using Domain.Questionnaires;
+using Domain.Inventory;
 using Domain.Users;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
@@ -26,13 +26,13 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
             .HasDefaultValueSql("timezone('utc', now())");
 
         // FK
-        builder.HasOne(c => c.Questionnaire)
+        builder.HasOne(c => c.Questionary)
             .WithMany()
             .HasForeignKey(c => c.QuestionnaireId)
             .OnDelete(DeleteBehavior.SetNull);
         
         builder.Property(c => c.QuestionnaireId)
-            .HasConversion(c => c.Value, c => new QuestionnaireId(c))
+            .HasConversion(c => c.Value, c => new QuestionaryId(c))
             .HasColumnType("uuid");
 
         //User 1 - Student

@@ -1,5 +1,5 @@
-﻿using Domain.Questionnaires;
-using Domain.Questionnaires.Statuses;
+﻿using Domain.Inventory;
+using Domain.Inventory.Statuses;
 using Domain.Users;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
@@ -8,15 +8,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Configurations;
 
-public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionnaire>
+public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionary>
 {
-    public void Configure(EntityTypeBuilder<Questionnaire> builder)
+    public void Configure(EntityTypeBuilder<Questionary> builder)
     {
         builder.ToTable("Questionnaires");
 
         builder.HasKey(q => q.Id);
         builder.Property(q => q.Id)
-            .HasConversion(id => id.Value, value => new QuestionnaireId(value));
+            .HasConversion(id => id.Value, value => new QuestionaryId(value));
 
         builder.Property(q => q.Description)
             .HasColumnType("text");
@@ -32,7 +32,7 @@ public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionnaire
             .HasForeignKey(q => q.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<QuestionnaireStatuses>(q => q.Status)
+        builder.HasOne<QuestionaryStatuses>(q => q.Status)
             .WithMany()
             .HasForeignKey(q => q.StatusId)
             .OnDelete(DeleteBehavior.Restrict);
