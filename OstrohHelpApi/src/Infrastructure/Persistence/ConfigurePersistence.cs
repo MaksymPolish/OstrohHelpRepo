@@ -56,6 +56,9 @@ public static class ConfigurePersistence
 
         services.AddScoped<IConsultationQuery, ConsultationRepository>();
         services.AddScoped<IConsultationRepository, ConsultationRepository>();
+
+        services.AddScoped<IMessageQuery, MessageRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
         
         services.AddSingleton<IAuthService, AuthService>();
     }
