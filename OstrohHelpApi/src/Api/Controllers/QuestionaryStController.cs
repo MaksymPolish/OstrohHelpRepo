@@ -54,8 +54,8 @@ public class QuestionaryStController(IMediator _mediator,
         return Ok(roles);
     }
     
-    [HttpDelete("{id} Delete Status")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    [HttpDelete("Delete-Status")]
+    public async Task<IActionResult> Delete([FromBody]Guid id, CancellationToken ct)
     {
         var command = new DeleteQuestionaryStatusCommand(id);
         var result = await _mediator.Send(command, ct);

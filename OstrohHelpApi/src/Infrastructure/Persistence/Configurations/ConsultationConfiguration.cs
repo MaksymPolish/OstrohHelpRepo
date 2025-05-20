@@ -1,4 +1,5 @@
-﻿using Domain.Consultations;
+﻿using Domain.Conferences;
+using Domain.Conferences.Statuses;
 using Domain.Inventory;
 using Domain.Users;
 using Infrastructure.Persistence.Converters;

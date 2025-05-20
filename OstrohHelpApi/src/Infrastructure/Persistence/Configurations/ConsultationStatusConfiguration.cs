@@ -1,8 +1,7 @@
-﻿using Domain.Consultations;
+﻿using Domain.Conferences.Statuses;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Domain.Consultations.Statuses;
 
 namespace Infrastructure.Persistence.Configurations;
 

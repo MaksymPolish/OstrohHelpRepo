@@ -1,4 +1,4 @@
-﻿using Domain.Consultations;
+﻿using Domain.Conferences;
 using Domain.Users;
 
 namespace Domain.Messages;
@@ -7,7 +7,7 @@ public class Message
 {
     public MessageId Id { get; set; }
     
-    public Consultations.Consultations Consultations { get; set; }
+    public Consultations Consultations { get; set; }
     public ConsultationsId ConsultationId { get; set; }
     public UserId SenderId { get; set; }
     public UserId ReceiverId { get; set; }

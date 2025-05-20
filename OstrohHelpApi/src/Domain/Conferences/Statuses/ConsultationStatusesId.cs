@@ -1,4 +1,4 @@
-namespace Domain.Consultations;
+namespace Domain.Conferences.Statuses;
 
 public record ConsultationStatusesId(Guid Value)
 {

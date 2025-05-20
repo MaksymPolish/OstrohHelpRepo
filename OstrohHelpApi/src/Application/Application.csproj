@@ -24,10 +24,6 @@
 
     <ItemGroup>
       <Folder Include="Common\Behaviours\" />
-      <Folder Include="ConsultationStatus\Commands\" />
-      <Folder Include="ConsultationStatus\Exceptions\" />
-      <Folder Include="Consultations\Commands\" />
-      <Folder Include="Consultations\Exceptions\" />
       <Folder Include="Messages\Commands\" />
       <Folder Include="Messages\Exceptions\" />
     </ItemGroup>

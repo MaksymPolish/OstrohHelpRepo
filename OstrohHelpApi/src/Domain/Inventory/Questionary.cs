@@ -30,4 +30,9 @@ public class Questionary
     public static new Questionary Create(QuestionaryId id, UserId userId, questionaryStatusId statusId,
         string description, bool isAnonymous, DateTime submittedAt) =>
         new(id, userId, statusId, description, isAnonymous, submittedAt);
+    
+    internal void UpdateStatus(QuestionaryStatuses newStatus)
+    {
+        StatusId = newStatus.Id;
+    }
 }

@@ -1,4 +1,4 @@
-﻿using Domain.Consultations;
+﻿using Domain.Conferences;
 using Microsoft.EntityFrameworkCore;
 using Domain.Messages;
 using Domain.Users;

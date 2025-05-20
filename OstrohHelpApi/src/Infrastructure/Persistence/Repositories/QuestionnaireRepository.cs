@@ -26,6 +26,14 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
         return questionary;
     }
 
+    public Task<Result<Questionary, QuestionnairesException>> UpdateStatusAsync(Questionary questionary, CancellationToken ct)
+    {
+        _context.Questionnaires.Update(questionary);
+        _context.SaveChanges();
+        
+        return Task.FromResult<Result<Questionary, QuestionnairesException>>(questionary);
+    }
+
     public async Task<Questionary> DeleteAsync(Questionary questionary, CancellationToken ct)
     {
         _context.Questionnaires.Remove(questionary);

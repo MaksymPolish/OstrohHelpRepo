@@ -4,6 +4,7 @@ using Application.Services.Interface;
 using Application.Users.Commands;
 using Domain.Users;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 [Route("api/auth")]
 public class AuthController(IAuthService _authService, IMediator _mediator, IUserQuery _userQuery) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] UserGoogleAuthenticationCommand command, CancellationToken ct)
     {
@@ -69,6 +71,13 @@ public class AuthController(IAuthService _authService, IMediator _mediator, IUse
 
     [HttpPut("User-course")]
     public async Task<IActionResult> Update_Course([FromBody] AddUserCourseCommand command, CancellationToken ct)
+    {
+        await _mediator.Send(command, ct);
+        return NoContent(); 
+    }
+    
+    [HttpPut("User-Role-Update")]
+    public async Task<IActionResult> Update([FromBody] UpdateUserCommand command, CancellationToken ct)
     {
         await _mediator.Send(command, ct);
         return NoContent(); 

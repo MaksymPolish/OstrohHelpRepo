@@ -49,4 +49,13 @@ public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQue
             .AsNoTracking()
             .ToListAsync(ct);
     }
+
+    public async Task<Option<QuestionaryStatuses>> GetByNameAsync(string name, CancellationToken ct)
+    {
+        var entity = await _context.QuestionnaireStatuses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Name == name, ct);
+        
+        return entity == null ? Option.None<QuestionaryStatuses>() : Option.Some(entity);
+    }
 } 

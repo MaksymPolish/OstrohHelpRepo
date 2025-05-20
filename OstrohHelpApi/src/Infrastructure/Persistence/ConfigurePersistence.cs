@@ -51,6 +51,12 @@ public static class ConfigurePersistence
         services.AddScoped<IQuestionnaireQuery, QuestionnaireRepository>();
         services.AddScoped<IQuestionnaireRepository, QuestionnaireRepository>();
         
+        services.AddScoped<IConsultationStatusQuery, ConsultationStatusRepository>();
+        services.AddScoped<IConsultationStatusRepository, ConsultationStatusRepository>();
+
+        services.AddScoped<IConsultationQuery, ConsultationRepository>();
+        services.AddScoped<IConsultationRepository, ConsultationRepository>();
+        
         services.AddSingleton<IAuthService, AuthService>();
     }
 }

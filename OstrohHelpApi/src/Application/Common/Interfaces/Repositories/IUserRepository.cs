@@ -8,5 +8,4 @@ public interface IUserRepository
     Task AddAsync(User user, CancellationToken ct);
     Task UpdateAsync(User user, CancellationToken ct);
     Task<User> DeleteAsync(User user, CancellationToken ct);
-
 }

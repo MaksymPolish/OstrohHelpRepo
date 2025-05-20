@@ -1,6 +1,6 @@
 using System.Reflection;
-using Domain.Consultations;
-using Domain.Consultations.Statuses;
+using Domain.Conferences;
+using Domain.Conferences.Statuses;
 using Domain.Inventory;
 using Domain.Inventory.Statuses;
 using Domain.Messages;
