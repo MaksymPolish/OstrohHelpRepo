@@ -24,8 +24,6 @@
 
     <ItemGroup>
       <Folder Include="Common\Behaviours\" />
-      <Folder Include="Messages\Commands\" />
-      <Folder Include="Messages\Exceptions\" />
     </ItemGroup>
 
 </Project>

@@ -16,7 +16,7 @@ public class Message
     public DateTime SentAt { get; set; }
     public DateTime? DeletedAt { get; set; }
     
-    new Message Create(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
+    public static Message Create(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
         new(id, consultationId, senderId, receiverId, text, isRead, sentAt, deletedAt);
     
     Message(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
@@ -29,5 +29,10 @@ public class Message
         IsRead = isRead;
         SentAt = sentAt;
         DeletedAt = deletedAt;
+    }
+    
+    public void MarkAsRead()
+    {
+        IsRead = true;
     }
 }
