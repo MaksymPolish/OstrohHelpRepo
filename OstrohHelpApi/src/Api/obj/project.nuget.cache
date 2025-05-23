@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "9DpbUhQIFRc=",
+  "dgSpecHash": "/MTQ7vZlgTo=",
   "success": true,
   "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\src\\Api\\Api.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Maks\\.nuget\\packages\\automapper\\14.0.0\\automapper.14.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\efcore.namingconventions\\8.0.3\\efcore.namingconventions.8.0.3.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation.aspnetcore\\11.3.0\\fluentvalidation.aspnetcore.11.3.0.nupkg.sha512",

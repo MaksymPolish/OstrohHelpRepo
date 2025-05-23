@@ -3,6 +3,7 @@ using Application;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,8 @@ builder.Services.AddAuthentication(options =>
         options.SignInScheme = "Cookies";
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
     });
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 
 var app = builder.Build();
 
@@ -46,6 +49,33 @@ app.UseAuthorization();
 
 //await app.InitialiseDb();
 app.MapControllers();
+
+var imagesPath = Path.Combine(builder.Environment.ContentRootPath, "data/images");
+
+if (!Directory.Exists(imagesPath))
+{
+    Directory.CreateDirectory(imagesPath);
+    
+    var containersPath = Path.Combine(imagesPath, "containers");
+    if (!Directory.Exists(containersPath))
+    {
+        Directory.CreateDirectory(containersPath);
+    }
+    
+    var productsPath = Path.Combine(imagesPath, "products");
+    if (!Directory.Exists(productsPath))
+    {
+        Directory.CreateDirectory(productsPath);
+    }
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(imagesPath),
+    RequestPath = "/images"
+});
+
+
 
 app.Run();
 

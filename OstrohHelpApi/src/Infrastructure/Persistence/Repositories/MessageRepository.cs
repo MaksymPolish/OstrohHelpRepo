@@ -32,6 +32,13 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
         return message;
     }
 
+    public async Task<Result<Message, MessageExceptions>> UpdateAsync(Message message, CancellationToken ct)
+    {
+        context.Messages.Update(message);
+        await context.SaveChangesAsync(ct);
+        return message;
+    }
+
     public async Task<Option<List<Message>>> GetAllMessagesByConsultationId(ConsultationsId id, CancellationToken cancellationToken)
     {
         var entity = await context.Messages

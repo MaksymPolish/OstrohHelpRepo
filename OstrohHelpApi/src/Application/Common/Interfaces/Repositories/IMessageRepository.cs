@@ -10,4 +10,6 @@ public interface IMessageRepository
     Task<Result<Message, MessageExceptions>> UpdateRead(Message message, CancellationToken ct);
     
     Task<Message> DeleteAsync(Message message, CancellationToken ct);
+    
+    Task<Result<Message, MessageExceptions>> UpdateAsync(Message message, CancellationToken ct);
 }

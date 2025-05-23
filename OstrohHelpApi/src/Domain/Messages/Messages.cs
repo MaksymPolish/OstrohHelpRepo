@@ -31,6 +31,11 @@ public class Message
         DeletedAt = deletedAt;
     }
     
+    public void UpdateText(string newText)
+    {
+        Text = newText;
+    }
+    
     public void MarkAsRead()
     {
         IsRead = true;

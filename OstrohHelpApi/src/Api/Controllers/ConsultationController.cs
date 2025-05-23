@@ -3,6 +3,7 @@ using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Consultations.Commands;
 using Application.Questionnaire.Commands;
+using AutoMapper;
 using Domain.Conferences;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,7 @@ public class ConsultationController(IMediator _mediator,
     IConsultationRepository _consultationRepository,
     IConsultationStatusQuery _consultationStatusQuery,
     IUserQuery _userQuery,
+    IMapper _mapper,
     IQuestionnaireQuery _questionnaireQuery) : ControllerBase
 {
     //Accept
@@ -53,56 +55,28 @@ public class ConsultationController(IMediator _mediator,
     
     //GetAll
     //Достаємо консультацію потім по studentId та psychologistId виводимо ім'я(FullName) студента і психолога, а також статус консультації
-    [HttpGet("Get-All-Consultations")]
+    [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var consultations = await _consultationQuery.GetAllAsync(ct);
-
-        if (!consultations.Any())
-            return NotFound(new { Message = "No consultations found." });
-
         var dtos = new List<ConsultationDto>();
 
         foreach (var c in consultations)
         {
-            string studentName = "Анонімно";
-            string psychologistName = "Невідомий";
-            string statusName = "Невідомий";
-
-            // --- Отримай статус ---
             var statusOption = await _consultationStatusQuery.GetByIdAsync(c.StatusId, ct);
-            await statusOption.Match(
-                s => Task.FromResult(statusName = s.Name),
-                () => Task.CompletedTask
-            );
-
-            // --- Отримай студента ---
-            var studentOption = await _userQuery.GetByIdAsync(c.StudentId, ct);
-            await studentOption.Match(
-                u => Task.FromResult(studentName = u.FullName),
-                () => Task.CompletedTask
-            );
-
-            // --- Отримай психолога ---
             var psychologistOption = await _userQuery.GetByIdAsync(c.PsychologistId, ct);
-            await psychologistOption.Match(
-                p => Task.FromResult(psychologistName = p.FullName),
-                () => Task.CompletedTask
-            );
+            var studentOption = await _userQuery.GetByIdAsync(c.StudentId, ct);
 
-            dtos.Add(new ConsultationDto
-            {
-                Id = c.Id,
-                QuestionnaireId = c.QuestionnaireId,
-                StudentId = c.StudentId,
-                StudentName = studentName,
-                PsychologistId = c.PsychologistId,
-                PsychologistName = psychologistName,
-                StatusId = c.StatusId,
-                StatusName = statusName,
-                ScheduledTime = c.ScheduledTime,
-                CreatedAt = c.CreatedAt
-            });
+            var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+            var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
+            var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
+            
+            var dto = _mapper.Map<ConsultationDto>(c);
+            dto.StatusName = statusName;
+            dto.StudentName = studentName;
+            dto.PsychologistName = psychologistName;
+
+            dtos.Add(dto);
         }
 
         return Ok(dtos);
@@ -112,59 +86,38 @@ public class ConsultationController(IMediator _mediator,
     //Теж саме і для GetById
     //GetById
     [HttpGet("Get-Consultation-ById")]
-    public async Task<IActionResult> GetById([FromQuery] Guid consultationId, CancellationToken ct)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var id = new ConsultationsId(consultationId);
-        var consultationOption = await _consultationQuery.GetByIdAsync(id, ct);
+        var consultationId = new ConsultationsId(id);
+        var option = await _consultationQuery.GetByIdAsync(consultationId, ct);
 
-        return await consultationOption.Match<Task<IActionResult>>(
+        return await option.Match<Task<IActionResult>>(
             async c =>
             {
-                string studentName = "Анонімно";
-                string psychologistName = "Невідомий";
-                string statusName = "Невідомий";
-
                 // --- Отримай статус ---
                 var statusOption = await _consultationStatusQuery.GetByIdAsync(c.StatusId, ct);
-                await statusOption.Match(
-                    s => Task.FromResult(statusName = s.Name),
-                    () => Task.CompletedTask
-                );
+                var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
 
                 // --- Отримай студента ---
                 var studentOption = await _userQuery.GetByIdAsync(c.StudentId, ct);
-                await studentOption.Match(
-                    u => Task.FromResult(studentName = u.FullName),
-                    () => Task.CompletedTask
-                );
-                
+                var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
 
                 // --- Отримай психолога ---
                 var psychologistOption = await _userQuery.GetByIdAsync(c.PsychologistId, ct);
-                await psychologistOption.Match(
-                    p => Task.FromResult(psychologistName = p.FullName),
-                    () => Task.CompletedTask
-                );
-                
+                var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
 
-                // --- DTO ---
-                var dto = new ConsultationDto
-                {
-                    Id = c.Id,
-                    QuestionnaireId = c.QuestionnaireId,
-                    StudentId = c.StudentId,
-                    StudentName = studentName,
-                    PsychologistId = c.PsychologistId,
-                    PsychologistName = psychologistName,
-                    StatusId = c.StatusId,
-                    StatusName = statusName,
-                    ScheduledTime = c.ScheduledTime,
-                    CreatedAt = c.CreatedAt
-                };
+                // --- Мапінг до DTO ---
+                var dto = _mapper.Map<ConsultationDto>(c);
+                dto.StatusName = statusName;
+                dto.StudentName = studentName;
+                dto.PsychologistName = psychologistName;
 
                 return Ok(dto);
             },
-            () => Task.FromResult<IActionResult>(NotFound(new { Message = "Questionary not found" }))
+            () => Task.FromResult<IActionResult>(
+                NotFound(new { Message = $"Consultation with ID '{id}' not found." })
+            )
         );
     }
     

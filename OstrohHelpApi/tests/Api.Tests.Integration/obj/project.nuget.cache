@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "bovSTumAzRM=",
+  "dgSpecHash": "6lxtvH7+t40=",
   "success": true,
   "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\Api.Tests.Integration.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Maks\\.nuget\\packages\\automapper\\14.0.0\\automapper.14.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\bouncycastle.cryptography\\2.2.1\\bouncycastle.cryptography.2.2.1.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\coverlet.collector\\6.0.0\\coverlet.collector.6.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\docker.dotnet\\3.125.15\\docker.dotnet.3.125.15.nupkg.sha512",

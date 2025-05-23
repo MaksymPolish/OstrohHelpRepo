@@ -23,7 +23,7 @@ public class UpdateMessageCommandHandler(
             async message =>
             {
                 // --- Оновлення тексту ---
-                message.UpdateText(command.text);
+                message.UpdateText(command.Text);
                 
                 // --- Збереження через репозиторій ---
                 return await _messageRepository.UpdateAsync(message, ct);

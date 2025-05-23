@@ -3,6 +3,7 @@ using Api.Dtos;
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Messages.Commands;
+using AutoMapper;
 using Domain.Conferences;
 using Domain.Messages;
 using MediatR;
@@ -15,6 +16,7 @@ namespace Api.Controllers;
 public class MessageController(IMediator _mediator, 
     IMessageQuery _messageQuery, 
     IMessageRepository _messageRepository,
+    IMapper _mapper,
     IUserQuery _userQuery) : ControllerBase
 {
     //Recive by Consultation
@@ -34,39 +36,28 @@ public class MessageController(IMediator _mediator,
                     string senderName = "Невідомий";
                     string receiverName = "Невідомий";
 
-                    // --- Отримай відправника ---
+                    // --- Отримай імена ---
                     var senderOption = await _userQuery.GetByIdAsync(message.SenderId, ct);
-                    senderOption.Match(
-                        user => { senderName = user.FullName; },
-                        () => { }
-                    );
-
-                    // --- Отримай отримувача ---
                     var receiverOption = await _userQuery.GetByIdAsync(message.ReceiverId, ct);
-                    receiverOption.Match(
-                        user => { receiverName = user.FullName; },
-                        () => { }
-                    );
 
-                    // --- Додай DTO ---
-                    dtos.Add(new MessageDto(
-                        Id: message.Id.ToString(),
-                        ConsultationId: message.ConsultationId.ToString(),
-                        SenderId: message.SenderId.ToString(),
-                        ReceiverId: message.ReceiverId.ToString(),
-                        Text: message.Text,
-                        IsRead: message.IsRead,
-                        SentAt: message.SentAt,
-                        FullNameSender: senderName,
-                        FullNameReceiver: receiverName));
+                    senderName = senderOption.Match(u => u.FullName, () => "Невідомий");
+                    receiverName = receiverOption.Match(u => u.FullName, () => "Невідомий");
+
+                    // --- Додай до списку ---
+                    var dto = _mapper.Map<MessageDto>(message);
+                    dto.FullNameSender = senderName;
+                    dto.FullNameReceiver = receiverName;
+                    dtos.Add(dto);
                 }
 
                 return Ok(dtos);
             },
-            () => Task.FromResult<IActionResult>(NotFound(new { Message = $"No messages found for consultation ID '{consultationId}'." }))
+            () => Task.FromResult<IActionResult>(
+                NotFound(new { Message = $"No messages found for consultation ID '{consultationId}'." })
+            )
         );
     }
-    
+
     //Send
     [HttpPost("Send")]
     public async Task<IActionResult> Send([FromBody] SendMessageCommand command, CancellationToken ct)

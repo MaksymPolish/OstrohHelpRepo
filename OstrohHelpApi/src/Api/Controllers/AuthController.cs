@@ -2,7 +2,9 @@
 using Application.Common.Interfaces.Queries;
 using Application.Services.Interface;
 using Application.Users.Commands;
+using AutoMapper;
 using Domain.Users;
+using Domain.Users.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +13,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService _authService, IMediator _mediator, IUserQuery _userQuery) : ControllerBase
+public class AuthController(IAuthService _authService, IMapper _mapper, IMediator _mediator, IUserQuery _userQuery, IRoleQuery _roleQuery) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("google-login")]
@@ -37,12 +39,25 @@ public class AuthController(IAuthService _authService, IMediator _mediator, IUse
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var roleId = new UserId(id);
-        var roleOption = await _userQuery.GetByIdAsync(roleId, ct);
+        var userId = new UserId(id);
+        var userOption = await _userQuery.GetByIdAsync(userId, ct);
 
-        return roleOption.Match<IActionResult>(
-            r => Ok(r),
-            () => NotFound(new { Message = $"Role with ID '{id}' was not found" })
+        return await userOption.Match<Task<IActionResult>>(
+            async user =>
+            {
+                // --- Отримай роль ---
+                var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
+                string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
+
+                // --- Мапінг до DTO ---
+                var dto = _mapper.Map<UserDto>(user);
+                dto.RoleName = roleName;
+
+                return Ok(dto);
+            },
+            () => Task.FromResult<IActionResult>(
+                NotFound(new { Message = $"User with ID '{id}' was not found" })
+            )
         );
     }
     
@@ -50,8 +65,23 @@ public class AuthController(IAuthService _authService, IMediator _mediator, IUse
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var users = await _userQuery.GetAllAsync(ct);
-        
-        return Ok(users);
+
+        var dtos = new List<UserDto>();
+
+        foreach (var user in users)
+        {
+            // --- Отримай роль ---
+            var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
+            string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
+
+            // --- Мапінг до DTO ---
+            var dto = _mapper.Map<UserDto>(user);
+            dto.RoleName = roleName;
+
+            dtos.Add(dto);
+        }
+
+        return Ok(dtos);
     }
 
     [HttpDelete("User-Delete")]
