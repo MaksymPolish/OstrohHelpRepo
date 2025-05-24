@@ -1,0 +1,6 @@
+package ua.edu.oa.ostrohhelpapp
+
+import io.flutter.embedding.android.FlutterActivity
+ 
+class MainActivity: FlutterActivity() {
+} 

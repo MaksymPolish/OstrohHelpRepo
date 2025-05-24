@@ -32,3 +32,5 @@ docker-compose-build/
 
 OstrohHelpApi/src/Api/appsettings.Development.json
 OstrohHelpApi/src/Api/appsettings.Development.json
+OstrohHelpApp/ostrohhelpapp/android/app/client_secret_930738005847-7q4c0aavnniv1mncbg4lsgbfkkkbnsht.apps.googleusercontent.com.json
+OstrohHelpApp/ostrohhelpapp/android/app/google-services.json
