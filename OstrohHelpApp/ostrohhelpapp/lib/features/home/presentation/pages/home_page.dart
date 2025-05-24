@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../widgets/bottom_nav_bar.dart';
+import '../../../questionnaire/presentation/pages/questionnaires_list_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,54 +10,49 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(SignOutRequested());
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Welcome to OA Mind Care!',
-              style: TextStyle(fontSize: 24),
-            ),
-            const SizedBox(height: 20),
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is Authenticated) {
-                  return Column(
-                    children: [
-                      if (state.user.photoUrl != null)
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: NetworkImage(state.user.photoUrl!),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Welcome to MindCare',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 48),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const QuestionnairesListPage(),
                         ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Hello, ${state.user.displayName}!',
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      Text(
-                        state.user.email ?? 'No email provided',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  );
-                }
-                return const CircularProgressIndicator();
-              },
-            ),
-          ],
+                      );
+                    },
+                    child: const Text('Submit a questionnaire'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Navigate to consultations page
+                    },
+                    child: const Text('Consultations'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 0),
     );
   }
 } 

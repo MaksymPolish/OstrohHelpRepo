@@ -6,6 +6,8 @@ import 'core/di/injection_container.dart' as di;
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
@@ -59,8 +61,35 @@ class MyApp extends StatelessWidget {
                 title: 'OA Mind Care',
                 debugShowCheckedModeBanner: false,
                 theme: ThemeData(
-                  primaryColor: const Color(0xFF046380),
-                  scaffoldBackgroundColor: Colors.white,
+                  primaryColor: const Color(0xFF7FB3D5),
+                  scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: const Color(0xFF7FB3D5),
+                    primary: const Color(0xFF7FB3D5),
+                    secondary: const Color(0xFF98D8C8),
+                    surface: const Color(0xFFF5F5F5),
+                  ),
+                  elevatedButtonTheme: ElevatedButtonThemeData(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7FB3D5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  textTheme: const TextTheme(
+                    headlineLarge: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                    bodyLarge: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
                 ),
                 home: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {

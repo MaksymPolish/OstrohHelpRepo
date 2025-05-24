@@ -4,6 +4,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.Questionnaire.Commands;
 using AutoMapper;
 using Domain.Inventory;
+using Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -107,6 +108,14 @@ public class QuestionnaireController(IMediator _mediator,
                 NotFound(new { Message = $"Questionnaire with ID '{id}' not found." })
             )
         );
+    }
+    
+    [HttpGet("get-by-user-id/{id}")]
+    public async Task<IActionResult> GetByUserId(Guid id, CancellationToken ct)
+    {
+        var idUser = new UserId(id);
+        var questionnaires = await _questionnaireQuery.GetByUserIdAsync(idUser, ct);
+        return Ok(questionnaires);
     }
     
     [HttpDelete("Delete-Questionnaire")]
