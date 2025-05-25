@@ -19,6 +19,7 @@ public class ConsultationController(IMediator _mediator,
     IConsultationRepository _consultationRepository,
     IConsultationStatusQuery _consultationStatusQuery,
     IUserQuery _userQuery,
+    IConsultationStatusQuery _statusQuery,
     IMapper _mapper,
     IQuestionnaireQuery _questionnaireQuery) : ControllerBase
 {
@@ -54,25 +55,24 @@ public class ConsultationController(IMediator _mediator,
         );
     }
     
-    //GetAll
-    //Достаємо консультацію потім по studentId та psychologistId виводимо ім'я(FullName) студента і психолога, а також статус консультації
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var consultations = await _consultationQuery.GetAllAsync(ct);
+
         var dtos = new List<ConsultationDto>();
 
-        foreach (var c in consultations)
+        foreach (var consultation in consultations)
         {
-            var statusOption = await _consultationStatusQuery.GetByIdAsync(c.StatusId, ct);
-            var psychologistOption = await _userQuery.GetByIdAsync(c.PsychologistId, ct);
-            var studentOption = await _userQuery.GetByIdAsync(c.StudentId, ct);
+            var statusOption = await _statusQuery.GetByIdAsync(consultation.StatusId, ct);
+            var psychologistOption = await _userQuery.GetByIdAsync(consultation.PsychologistId, ct);
+            var studentOption = await _userQuery.GetByIdAsync(consultation.StudentId, ct);
 
             var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
             var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
             var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
             
-            var dto = _mapper.Map<ConsultationDto>(c);
+            var dto = _mapper.Map<ConsultationDto>(consultation);
             dto.StatusName = statusName;
             dto.StudentName = studentName;
             dto.PsychologistName = psychologistName;
@@ -95,24 +95,16 @@ public class ConsultationController(IMediator _mediator,
         return await option.Match<Task<IActionResult>>(
             async c =>
             {
-                // --- Отримай статус ---
-                var statusOption = await _consultationStatusQuery.GetByIdAsync(c.StatusId, ct);
-                var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
-
-                // --- Отримай студента ---
+                var statusOption = await _statusQuery.GetByIdAsync(c.StatusId, ct);
                 var studentOption = await _userQuery.GetByIdAsync(c.StudentId, ct);
-                var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
-
-                // --- Отримай психолога ---
                 var psychologistOption = await _userQuery.GetByIdAsync(c.PsychologistId, ct);
-                var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
 
                 // --- Мапінг до DTO ---
                 var dto = _mapper.Map<ConsultationDto>(c);
-                dto.StatusName = statusName;
-                dto.StudentName = studentName;
-                dto.PsychologistName = psychologistName;
-
+                dto.StatusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+                dto.StudentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
+                dto.PsychologistId = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
+                
                 return Ok(dto);
             },
             () => Task.FromResult<IActionResult>(
@@ -141,7 +133,7 @@ public class ConsultationController(IMediator _mediator,
             var dto = _mapper.Map<ConsultationDto>(consultation);
             dto.StatusName = statusName;
             dto.StudentName = studentName;
-            dto.PsychologistName = psychologistName;
+            dto.PsychologistName = psychologistName;    
 
             return Ok(dto);
         }

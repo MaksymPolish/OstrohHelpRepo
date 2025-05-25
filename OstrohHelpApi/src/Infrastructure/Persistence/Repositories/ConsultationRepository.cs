@@ -49,7 +49,7 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
         List<Consultations> resultList = await context.Consultations
             .AsNoTracking()
             .Where(x => x.PsychologistId == id || x.StudentId == id)
-            .Distinct() // Уникаємо дублікатів
+            .Distinct() 
             .ToListAsync(ct);
 
         return resultList;
