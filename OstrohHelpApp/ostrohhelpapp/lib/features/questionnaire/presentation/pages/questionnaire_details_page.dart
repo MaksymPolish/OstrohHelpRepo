@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/services/questionnaire_api_service.dart';
+import 'package:intl/intl.dart';
 
 class QuestionnaireDetailsPage extends StatelessWidget {
   final String questionnaireId;
@@ -64,9 +65,9 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          questionnaire['status'] ?? 'Unknown',
+                          questionnaire['statusName'] ?? 'Unknown',
                           style: TextStyle(
-                            color: questionnaire['status'] == 'Under Review'
+                            color: questionnaire['statusName'] == 'Обробляється'
                                 ? Colors.orange
                                 : Colors.green,
                             fontWeight: FontWeight.bold,
@@ -78,7 +79,11 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
-                        Text(questionnaire['submittedDate'] ?? 'Unknown date'),
+                        Text(
+                          questionnaire['submittedAt'] != null
+                              ? DateTime.parse(questionnaire['submittedAt']).toLocal().toString()
+                              : 'Unknown date',
+                        ),
                         if (questionnaire['isAnonymous'] == true) ...[
                           const SizedBox(height: 16),
                           const Text(

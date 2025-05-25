@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../../../questionnaire/presentation/pages/questionnaires_list_page.dart';
 

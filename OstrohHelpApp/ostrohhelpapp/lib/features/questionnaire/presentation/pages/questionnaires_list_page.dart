@@ -73,18 +73,25 @@ class QuestionnairesListPage extends StatelessWidget {
                         children: [
                           const SizedBox(height: 8),
                           Text(
-                            'Submitted on: ${questionnaire['submittedDate']?.toString().split('T')[0] ?? 'Unknown date'}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
+                          questionnaire['submittedAt'] != null
+                              ? DateTime.parse(questionnaire['submittedAt']).toLocal().toString()
+                              : 'Unknown date',
+                        ),
                           const SizedBox(height: 4),
                           Text(
-                            'Status: ${questionnaire['status'] ?? 'Unknown'}',
-                            style: TextStyle(
-                              color: questionnaire['status'] == 'Under Review'
-                                  ? Colors.orange
-                                  : Colors.green,
-                            ),
+                          'Status:',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          questionnaire['statusName'] ?? 'Unknown',
+                          style: TextStyle(
+                            color: questionnaire['statusName'] == 'Обробляється'
+                                ? Colors.orange
+                                : Colors.green,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
                         ],
                       ),
                       trailing: const Icon(Icons.chevron_right),
