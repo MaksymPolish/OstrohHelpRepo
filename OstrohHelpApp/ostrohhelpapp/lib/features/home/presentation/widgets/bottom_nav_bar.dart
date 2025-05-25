@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../consultation/presentation/pages/consultation_page.dart';
+import '../../../consultation/presentation/pages/consultation_list_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../questionnaire/presentation/pages/questionnaires_list_page.dart';
 import '../pages/home_page.dart';
@@ -47,7 +47,7 @@ class CustomBottomNavBar extends StatelessWidget {
             page = const QuestionnairesListPage();
             break;
           case 2:
-            page = const ConsultationPage();
+            page = const ConsultationListPage();
             break;
           case 3:
             page = const ProfilePage();

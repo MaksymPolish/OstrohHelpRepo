@@ -117,28 +117,29 @@ public class ConsultationController(IMediator _mediator,
     public async Task<IActionResult> GetAllByUserId(Guid Id, CancellationToken ct)
     {
         var userId = new UserId(Id);
-        
+    
         var consultations = await _consultationQuery.GetAllByUserIdAsync(userId, ct);
 
-        foreach (var consultation  in consultations)
+        if (!consultations.Any())
+            return NotFound(new { Message = $"No consultations found for user ID '{userId}'." });
+
+        var dtos = new List<ConsultationDto>();
+
+        foreach (var consultation in consultations)
         {
             var statusOption = await _consultationStatusQuery.GetByIdAsync(consultation.StatusId, ct);
             var psychologistOption = await _userQuery.GetByIdAsync(consultation.PsychologistId, ct);
             var studentOption = await _userQuery.GetByIdAsync(consultation.StudentId, ct);
 
-            var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
-            var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
-            var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
-            
             var dto = _mapper.Map<ConsultationDto>(consultation);
-            dto.StatusName = statusName;
-            dto.StudentName = studentName;
-            dto.PsychologistName = psychologistName;    
+            dto.StatusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+            dto.StudentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
+            dto.PsychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
 
-            return Ok(dto);
+            dtos.Add(dto);
         }
-        
-        return Ok(consultations);
+
+        return Ok(dtos);
     }
     
     
