@@ -3,6 +3,8 @@ using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Consultations.Exceptions;
 using Domain.Conferences;
+using Domain.Users;
+using Google.Apis.Util;
 using Microsoft.EntityFrameworkCore;
 using Optional;
 
@@ -40,5 +42,16 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
     {
         var result = await context.Consultations.FirstOrDefaultAsync(x => x.Id == id, ct);
         return result != null ? Option.Some(result) : Option.None<Consultations>();
+    }
+
+    public async Task<IEnumerable<Consultations>> GetAllByUserIdAsync(UserId id, CancellationToken ct)
+    {
+        List<Consultations> resultList = await context.Consultations
+            .AsNoTracking()
+            .Where(x => x.PsychologistId == id || x.StudentId == id)
+            .Distinct() // Уникаємо дублікатів
+            .ToListAsync(ct);
+
+        return resultList;
     }
 }

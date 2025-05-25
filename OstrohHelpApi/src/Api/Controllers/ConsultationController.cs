@@ -5,6 +5,7 @@ using Application.Consultations.Commands;
 using Application.Questionnaire.Commands;
 using AutoMapper;
 using Domain.Conferences;
+using Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -85,8 +86,7 @@ public class ConsultationController(IMediator _mediator,
     
     //Теж саме і для GetById
     //GetById
-    [HttpGet("Get-Consultation-ById")]
-    [HttpGet("{id}")]
+    [HttpGet("Get-Consultation-ById/{id}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var consultationId = new ConsultationsId(id);
@@ -121,7 +121,33 @@ public class ConsultationController(IMediator _mediator,
         );
     }
     
-    
+    [HttpGet("Get-All-Consultations-By-UserId/{Id}")]
+    public async Task<IActionResult> GetAllByUserId(Guid Id, CancellationToken ct)
+    {
+        var userId = new UserId(Id);
+        
+        var consultations = await _consultationQuery.GetAllByUserIdAsync(userId, ct);
+
+        foreach (var consultation  in consultations)
+        {
+            var statusOption = await _consultationStatusQuery.GetByIdAsync(consultation.StatusId, ct);
+            var psychologistOption = await _userQuery.GetByIdAsync(consultation.PsychologistId, ct);
+            var studentOption = await _userQuery.GetByIdAsync(consultation.StudentId, ct);
+
+            var statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+            var studentName = studentOption.Map(u => u.FullName).ValueOr("Невідомий");
+            var psychologistName = psychologistOption.Map(u => u.FullName).ValueOr("Невідомий");
+            
+            var dto = _mapper.Map<ConsultationDto>(consultation);
+            dto.StatusName = statusName;
+            dto.StudentName = studentName;
+            dto.PsychologistName = psychologistName;
+
+            return Ok(dto);
+        }
+        
+        return Ok(consultations);
+    }
     
     
 }
