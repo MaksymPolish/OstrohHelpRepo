@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/di/injection_container.dart' as di;
-import 'features/auth/data/repositories/auth_repository_impl.dart';
-import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
@@ -47,87 +45,60 @@ class MyApp extends StatelessWidget {
         }
 
         if (snapshot.connectionState == ConnectionState.done) {
-          return MultiRepositoryProvider(
+          return MultiBlocProvider(
             providers: [
-              RepositoryProvider<AuthRepository>(
-                create: (context) => AuthRepositoryImpl(),
+              BlocProvider<AuthBloc>(
+                create: (context) => AuthBloc()..add(CheckAuthStatus()),
               ),
             ],
-            child: BlocProvider(
-              create: (context) => AuthBloc(
-                authRepository: context.read<AuthRepository>(),
-              )..add(CheckAuthStatus()),
-              child: MaterialApp(
-                title: 'OA Mind Care',
-                debugShowCheckedModeBanner: false,
-                theme: ThemeData(
-                  primaryColor: const Color(0xFF7FB3D5),
-                  scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF7FB3D5),
-                    primary: const Color(0xFF7FB3D5),
-                    secondary: const Color(0xFF98D8C8),
-                    surface: const Color(0xFFF5F5F5),
+            child: MaterialApp(
+              title: 'OA Mind Care',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                primaryColor: const Color(0xFF7FB3D5),
+                scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF7FB3D5),
+                  primary: const Color(0xFF7FB3D5),
+                  secondary: const Color(0xFF98D8C8),
+                  surface: const Color(0xFFF5F5F5),
+                ),
+                elevatedButtonTheme: ElevatedButtonThemeData(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7FB3D5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  elevatedButtonTheme: ElevatedButtonThemeData(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7FB3D5),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                ),
+                textTheme: const TextTheme(
+                  headlineLarge: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
+                  ),
+                  bodyLarge: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              ),
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthLoading) {
+                    return const Scaffold(
+                      body: Center(
+                        child: CircularProgressIndicator(),
                       ),
-                    ),
-                  ),
-                  textTheme: const TextTheme(
-                    headlineLarge: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
-                    ),
-                    bodyLarge: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF2C3E50),
-                    ),
-                  ),
-                ),
-                home: BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    if (state is AuthLoading) {
-                      return const Scaffold(
-                        body: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-                    if (state is Authenticated) {
-                      return const HomePage();
-                    }
-                    if (state is AuthError) {
-                      return Scaffold(
-                        body: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Error: ${state.message}',
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.read<AuthBloc>().add(CheckAuthStatus());
-                                },
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    return const LoginPage();
-                  },
-                ),
+                    );
+                  }
+                  if (state is Authenticated) {
+                    return const HomePage();
+                  }
+                  return const LoginPage();
+                },
               ),
             ),
           );

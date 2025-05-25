@@ -51,4 +51,13 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
             .AsNoTracking()
             .ToListAsync(ct); 
     }
+
+    public async Task<Option<User>> GetByEmailAsync(string email, CancellationToken ct)
+    {
+        var entity = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Email == email, ct);
+
+        return entity == null ? Option.None<User>() : Option.Some(entity);
+    }
 }

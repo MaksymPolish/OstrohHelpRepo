@@ -19,7 +19,7 @@ public class QuestionnaireController(IMediator _mediator,
     IQuestionnaireStatusQuery _statusQuery,
     IMapper _mapper) : ControllerBase
 {
-    [HttpPost]
+    [HttpPost("Create-Questionnaire")]
     public async Task<IActionResult> Create([FromBody] CreateQuestionnaireCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -115,7 +115,40 @@ public class QuestionnaireController(IMediator _mediator,
     {
         var idUser = new UserId(id);
         var questionnaires = await _questionnaireQuery.GetByUserIdAsync(idUser, ct);
-        return Ok(questionnaires);
+        var dtos = new List<QuestionnaireDto>();
+
+        foreach (var q in questionnaires)
+        {
+            string fullName = "Невідомий";
+            string email = "Невідомий";
+            string statusName = "Невідомий";
+
+            // --- Отримай студента ---
+            if (q.UserId is not null)
+            {
+                var userOption = await _userQuery.GetByIdAsync(q.UserId, ct);
+                userOption.Match(u =>
+                {
+                    fullName = u.FullName;
+                    email = u.Email;
+                }, () => { });
+            }
+            
+            // --- Отримай статус ---
+            var statusOption = await _statusQuery.GetByIdAsync(q.StatusId, ct);
+            statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+
+            // --- Мапінг до DTO ---
+            var dto = _mapper.Map<QuestionnaireDto>(q);
+            dto.FullName = fullName;
+            dto.Email = email;
+            dto.StatusName = statusName;
+
+            dtos.Add(dto);
+        }
+
+        return Ok(dtos);
+       
     }
     
     [HttpDelete("Delete-Questionnaire")]

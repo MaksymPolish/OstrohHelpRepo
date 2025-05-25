@@ -1,30 +1,21 @@
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart'; // Add this import
+import 'package:firebase_core/firebase_core.dart';
 
-import '../../features/auth/data/repositories/auth_repository_impl.dart';
-import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/data/services/auth_api_service.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // Blocs
-  if (!sl.isRegistered<AuthBloc>()) {
-    sl.registerFactory(
-      () => AuthBloc(
-        authRepository: sl(),
-      ),
-    );
+  // Services
+  if (!sl.isRegistered<AuthApiService>()) {
+    sl.registerLazySingleton(() => AuthApiService());
   }
 
-  // Repositories
-  if (!sl.isRegistered<AuthRepository>()) {
-    sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(
-        firebaseAuth: sl(), // Will be resolved when needed
-      ),
-    );
+  // Blocs
+  if (!sl.isRegistered<AuthBloc>()) {
+    sl.registerFactory(() => AuthBloc());
   }
 
   // Register FirebaseAuth as a factory so it's not accessed early

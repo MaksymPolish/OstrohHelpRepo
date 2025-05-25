@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class QuestionnaireApiService {
-  final String baseUrl = 'http://192.168.0.101:5132/api';
+  final String baseUrl = 'http://10.0.2.2:5132/api';
 
   Future<List<Map<String, dynamic>>> getAllQuestionnaires() async {
     final response = await http.get(Uri.parse('$baseUrl/questionnaire/all'));
@@ -25,6 +25,7 @@ class QuestionnaireApiService {
     final response = await http.get(Uri.parse('$baseUrl/questionnaire/get-by-user-id/$userId'));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
+      print('Questionnaires for user $userId: $data');
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to load user questionnaires');

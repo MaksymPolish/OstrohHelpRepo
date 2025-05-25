@@ -61,6 +61,30 @@ public class AuthController(IAuthService _authService, IMapper _mapper, IMediato
         );
     }
     
+    [HttpGet("get-by-email")]
+    public async Task<IActionResult> GetByEmail([FromQuery] string email, CancellationToken ct)
+    {
+        var userOption = await _userQuery.GetByEmailAsync(email, ct);
+
+        return await userOption.Match<Task<IActionResult>>(
+            async user =>
+            {
+                // --- Отримай роль ---
+                var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
+                string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
+
+                // --- Мапінг до DTO ---
+                var dto = _mapper.Map<UserDto>(user);
+                dto.RoleName = roleName;
+
+                return Ok(dto);
+            },
+            () => Task.FromResult<IActionResult>(
+                NotFound(new { Message = $"User with email '{email}' was not found" })
+            )
+        );
+    }
+
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
