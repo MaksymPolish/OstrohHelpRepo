@@ -1,4 +1,5 @@
 ﻿using Application.Common;
+using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Questionnaire.Exceptions;
 using Application.QuestionnaireStatus.Exceptions;
@@ -11,34 +12,46 @@ namespace Application.Questionnaire.Commands;
 
 public record CreateQuestionnaireCommand(
     Guid UserId,
-    Guid StatusId,
     string Description,
     bool IsAnonymous,
     DateTime SubmittedAt) : IRequest<Result<Questionary, QuestionnairesException>>;
 
-public class CreateQuestionnaireCommandHandler(IQuestionnaireRepository _repository)
+public class CreateQuestionnaireCommandHandler(IQuestionnaireRepository _repository, IQuestionnaireStatusQuery _repositoryStatusQuery)
     : IRequestHandler<CreateQuestionnaireCommand, Result<Questionary, QuestionnairesException>>
 {
-    public async Task<Result<Questionary, QuestionnairesException>> Handle(CreateQuestionnaireCommand command, CancellationToken ct)
+    public async Task<Result<Questionary, QuestionnairesException>> Handle(
+        CreateQuestionnaireCommand command, 
+        CancellationToken ct)
     {
-        try
-        {
-            var questionnaire = Questionary.Create(
-                id: QuestionaryId.New(),
-                userId: new UserId(command.UserId),
-                statusId: new questionaryStatusId(command.StatusId),
-                description: command.Description,
-                isAnonymous: command.IsAnonymous,
-                submittedAt: command.SubmittedAt
-            );
+        const string statusName = "Обробляється";
+        var questionaryStatus = await _repositoryStatusQuery.GetByNameAsync(statusName, ct);
 
-            await _repository.AddAsync(questionnaire, ct);
+        return await questionaryStatus.Match(
+            async status =>
+            {
+                try
+                {
+                    var questionnaire = Questionary.Create(
+                        id: QuestionaryId.New(),
+                        userId: new UserId(command.UserId),
+                        statusId: status.Id,
+                        description: command.Description,
+                        isAnonymous: command.IsAnonymous,
+                        submittedAt: command.SubmittedAt
+                    );
 
-            return questionnaire;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Something go wrong with creating questionnaires", ex);
-        }
+                    await _repository.AddAsync(questionnaire, ct);
+                
+                    return questionnaire; // ✅ Неявне Result.Success(...)
+                }
+                catch (Exception ex)
+                {
+                    return new QuestionnaireUnknownException(QuestionaryId.New(), ex);
+                }
+            },
+            () => Task.FromResult<Result<Questionary, QuestionnairesException>>(
+                new QuestionnaireStatusNotFoundException(statusName)
+            )
+        );
     }
 }

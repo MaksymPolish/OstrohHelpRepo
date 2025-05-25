@@ -151,6 +151,46 @@ public class QuestionnaireController(IMediator _mediator,
        
     }
     
+    [HttpGet("Get-All-Questionnaire-By-UserId/{id}")]
+    public async Task<IActionResult> GetAllByUserId(Guid id, CancellationToken ct)
+    {
+        var UserId = new UserId(id);
+        var questionnaires = await _questionnaireQuery.GetAllByUserIdAsync(UserId, ct);
+        var dtos = new List<QuestionnaireDto>();
+
+        foreach (var q in questionnaires)
+        {
+            string fullName = "Невідомий";
+            string email = "Невідомий";
+            string statusName = "Невідомий";
+
+            // --- Отримай студента ---
+            if (q.UserId is not null)
+            {
+                var userOption = await _userQuery.GetByIdAsync(q.UserId, ct);
+                userOption.Match(u =>
+                {
+                    fullName = u.FullName;
+                    email = u.Email;
+                }, () => { });
+            }
+            
+            // --- Отримай статус ---
+            var statusOption = await _statusQuery.GetByIdAsync(q.StatusId, ct);
+            statusName = statusOption.Map(s => s.Name).ValueOr("Невідомий");
+
+            // --- Мапінг до DTO ---
+            var dto = _mapper.Map<QuestionnaireDto>(q);
+            dto.FullName = fullName;
+            dto.Email = email;
+            dto.StatusName = statusName;
+
+            dtos.Add(dto);
+        }
+
+        return Ok(dtos);
+    }
+    
     [HttpDelete("Delete-Questionnaire")]
     public async Task<IActionResult> Delete([FromBody]Guid id, CancellationToken ct)
     {

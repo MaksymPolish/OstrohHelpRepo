@@ -8,30 +8,37 @@ using MediatR;
 
 namespace Application.Questionnaire.Exceptions;
 
-public abstract class QuestionnairesException(QuestionaryId id, string message, Exception? exception = null) 
-    : Exception(message, exception), IRequest<Result<Questionary, QuestionnairesException>>
+public abstract class QuestionnairesException : Exception
 {
-    public QuestionaryId questionaryId { get; } = id;
+    protected QuestionnairesException(string message, Exception? inner = null) : base(message, inner) { }
 }
 
 public class QuestionnaireUnknownException : QuestionnairesException
 {
-    public QuestionnaireUnknownException(QuestionaryId id, Exception innerException) : base(id, $"An unknown error occurred while processing questionnaires '{id}'.", innerException) { }
+    public QuestionnaireUnknownException(QuestionaryId id, Exception inner) 
+        : base($"An unknown error occurred while processing questionnaires with ID '{id}'.", inner)
+    {
+    }
 }
 
 public class QuestionnaireNotFoundException : QuestionnairesException
 {
-    public QuestionnaireNotFoundException(QuestionaryId id) : base(id, $"Questionnaire with ID '{id}' was not found.") { }
+    public QuestionnaireNotFoundException(QuestionaryId id) : base($"Questionnaire with ID '{id}' was not found.") { }
 }
 
 public class QuestionnaireAlreadyAcceptedException : QuestionnairesException
 {
-    public QuestionaryId Id { get; }
-
     public QuestionnaireAlreadyAcceptedException(QuestionaryId id)
-        : base(id, $"This questionary is already accepted. ID: {id}")
+        : base($"This questionary is already accepted. ID: {id}")
     {
-        Id = id;
+    }
+}
+
+public class QuestionnaireStatusNotFoundException : QuestionnairesException
+{
+    public QuestionnaireStatusNotFoundException(string name) 
+        : base($"Questionnaire status '{name}' not found.")
+    {
     }
 }
 

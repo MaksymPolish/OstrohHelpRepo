@@ -62,4 +62,14 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
 
         return entity == null ? Option.None<Questionary>() : Option.Some(entity);
     }
+
+    public async Task<IEnumerable<Questionary>> GetAllByUserIdAsync(UserId id, CancellationToken ct)
+    {
+        List<Questionary> questionaries = await _context.Questionnaires
+            .AsNoTracking()
+            .Where(x => x.UserId == id)
+            .ToListAsync(ct);
+
+        return questionaries;
+    }
 }

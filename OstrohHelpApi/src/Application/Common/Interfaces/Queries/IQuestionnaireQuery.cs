@@ -11,4 +11,6 @@ public interface IQuestionnaireQuery
     Task<Option<Questionary>> GetByIdAsync(QuestionaryId id, CancellationToken ct);
     
     Task<Option<Questionary>> GetByUserIdAsync(UserId id, CancellationToken ct);
+    
+    Task<IEnumerable<Questionary>> GetAllByUserIdAsync(UserId id, CancellationToken ct);
 }

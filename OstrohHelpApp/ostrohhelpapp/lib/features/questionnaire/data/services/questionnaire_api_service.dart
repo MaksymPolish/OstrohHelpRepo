@@ -22,7 +22,7 @@ class QuestionnaireApiService {
   }
 
   Future<List<Map<String, dynamic>>> getQuestionnairesByUserId(String userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/questionnaire/get-by-user-id/$userId'));
+    final response = await http.get(Uri.parse('$baseUrl/questionnaire/Get-All-Questionnaire-By-UserId/$userId'));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       print('Questionnaires for user $userId: $data');
@@ -33,7 +33,7 @@ class QuestionnaireApiService {
 
   Future<Map<String, dynamic>> createQuestionnaire(Map<String, dynamic> questionnaire) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/questionnaire'),
+      Uri.parse('$baseUrl/questionnaire/Create-Questionnaire'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(questionnaire),
     );
