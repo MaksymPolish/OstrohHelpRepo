@@ -14,10 +14,7 @@ namespace Application.Messages.Commands;
 public record SendMessageCommand(
     Guid ConsultationId,
     Guid SenderId,
-    Guid ReceiverId,
-    string Text,
-    bool IsRead = false,
-    DateTime? SentAt = null) 
+    string Text) 
     : IRequest<Result<Message, MessageExceptions>>;
 
 public class SendMessageCommandHandler(
@@ -27,15 +24,20 @@ public class SendMessageCommandHandler(
 {
     public async Task<Result<Message, MessageExceptions>> Handle(SendMessageCommand command, CancellationToken ct)
     {
+        bool isRead = false;
         var consultationId = new ConsultationsId(command.ConsultationId);
         var senderId = new UserId(command.SenderId);
-        var receiverId = new UserId(command.ReceiverId);
 
         var consultationOption = await _consultationQuery.GetByIdAsync(consultationId, ct);
 
         return await consultationOption.Match(
             async consultation =>
             {
+                // --- Визначення отримувача ---
+                var receiverId = consultation.StudentId == senderId 
+                    ? consultation.PsychologistId 
+                    : consultation.StudentId;
+                
                 // --- Створення повідомлення ---
                 var message = Message.Create(
                     id: new MessageId(Guid.NewGuid()),
@@ -43,8 +45,8 @@ public class SendMessageCommandHandler(
                     senderId: senderId,
                     receiverId: receiverId,
                     text: command.Text,
-                    isRead: command.IsRead,
-                    sentAt: command.SentAt ?? DateTime.UtcNow,
+                    isRead: isRead,
+                    sentAt: DateTime.UtcNow,
                     deletedAt: null
                 );
 

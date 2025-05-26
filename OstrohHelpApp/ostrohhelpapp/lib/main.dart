@@ -8,6 +8,8 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
+import 'features/consultation/presentation/pages/consultation_list_page.dart';
+import 'features/consultation/presentation/pages/chat_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +102,13 @@ class MyApp extends StatelessWidget {
                   return const LoginPage();
                 },
               ),
+              routes: {
+                '/consultations': (context) => const ConsultationListPage(),
+                '/chat': (context) {
+                  final consultationId = ModalRoute.of(context)!.settings.arguments as String;
+                  return ChatPage(consultationId: consultationId);
+                },
+              },
             ),
           );
         }
