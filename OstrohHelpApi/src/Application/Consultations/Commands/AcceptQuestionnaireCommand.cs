@@ -13,7 +13,7 @@ using Optional;
 
 namespace Application.Consultations.Commands;
 
-public record AcceptQuestionnaireCommand(Guid QuestionaryId, Guid PsychologistId, Guid ConsultationStatusId, DateTime ScheduledTime)
+public record AcceptQuestionnaireCommand(Guid QuestionaryId, Guid PsychologistId, DateTime ScheduledTime)
     : IRequest<Result<Domain.Conferences.Consultations, Exception>>;
 
 public class AcceptQuestionnaireCommandHandler(

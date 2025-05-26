@@ -4,6 +4,7 @@ import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
+import 'admin_panel_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -21,8 +22,21 @@ class ProfilePage extends StatelessWidget {
           }
           
           if (state is! Authenticated) {
-            return const Center(child: Text('Please log in to view profile'));
-            
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Please log in to view profile'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/');
+                    },
+                    child: const Text('Sign In'),
+                  ),
+                ],
+              ),
+            );
           }
 
           final user = state.user;
@@ -58,6 +72,28 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
+                if (user.roleId == '0c79cd0c-86a8-4a02-803d-d4af6f6ef266' ||
+                    user.roleId == 'cf9e7046-d455-480c-970e-0dc55f5ef42c')
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPanelPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.admin_panel_settings),
+                    label: const Text('Адмін панель'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
                 ElevatedButton.icon(
                   onPressed: () {
                     context.read<AuthBloc>().add(SignOutRequested());

@@ -10,6 +10,8 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/consultation/presentation/pages/consultation_list_page.dart';
 import 'features/consultation/presentation/pages/chat_page.dart';
+import 'features/profile/presentation/pages/admin_panel_page.dart';
+import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,6 +110,8 @@ class MyApp extends StatelessWidget {
                   final consultationId = ModalRoute.of(context)!.settings.arguments as String;
                   return ChatPage(consultationId: consultationId);
                 },
+                '/admin-panel': (context) => const AdminPanelPage(),
+                '/admin-questionnaires': (context) => const AdminQuestionnairesPage(),
               },
             ),
           );

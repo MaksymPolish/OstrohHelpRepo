@@ -26,9 +26,7 @@ class MessageApiService {
       headers: {'Content-Type': 'application/json'},
       body: json.encode(message),
     );
-    print('SEND MESSAGE STATUS: ${response.statusCode}');
-    print('SEND MESSAGE BODY: ${response.body}');
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to send message');
     }
   }
@@ -37,9 +35,9 @@ class MessageApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/Message/Delete'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'id': messageId}),
+      body: json.encode({'messageId': messageId}),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to delete message');
     }
   }

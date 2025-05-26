@@ -101,6 +101,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       email: userData['email'],
       displayName: userData['displayName'],
       photoUrl: userData['photoUrl'],
+      roleId: userData['roleId'],
+      roleName: userData['roleName'],
     );
   }
 } 
