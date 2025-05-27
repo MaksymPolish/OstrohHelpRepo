@@ -45,3 +45,4 @@ OstrohHelpApi/src/Api/appsettings.json
 appsettings.json
 /OstrohHelpApi/src/Api
 
+*.json

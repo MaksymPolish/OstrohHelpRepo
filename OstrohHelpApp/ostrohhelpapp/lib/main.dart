@@ -12,6 +12,7 @@ import 'features/consultation/presentation/pages/consultation_list_page.dart';
 import 'features/consultation/presentation/pages/chat_page.dart';
 import 'features/profile/presentation/pages/admin_panel_page.dart';
 import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
+import 'features/auth/presentation/widgets/course_input_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,9 @@ void main() async {
   } catch (e) {
     debugPrint('Error initializing Firebase: $e');
   }
+
+  // Initialize dependency injection
+  await di.init();
 
   runApp(const MyApp());
 }
@@ -52,7 +56,7 @@ class MyApp extends StatelessWidget {
           return MultiBlocProvider(
             providers: [
               BlocProvider<AuthBloc>(
-                create: (context) => AuthBloc()..add(CheckAuthStatus()),
+                create: (context) => di.sl<AuthBloc>(param1: context)..add(CheckAuthStatus()),
               ),
             ],
             child: MaterialApp(
@@ -89,21 +93,6 @@ class MyApp extends StatelessWidget {
                   ),
                 ),
               ),
-              home: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is AuthLoading) {
-                    return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-                  if (state is Authenticated) {
-                    return const HomePage();
-                  }
-                  return const LoginPage();
-                },
-              ),
               routes: {
                 '/consultations': (context) => const ConsultationListPage(),
                 '/chat': (context) {
@@ -113,6 +102,7 @@ class MyApp extends StatelessWidget {
                 '/admin-panel': (context) => const AdminPanelPage(),
                 '/admin-questionnaires': (context) => const AdminQuestionnairesPage(),
               },
+              home: const AuthRoot(),
             ),
           );
         }
@@ -134,6 +124,52 @@ class MyApp extends StatelessWidget {
     await Firebase.initializeApp(
       name: "ostrohhelpapp-e9a56",
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+}
+
+// Окремий віджет для root, щоб можна було використовувати контекст з Navigator
+class AuthRoot extends StatelessWidget {
+  const AuthRoot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) =>
+          current is Authenticated &&
+          (current.user.course == null || current.user.course!.trim().isEmpty),
+      listener: (context, state) {
+        if (state is Authenticated &&
+            (state.user.course == null || state.user.course!.trim().isEmpty)) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => Builder(
+              builder: (dialogContext) => CourseInputDialog(
+                userId: state.user.id!,
+                onSubmit: (userId, course) {
+                  dialogContext.read<AuthBloc>().add(UpdateUserCourse(userId, course));
+                },
+              ),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthLoading) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          if (state is Authenticated) {
+            return const HomePage();
+          }
+          return const LoginPage();
+        },
+      ),
     );
   }
 }

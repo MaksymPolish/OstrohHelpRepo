@@ -6,16 +6,22 @@ import '../../data/services/auth_api_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../../../core/di/injection_container.dart';
+import '../widgets/course_input_dialog.dart';
+import 'package:flutter/material.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    signInOption: SignInOption.standard,
+  );
   final AuthApiService _apiService = sl<AuthApiService>();
+  final BuildContext context;
 
-  AuthBloc() : super(AuthInitial()) {
+  AuthBloc(this.context) : super(AuthInitial()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<SignInWithGoogleRequested>(_onSignInWithGoogleRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<UpdateUserCourse>(_onUpdateUserCourse);
   }
 
   Future<void> _onCheckAuthStatus(
@@ -26,7 +32,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (currentUser != null) {
       try {
         final userData = await _apiService.getUserById(currentUser.uid);
-        emit(Authenticated(_mapApiUser(userData)));
+        final user = _mapApiUser(userData);
+        emit(Authenticated(user));
       } catch (e) {
         emit(AuthError(e.toString()));
       }
@@ -53,20 +60,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         idToken: googleAuth.idToken,
       );
 
-      // Додаю вивід idToken у консоль
-      if (googleAuth.idToken != null) {
-        print('==========================================');
-        print('Google ID Token:');
-        print(googleAuth.idToken);
-        print('==========================================');
-      }
-
       final firebase_auth.UserCredential userCredential = await _auth.signInWithCredential(credential);
-      
-      // Send ID token to your backend
+
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(googleAuth.idToken!);
-        emit(Authenticated(_mapApiUser(userData)));
+        final user = _mapApiUser(userData);
+        emit(Authenticated(user));
       } else {
         throw Exception('Failed to get ID token from Google');
       }
@@ -91,6 +90,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onUpdateUserCourse(
+    UpdateUserCourse event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      await _apiService.updateUserCourse(event.userId, event.course);
+      final userData = await _apiService.getUserById(event.userId);
+      emit(Authenticated(_mapApiUser(userData)));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
   app_user.User _mapApiUser(Map<String, dynamic> userData) {
     return app_user.User(
       id: userData['id'],
@@ -99,6 +111,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       photoUrl: userData['photoUrl'],
       roleId: userData['roleId'],
       roleName: userData['roleName'],
+      course: userData['course'],
     );
   }
 } 

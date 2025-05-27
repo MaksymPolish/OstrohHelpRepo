@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../../../questionnaire/presentation/pages/questionnaires_list_page.dart';
+import '../../../auth/presentation/pages/login_page.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../../core/di/injection_container.dart' as di;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

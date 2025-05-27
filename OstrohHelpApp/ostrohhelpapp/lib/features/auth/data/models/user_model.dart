@@ -8,6 +8,7 @@ class UserModel extends User {
     String? photoUrl,
     String? roleId,
     String? roleName,
+    String? course,
   }) : super(
           id: id,
           email: email,
@@ -15,6 +16,7 @@ class UserModel extends User {
           photoUrl: photoUrl,
           roleId: roleId,
           roleName: roleName,
+          course: course,
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class UserModel extends User {
       photoUrl: json['photoUrl'] as String?,
       roleId: json['roleId'] as String?,
       roleName: json['roleName'] as String?,
+      course: json['course'] as String?,
     );
   }
 
@@ -36,6 +39,7 @@ class UserModel extends User {
       'photoUrl': photoUrl,
       'roleId': roleId,
       'roleName': roleName,
+      'course': course,
     };
   }
 } 

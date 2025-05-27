@@ -78,7 +78,7 @@ class AuthApiService {
         'course': course,
       }),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to update user course: ${response.body}');
     }
   }
