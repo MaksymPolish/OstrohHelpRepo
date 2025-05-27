@@ -59,6 +59,10 @@
               "target": "Package",
               "version": "[14.0.0, )"
             },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
+            },
             "FluentValidation.AspNetCore": {
               "target": "Package",
               "version": "[11.3.0, )"
@@ -164,6 +168,10 @@
             "AutoMapper": {
               "target": "Package",
               "version": "[14.0.0, )"
+            },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
             },
             "FluentValidation.DependencyInjectionExtensions": {
               "target": "Package",
@@ -274,6 +282,10 @@
               "target": "Package",
               "version": "[14.0.0, )"
             },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
+            },
             "Google.Apis.Auth": {
               "target": "Package",
               "version": "[1.69.0, )"
@@ -357,6 +369,10 @@
             "EFCore.NamingConventions": {
               "target": "Package",
               "version": "[8.0.3, )"
+            },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
             },
             "Google.Apis.Auth": {
               "target": "Package",
@@ -442,6 +458,10 @@
             "AutoMapper": {
               "target": "Package",
               "version": "[14.0.0, )"
+            },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
             },
             "FluentAssertions": {
               "target": "Package",
@@ -553,6 +573,10 @@
               "target": "Package",
               "version": "[14.0.0, )"
             },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
+            },
             "Google.Apis.Auth": {
               "target": "Package",
               "version": "[1.69.0, )"
@@ -661,6 +685,10 @@
             "AutoMapper": {
               "target": "Package",
               "version": "[14.0.0, )"
+            },
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.2.0, )"
             },
             "Google.Apis.Auth": {
               "target": "Package",

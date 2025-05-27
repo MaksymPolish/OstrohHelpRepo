@@ -103,6 +103,24 @@
           "lib/net8.0/EFCore.NamingConventions.dll": {}
         }
       },
+      "FirebaseAdmin/3.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Rest": "4.8.0",
+          "Google.Apis.Auth": "1.68.0",
+          "System.Collections.Immutable": "8.0.0"
+        },
+        "compile": {
+          "lib/net6.0/FirebaseAdmin.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/FirebaseAdmin.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "FluentAssertions/7.0.0-alpha.3": {
         "type": "package",
         "dependencies": {
@@ -166,6 +184,41 @@
         "runtime": {
           "lib/netstandard2.1/FluentValidation.DependencyInjectionExtensions.dll": {
             "related": ".xml"
+          }
+        }
+      },
+      "Google.Api.Gax/4.8.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
+          "Newtonsoft.Json": "13.0.3"
+        },
+        "compile": {
+          "lib/netstandard2.0/Google.Api.Gax.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Google.Api.Gax.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Api.Gax.Rest/4.8.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax": "4.8.0",
+          "Google.Apis.Auth": "[1.67.0, 2.0.0)",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Google.Api.Gax.Rest.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Google.Api.Gax.Rest.dll": {
+            "related": ".pdb;.xml"
           }
         }
       },
@@ -2614,6 +2667,22 @@
           "lib/netstandard1.3/System.Collections.Concurrent.dll": {}
         }
       },
+      "System.Collections.Immutable/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.Collections.Immutable.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/System.Collections.Immutable.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
       "System.Collections.NonGeneric/4.3.0": {
         "type": "package",
         "dependencies": {
@@ -4028,6 +4097,7 @@
           "Application": "1.0.0",
           "AspNetCore.Firebase.Authentication": "2.0.1",
           "AutoMapper": "14.0.0",
+          "FirebaseAdmin": "3.2.0",
           "FluentValidation.AspNetCore": "11.3.0",
           "Google.Apis.Auth": "1.69.0",
           "Google.Apis.Core": "1.69.0",
@@ -4053,6 +4123,7 @@
           "AspNetCore.Firebase.Authentication": "2.0.1",
           "AutoMapper": "14.0.0",
           "Domain": "1.0.0",
+          "FirebaseAdmin": "3.2.0",
           "FluentValidation.DependencyInjectionExtensions": "11.9.2",
           "Google.Apis.Auth": "1.69.0",
           "MediatR": "12.4.1",
@@ -4077,6 +4148,7 @@
         "dependencies": {
           "AspNetCore.Firebase.Authentication": "2.0.1",
           "AutoMapper": "14.0.0",
+          "FirebaseAdmin": "3.2.0",
           "Google.Apis.Auth": "1.69.0"
         },
         "compile": {
@@ -4095,6 +4167,7 @@
           "AutoMapper": "14.0.0",
           "Domain": "1.0.0",
           "EFCore.NamingConventions": "8.0.3",
+          "FirebaseAdmin": "3.2.0",
           "Google.Apis.Auth": "1.69.0",
           "Microsoft.Extensions.DependencyInjection": "8.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.4"
@@ -4114,6 +4187,7 @@
           "Application": "1.0.0",
           "AspNetCore.Firebase.Authentication": "2.0.1",
           "AutoMapper": "14.0.0",
+          "FirebaseAdmin": "3.2.0",
           "Google.Apis.Auth": "1.69.0",
           "Infrastructure": "1.0.0",
           "Microsoft.AspNetCore.Mvc.Testing": "8.0.0",
@@ -4137,6 +4211,7 @@
           "AspNetCore.Firebase.Authentication": "2.0.1",
           "AutoMapper": "14.0.0",
           "Domain": "1.0.0",
+          "FirebaseAdmin": "3.2.0",
           "Google.Apis.Auth": "1.69.0"
         },
         "compile": {
@@ -4296,6 +4371,24 @@
         "lib/net8.0/EFCore.NamingConventions.dll"
       ]
     },
+    "FirebaseAdmin/3.2.0": {
+      "sha512": "689HWz59pmUQVJY3YJd7rsevICX8KL2qQX23XyHIp2+Qek9IScgL6T/AnyHF6WMirXll2tULRe+LGOItj7kF6A==",
+      "type": "package",
+      "path": "firebaseadmin/3.2.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "firebaseadmin.3.2.0.nupkg.sha512",
+        "firebaseadmin.nuspec",
+        "lib/net462/FirebaseAdmin.dll",
+        "lib/net462/FirebaseAdmin.xml",
+        "lib/net6.0/FirebaseAdmin.dll",
+        "lib/net6.0/FirebaseAdmin.xml",
+        "lib/netstandard2.0/FirebaseAdmin.dll",
+        "lib/netstandard2.0/FirebaseAdmin.xml"
+      ]
+    },
     "FluentAssertions/7.0.0-alpha.3": {
       "sha512": "c5HCYKAW0vhxx8qJ6s8o683GqjfKD7HCJPGA9IOcnZVvqa8atkG0mYhHEpkp/hnC4IVhRPmX+wHjBXDyZVn+3g==",
       "type": "package",
@@ -4379,6 +4472,44 @@
         "lib/netstandard2.0/FluentValidation.DependencyInjectionExtensions.xml",
         "lib/netstandard2.1/FluentValidation.DependencyInjectionExtensions.dll",
         "lib/netstandard2.1/FluentValidation.DependencyInjectionExtensions.xml"
+      ]
+    },
+    "Google.Api.Gax/4.8.0": {
+      "sha512": "xlV8Jq/G5CQAA3PwYAuKGjfzGOP7AvjhREnE6vgZlzxREGYchHudZWa2PWSqFJL+MBtz9YgitLpRogANN3CVvg==",
+      "type": "package",
+      "path": "google.api.gax/4.8.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "NuGetIcon.png",
+        "google.api.gax.4.8.0.nupkg.sha512",
+        "google.api.gax.nuspec",
+        "lib/net462/Google.Api.Gax.dll",
+        "lib/net462/Google.Api.Gax.pdb",
+        "lib/net462/Google.Api.Gax.xml",
+        "lib/netstandard2.0/Google.Api.Gax.dll",
+        "lib/netstandard2.0/Google.Api.Gax.pdb",
+        "lib/netstandard2.0/Google.Api.Gax.xml"
+      ]
+    },
+    "Google.Api.Gax.Rest/4.8.0": {
+      "sha512": "zaA5LZ2VvGj/wwIzRB68swr7khi2kWNgqWvsB0fYtScIAl3kGkGtqiBcx63H1YLeKr5xau1866bFjTeReH6FSQ==",
+      "type": "package",
+      "path": "google.api.gax.rest/4.8.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "NuGetIcon.png",
+        "google.api.gax.rest.4.8.0.nupkg.sha512",
+        "google.api.gax.rest.nuspec",
+        "lib/net462/Google.Api.Gax.Rest.dll",
+        "lib/net462/Google.Api.Gax.Rest.pdb",
+        "lib/net462/Google.Api.Gax.Rest.xml",
+        "lib/netstandard2.0/Google.Api.Gax.Rest.dll",
+        "lib/netstandard2.0/Google.Api.Gax.Rest.pdb",
+        "lib/netstandard2.0/Google.Api.Gax.Rest.xml"
       ]
     },
     "Google.Apis/1.69.0": {
@@ -7544,6 +7675,36 @@
         "ref/xamarinwatchos10/_._",
         "system.collections.concurrent.4.3.0.nupkg.sha512",
         "system.collections.concurrent.nuspec"
+      ]
+    },
+    "System.Collections.Immutable/8.0.0": {
+      "sha512": "AurL6Y5BA1WotzlEvVaIDpqzpIPvYnnldxru8oXJU2yFxFUy3+pNXjXd1ymO+RA0rq0+590Q8gaz2l3Sr7fmqg==",
+      "type": "package",
+      "path": "system.collections.immutable/8.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/net461/System.Collections.Immutable.targets",
+        "buildTransitive/net462/_._",
+        "buildTransitive/net6.0/_._",
+        "buildTransitive/netcoreapp2.0/System.Collections.Immutable.targets",
+        "lib/net462/System.Collections.Immutable.dll",
+        "lib/net462/System.Collections.Immutable.xml",
+        "lib/net6.0/System.Collections.Immutable.dll",
+        "lib/net6.0/System.Collections.Immutable.xml",
+        "lib/net7.0/System.Collections.Immutable.dll",
+        "lib/net7.0/System.Collections.Immutable.xml",
+        "lib/net8.0/System.Collections.Immutable.dll",
+        "lib/net8.0/System.Collections.Immutable.xml",
+        "lib/netstandard2.0/System.Collections.Immutable.dll",
+        "lib/netstandard2.0/System.Collections.Immutable.xml",
+        "system.collections.immutable.8.0.0.nupkg.sha512",
+        "system.collections.immutable.nuspec",
+        "useSharedDesignerContext.txt"
       ]
     },
     "System.Collections.NonGeneric/4.3.0": {
@@ -11213,6 +11374,7 @@
     "net8.0": [
       "AspNetCore.Firebase.Authentication >= 2.0.1",
       "AutoMapper >= 14.0.0",
+      "FirebaseAdmin >= 3.2.0",
       "FluentAssertions >= 7.0.0-alpha.3",
       "Google.Apis.Auth >= 1.69.0",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
@@ -11276,6 +11438,10 @@
           "AutoMapper": {
             "target": "Package",
             "version": "[14.0.0, )"
+          },
+          "FirebaseAdmin": {
+            "target": "Package",
+            "version": "[3.2.0, )"
           },
           "FluentAssertions": {
             "target": "Package",

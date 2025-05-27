@@ -30,7 +30,18 @@ docker-compose-build/
 # Environment variables
 .env
 
+*.json
+
 OstrohHelpApi/src/Api/appsettings.Development.json
 OstrohHelpApi/src/Api/appsettings.Development.json
 OstrohHelpApp/ostrohhelpapp/android/app/client_secret_930738005847-7q4c0aavnniv1mncbg4lsgbfkkkbnsht.apps.googleusercontent.com.json
 OstrohHelpApp/ostrohhelpapp/android/app/google-services.json
+OstrohHelpApi/src/Api/ostrohhelpapp-e9a56-firebase-adminsdk-fbsvc-7ab24ecb25.json
+OstrohHelpApi/src/*.json
+appsettings.Development.json
+ostrohhelpapp.json
+OstrohHelpApi/src/Api/appsettings.json
+OstrohHelpApi/src/Api/appsettings.json
+appsettings.json
+/OstrohHelpApi/src/Api
+

@@ -3,6 +3,8 @@ using Application;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +44,14 @@ builder.Services.AddAuthentication(options =>
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
     });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// Ініціалізація Firebase Admin SDK
+var firebaseJsonPath = Path.Combine(builder.Environment.ContentRootPath, "ostrohhelpapp.json");
+
+FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.FromFile(firebaseJsonPath)
+});
 
 
 var app = builder.Build();

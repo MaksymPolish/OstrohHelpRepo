@@ -81,10 +81,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(AuthLoading());
-      final currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        await _apiService.deleteUser(currentUser.uid);
-      }
       await Future.wait([
         _auth.signOut(),
         _googleSignIn.signOut(),

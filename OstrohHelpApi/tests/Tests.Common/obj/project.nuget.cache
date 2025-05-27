@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "MtFCeLGxRO4=",
+  "dgSpecHash": "LClW8CKY9dY=",
   "success": true,
   "projectFilePath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj",
   "expectedPackageFiles": [
@@ -11,9 +11,12 @@
     "C:\\Users\\Maks\\.nuget\\packages\\docker.dotnet\\3.125.15\\docker.dotnet.3.125.15.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\docker.dotnet.x509\\3.125.15\\docker.dotnet.x509.3.125.15.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\efcore.namingconventions\\8.0.3\\efcore.namingconventions.8.0.3.nupkg.sha512",
+    "C:\\Users\\Maks\\.nuget\\packages\\firebaseadmin\\3.2.0\\firebaseadmin.3.2.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation.aspnetcore\\11.3.0\\fluentvalidation.aspnetcore.11.3.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\11.9.2\\fluentvalidation.dependencyinjectionextensions.11.9.2.nupkg.sha512",
+    "C:\\Users\\Maks\\.nuget\\packages\\google.api.gax\\4.8.0\\google.api.gax.4.8.0.nupkg.sha512",
+    "C:\\Users\\Maks\\.nuget\\packages\\google.api.gax.rest\\4.8.0\\google.api.gax.rest.4.8.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\google.apis\\1.69.0\\google.apis.1.69.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\google.apis.auth\\1.69.0\\google.apis.auth.1.69.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\google.apis.core\\1.69.0\\google.apis.core.1.69.0.nupkg.sha512",
@@ -141,6 +144,7 @@
     "C:\\Users\\Maks\\.nuget\\packages\\system.codedom\\7.0.0\\system.codedom.7.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\system.collections\\4.3.0\\system.collections.4.3.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\system.collections.concurrent\\4.3.0\\system.collections.concurrent.4.3.0.nupkg.sha512",
+    "C:\\Users\\Maks\\.nuget\\packages\\system.collections.immutable\\8.0.0\\system.collections.immutable.8.0.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\system.collections.nongeneric\\4.3.0\\system.collections.nongeneric.4.3.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\system.collections.specialized\\4.3.0\\system.collections.specialized.4.3.0.nupkg.sha512",
     "C:\\Users\\Maks\\.nuget\\packages\\system.configuration.configurationmanager\\4.4.0\\system.configuration.configurationmanager.4.4.0.nupkg.sha512",
