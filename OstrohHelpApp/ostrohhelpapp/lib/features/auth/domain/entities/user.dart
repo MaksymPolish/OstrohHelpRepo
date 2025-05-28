@@ -4,6 +4,7 @@ class User extends Equatable {
   final String? id;
   final String? email;
   final String? displayName;
+  final String? fullName;
   final String? photoUrl;
   final String? roleId;
   final String? roleName;
@@ -13,6 +14,7 @@ class User extends Equatable {
     this.id,
     this.email,
     this.displayName,
+    this.fullName,
     this.photoUrl,
     this.roleId,
     this.roleName,
@@ -20,5 +22,5 @@ class User extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, email, displayName, photoUrl, roleId, roleName, course];
+  List<Object?> get props => [id, email, displayName, fullName, photoUrl, roleId, roleName, course];
 } 
