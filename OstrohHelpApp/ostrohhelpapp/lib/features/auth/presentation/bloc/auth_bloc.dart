@@ -65,7 +65,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(googleAuth.idToken!);
         final user = _mapApiUser(userData);
-        emit(Authenticated(user));
+
+        final fullUserData = await _apiService.getUserById(user.id!);
+        final fullUser = _mapApiUser(fullUserData);
+
+        emit(Authenticated(fullUser));
       } else {
         throw Exception('Failed to get ID token from Google');
       }

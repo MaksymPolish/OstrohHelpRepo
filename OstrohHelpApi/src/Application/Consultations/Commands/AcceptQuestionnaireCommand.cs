@@ -81,10 +81,6 @@ public class AcceptQuestionnaireCommandHandler(
 
                                                 await _consultationRepository.AddAsync(consultation, ct);
 
-                                                // --- 7. Оновлення статуса анкети ---
-                                                // q.UpdateStatus(new QuestionaryStatusesId(consultationStatus.Id));
-                                                await _questionnaireRepository.UpdateAsync(q, ct);
-
                                                 return consultation;
                                             },
                                             () => Task.FromResult<Result<Domain.Conferences.Consultations, Exception>>(
@@ -111,5 +107,7 @@ public class AcceptQuestionnaireCommandHandler(
                 new Exception($"Questionary with ID '{questionnaireId}' not found.")
             )
         );
+        
+       
     }
 }

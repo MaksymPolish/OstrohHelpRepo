@@ -18,18 +18,56 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
   final QuestionnaireApiService _apiService = QuestionnaireApiService();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
 
-  Future<void> _acceptQuestionnaire({
-    required String questionaryId,
-    required String psychologistId,
-    required DateTime scheduledTime,
-  }) async {
-    final data = {
-      'questionaryId': questionaryId,
-      'psychologistId': psychologistId,
-      'scheduledTime': scheduledTime.toIso8601String(),
-    };
+  Future<DateTime?> showDateTimePicker(BuildContext context) async {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
+    selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return child!;
+      },
+    );
+    if (selectedDate == null) return null;
+
+    selectedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 12, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+    if (selectedTime == null) return null;
+
+    return DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+  }
+
+  Future<void> _acceptQuestionnaire(String questionnaireId, String psychologistId) async {
+    const acceptedStatusId = 'c71269cb-f0a3-4020-b25a-e423e7daa398';
     try {
-      await _consultationApiService.acceptConsultation(data);
+      final scheduledTime = await showDateTimePicker(context);
+      if (scheduledTime == null) return;
+
+      await _consultationApiService.acceptConsultation({
+        'questionaryId': questionnaireId,
+        'psychologistId': psychologistId,
+        'scheduledTime': scheduledTime.toIso8601String(),
+      });
+
+      await _apiService.updateQuestionnaireStatus(questionnaireId, acceptedStatusId);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Анкету прийнято!')),
       );
@@ -37,77 +75,6 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Помилка при прийнятті: $e')),
-      );
-    }
-  }
-
-  Future<void> _showAcceptDialog(BuildContext context, String questionnaireId, String psychologistId) async {
-    DateTime? selectedDateTime;
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        DateTime tempDate = DateTime.now().add(const Duration(days: 1));
-        TimeOfDay tempTime = const TimeOfDay(hour: 12, minute: 0);
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Виберіть дату та час консультації'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: tempDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) setState(() => tempDate = date);
-                    },
-                    child: Text('Дата: ${DateFormat('dd.MM.yyyy').format(tempDate)}'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: tempTime,
-                      );
-                      if (time != null) setState(() => tempTime = time);
-                    },
-                    child: Text('Час: ${tempTime.format(context)}'),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Скасувати'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    selectedDateTime = DateTime(
-                      tempDate.year,
-                      tempDate.month,
-                      tempDate.day,
-                      tempTime.hour,
-                      tempTime.minute,
-                    );
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Прийняти'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    if (selectedDateTime != null) {
-      await _acceptQuestionnaire(
-        questionaryId: questionnaireId,
-        psychologistId: psychologistId,
-        scheduledTime: selectedDateTime!,
       );
     }
   }
@@ -131,7 +98,9 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
               if (snapshot.hasError) {
                 return Center(child: Text('Помилка: ${snapshot.error}'));
               }
-              final questionnaires = snapshot.data ?? [];
+              final questionnaires = (snapshot.data ?? [])
+                  .where((q) => q['statusId'] != 'c71269cb-f0a3-4020-b25a-e423e7daa398')
+                  .toList();
               if (questionnaires.isEmpty) {
                 return const Center(child: Text('Анкет немає.'));
               }
@@ -155,7 +124,7 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                       trailing: (user.roleId == '0c79cd0c-86a8-4a02-803d-d4af6f6ef266' ||
                                 user.roleId == 'cf9e7046-d455-480c-970e-0dc55f5ef42c')
                           ? ElevatedButton(
-                              onPressed: () => _showAcceptDialog(context, q['id'], user.id ?? ''),
+                              onPressed: () => _acceptQuestionnaire(q['id'], user.id ?? ''),
                               child: const Text('Прийняти'),
                             )
                           : null,

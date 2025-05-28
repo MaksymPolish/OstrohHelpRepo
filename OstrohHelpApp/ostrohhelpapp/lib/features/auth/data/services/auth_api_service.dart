@@ -45,8 +45,7 @@ class AuthApiService {
       },
     );
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> list = data['items'];
+      final List<dynamic> list = json.decode(response.body);
       return list.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to get users: ${response.body}');
@@ -61,7 +60,8 @@ class AuthApiService {
       },
       body: json.encode(id),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (response.body.isEmpty) return;
       throw Exception('Failed to delete user: ${response.body}');
     }
   }
@@ -95,7 +95,8 @@ class AuthApiService {
         'roleId': roleId,
       }),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (response.body.isEmpty) return;
       throw Exception('Failed to update user role: ${response.body}');
     }
   }

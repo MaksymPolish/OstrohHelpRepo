@@ -33,4 +33,6 @@ public class UserDto
     public Guid RoleId { get; set; }
     public string GoogleId { get; set; }
     public string RoleName { get; set; }
+    
+    public string? Course { get; set; }
 } 

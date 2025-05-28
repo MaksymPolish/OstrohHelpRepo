@@ -37,7 +37,7 @@ class ConsultationApiService {
       headers: {'Content-Type': 'application/json'},
       body: json.encode(consultation),
     );
-    if (response.statusCode == 201) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       return json.decode(response.body);
     }
     throw Exception('Failed to accept consultation');
@@ -64,4 +64,6 @@ class ConsultationApiService {
       throw Exception('Failed to delete consultation');
     }
   }
+
+  
 } 

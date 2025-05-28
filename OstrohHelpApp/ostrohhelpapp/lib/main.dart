@@ -13,6 +13,7 @@ import 'features/consultation/presentation/pages/chat_page.dart';
 import 'features/profile/presentation/pages/admin_panel_page.dart';
 import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
 import 'features/auth/presentation/widgets/course_input_dialog.dart';
+import 'features/profile/presentation/pages/admin_users_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,6 +102,16 @@ class MyApp extends StatelessWidget {
                 },
                 '/admin-panel': (context) => const AdminPanelPage(),
                 '/admin-questionnaires': (context) => const AdminQuestionnairesPage(),
+                '/admin-users': (context) {
+                  return BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      if (state is Authenticated) {
+                        return AdminUsersPage(currentUserId: state.user.id ?? '');
+                      }
+                      return const Scaffold(body: Center(child: Text('Не авторизовано')));
+                    },
+                  );
+                },
               },
               home: const AuthRoot(),
             ),
@@ -129,18 +140,29 @@ class MyApp extends StatelessWidget {
 }
 
 // Окремий віджет для root, щоб можна було використовувати контекст з Navigator
-class AuthRoot extends StatelessWidget {
+class AuthRoot extends StatefulWidget {
   const AuthRoot({super.key});
+  @override
+  State<AuthRoot> createState() => _AuthRootState();
+}
+
+class _AuthRootState extends State<AuthRoot> {
+  bool _dialogShown = false;
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) =>
-          current is Authenticated &&
-          (current.user.course == null || current.user.course!.trim().isEmpty),
+      listenWhen: (previous, current) {
+        // Діалог тільки якщо курс порожній і ще не показували
+        return current is Authenticated &&
+            (current.user.course == null || current.user.course!.trim().isEmpty) &&
+            !_dialogShown;
+      },
       listener: (context, state) {
         if (state is Authenticated &&
-            (state.user.course == null || state.user.course!.trim().isEmpty)) {
+            (state.user.course == null || state.user.course!.trim().isEmpty) &&
+            !_dialogShown) {
+          _dialogShown = true;
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -149,10 +171,15 @@ class AuthRoot extends StatelessWidget {
                 userId: state.user.id!,
                 onSubmit: (userId, course) {
                   dialogContext.read<AuthBloc>().add(UpdateUserCourse(userId, course));
+                  _dialogShown = false; // Дозволити показати діалог знову, якщо курс знову стане порожнім
                 },
               ),
             ),
           );
+        }
+        // Скидаємо прапорець, якщо користувач розлогінився
+        if (state is! Authenticated) {
+          _dialogShown = false;
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(

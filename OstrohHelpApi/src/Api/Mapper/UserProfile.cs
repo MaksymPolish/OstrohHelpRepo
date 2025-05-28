@@ -13,6 +13,7 @@ public class UserProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
             .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.RoleId.Value))
-            .ForMember(dest => dest.GoogleId, opt => opt.MapFrom(src => src.GoogleId ?? string.Empty));
+            .ForMember(dest => dest.GoogleId, opt => opt.MapFrom(src => src.GoogleId ?? string.Empty))
+            .ForMember(dest => dest.Course, opt => opt.MapFrom(src => src.Course));
     }
 }

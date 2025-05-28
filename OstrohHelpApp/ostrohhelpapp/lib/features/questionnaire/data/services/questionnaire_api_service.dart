@@ -54,11 +54,11 @@ class QuestionnaireApiService {
     }
   }
 
-  Future<void> updateQuestionnaireStatus(String id, String status) async {
+  Future<void> updateQuestionnaireStatus(String id, String statusId) async {
     final response = await http.put(
       Uri.parse('$baseUrl/questionnaire/Update-StatusQuestionnaire'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'id': id, 'status': status}),
+      body: json.encode({'id': id, 'statusId': statusId}),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update questionnaire status');
