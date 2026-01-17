@@ -7,7 +7,6 @@ public class ConsultationDtoProfile : Profile
 {
     public ConsultationDtoProfile()
     {
-        // Mapping for ConsultationDto to itself (if needed)
-        CreateMap<ConsultationDto, ConsultationDto>();
+        // Тут можна додати кастомні мапінги, якщо потрібно
     }
 }

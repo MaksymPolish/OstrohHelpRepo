@@ -15,7 +15,6 @@ namespace Api.Controllers;
 [Route("api/Message")]
 public class MessageController(IMediator _mediator, 
     IMessageQuery _messageQuery, 
-    IMessageRepository _messageRepository,
     IMapper _mapper,
     IUserQuery _userQuery) : ControllerBase
 {

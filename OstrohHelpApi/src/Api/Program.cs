@@ -7,6 +7,10 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
 
+using Api.Middleware;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Application.ApplicationAssemblyMarker>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
@@ -68,6 +74,9 @@ if (File.Exists(firebaseJsonPath))
 
 
 var app = builder.Build();
+
+// Глобальна обробка помилок
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

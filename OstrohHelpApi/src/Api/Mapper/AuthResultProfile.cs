@@ -7,7 +7,6 @@ public class AuthResultProfile : Profile
 {
     public AuthResultProfile()
     {
-        // Mapping for AuthResultDto is usually manual, but for completeness:
-        CreateMap<AuthResultDto, AuthResultDto>();
+        // Тут можна додати кастомні мапінги, якщо потрібно
     }
 }

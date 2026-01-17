@@ -11,8 +11,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/QuestiStatController")]
 public class QuestionaryStController(IMediator _mediator, 
-    IQuestionnaireStatusQuery _questionnaireStatusQuery, 
-    IQuestionnaireStatusRepository _questionnaireStatusRepository) : ControllerBase
+    IQuestionnaireStatusQuery _questionnaireStatusQuery) : ControllerBase
 {
     [HttpPost("Create-QuestionaryStatus")]
     public async Task<IActionResult> Create([FromBody] CreateQuestionaryStatusCommand command, CancellationToken ct)

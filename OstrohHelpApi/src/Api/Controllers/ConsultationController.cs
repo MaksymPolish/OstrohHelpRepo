@@ -15,13 +15,11 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/Consultations")]
 public class ConsultationController(IMediator _mediator, 
-    IConsultationQuery _consultationQuery, 
-    IConsultationRepository _consultationRepository,
+    IConsultationQuery _consultationQuery,
     IConsultationStatusQuery _consultationStatusQuery,
     IUserQuery _userQuery,
     IConsultationStatusQuery _statusQuery,
-    IMapper _mapper,
-    IQuestionnaireQuery _questionnaireQuery) : ControllerBase
+    IMapper _mapper) : ControllerBase
 {
     //Accept
     [HttpPost("Accept-Questionnaire")]

@@ -9,7 +9,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RoleController(IMediator _mediator, IRoleQuery _roleQuery, IRoleRepository _roleRepository) : ControllerBase
+public class RoleController(IMediator _mediator, IRoleQuery _roleQuery) : ControllerBase
 {
     [HttpPost("Create-Role")]
     public async Task<IActionResult> Create([FromBody] CreateRoleCommand command, CancellationToken ct)

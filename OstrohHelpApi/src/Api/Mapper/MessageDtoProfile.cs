@@ -7,7 +7,6 @@ public class MessageDtoProfile : Profile
 {
     public MessageDtoProfile()
     {
-        // Mapping for MessageDto to itself (if needed)
-        CreateMap<MessageDto, MessageDto>();
+        // Тут можна додати кастомні мапінги, якщо потрібно
     }
 }

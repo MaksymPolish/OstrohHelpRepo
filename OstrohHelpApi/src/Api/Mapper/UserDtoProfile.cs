@@ -7,7 +7,6 @@ public class UserDtoProfile : Profile
 {
     public UserDtoProfile()
     {
-        // Mapping for UserDto to itself (if needed)
-        CreateMap<UserDto, UserDto>();
+        // Тут можна додати кастомні мапінги, якщо потрібно
     }
 }

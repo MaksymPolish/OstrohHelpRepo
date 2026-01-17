@@ -9,8 +9,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/ConsultationStatus")]
-public class ConsultationStatusController(IConsultationStatusQuery _consultationStatusQuery, 
-    IConsultationStatusRepository _consultationStatusRepository,
+public class ConsultationStatusController(IConsultationStatusQuery _consultationStatusQuery,
     IMediator _mediator) : ControllerBase 
 {
     //Add
