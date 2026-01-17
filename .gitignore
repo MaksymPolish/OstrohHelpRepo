@@ -1,22 +1,21 @@
+# Sensitive configs
+src/Api/appsettings.Development.json
+src/Api/google-auth.json
 # Build artifacts
 **/bin/
 **/obj/
 
 # EF Core Migrations
 **/Persistence/Migrations/
-OstrohHelpApi/src/Api/appsettings.Development.json
-# Visual Studio files
+
+# IDE files
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
-
-# Rider
 .idea/
 *.iml
 *.iws
-
-# Resharper
 _ReSharper*/
 *.DotSettings.user
 
@@ -30,19 +29,10 @@ docker-compose-build/
 # Environment variables
 .env
 
+# JSON configs and secrets
 *.json
+!src/Api/appsettings.json
+!src/Api/appsettings.Development.json
 
-OstrohHelpApi/src/Api/appsettings.Development.json
-OstrohHelpApi/src/Api/appsettings.Development.json
-OstrohHelpApp/ostrohhelpapp/android/app/client_secret_930738005847-7q4c0aavnniv1mncbg4lsgbfkkkbnsht.apps.googleusercontent.com.json
-OstrohHelpApp/ostrohhelpapp/android/app/google-services.json
-OstrohHelpApi/src/Api/ostrohhelpapp-e9a56-firebase-adminsdk-fbsvc-7ab24ecb25.json
-OstrohHelpApi/src/*.json
-appsettings.Development.json
-ostrohhelpapp.json
-OstrohHelpApi/src/Api/appsettings.json
-OstrohHelpApi/src/Api/appsettings.json
-appsettings.json
-/OstrohHelpApi/src/Api
-
-*.json
+# Ignore obj in Api
+src/Api/obj/
