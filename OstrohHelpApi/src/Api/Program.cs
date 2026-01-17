@@ -38,20 +38,33 @@ builder.Services.AddAuthentication(options =>
     .AddCookie("Cookies")
     .AddGoogle("Google", options =>
     {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        // Зчитування ClientId та ClientSecret з google-auth.json
+        var googleAuthPath = Path.Combine(builder.Environment.ContentRootPath, "google-auth.json");
+        if (File.Exists(googleAuthPath))
+        {
+            var googleAuthJson = File.ReadAllText(googleAuthPath);
+            dynamic googleAuth = Newtonsoft.Json.JsonConvert.DeserializeObject(googleAuthJson);
+            options.ClientId = googleAuth.ClientId;
+            options.ClientSecret = googleAuth.ClientSecret;
+        }
+        else
+        {
+            throw new Exception($"google-auth.json not found at {googleAuthPath}");
+        }
         options.SignInScheme = "Cookies";
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
     });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Ініціалізація Firebase Admin SDK
+// Ініціалізація Firebase Admin SDK (тільки якщо файл існує)
 var firebaseJsonPath = Path.Combine(builder.Environment.ContentRootPath, "ostrohhelpapp.json");
-
-FirebaseApp.Create(new AppOptions()
+if (File.Exists(firebaseJsonPath))
 {
-    Credential = GoogleCredential.FromFile(firebaseJsonPath)
-});
+    FirebaseApp.Create(new AppOptions()
+    {
+        Credential = GoogleCredential.FromFile(firebaseJsonPath)
+    });
+}
 
 
 var app = builder.Build();

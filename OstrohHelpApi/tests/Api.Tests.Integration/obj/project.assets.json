@@ -4104,6 +4104,8 @@
           "Infrastructure": "1.0.0",
           "Microsoft.AspNetCore.Authentication.Google": "8.0.15",
           "Microsoft.AspNetCore.OpenApi": "8.0.0",
+          "Microsoft.EntityFrameworkCore": "8.0.4",
+          "Microsoft.EntityFrameworkCore.Relational": "8.0.4",
           "Swashbuckle.AspNetCore": "6.4.0"
         },
         "compile": {
@@ -11385,32 +11387,40 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Maks\\.nuget\\packages\\": {}
+    "C:\\Users\\maksp\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\Api.Tests.Integration.csproj",
+      "projectUniqueName": "D:\\AcademStaff\\GitHub\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\Api.Tests.Integration.csproj",
       "projectName": "Api.Tests.Integration",
-      "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\Api.Tests.Integration.csproj",
-      "packagesPath": "C:\\Users\\Maks\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\obj\\",
+      "projectPath": "D:\\AcademStaff\\GitHub\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\Api.Tests.Integration.csproj",
+      "packagesPath": "C:\\Users\\maksp\\.nuget\\packages\\",
+      "outputPath": "D:\\AcademStaff\\GitHub\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Api.Tests.Integration\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\Maks\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\maksp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj": {
-              "projectPath": "C:\\Users\\Maks\\Documents\\Git\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj"
+            "D:\\AcademStaff\\GitHub\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj": {
+              "projectPath": "D:\\AcademStaff\\GitHub\\OstrohHelpRepo\\OstrohHelpApi\\tests\\Tests.Common\\Tests.Common.csproj"
             }
           }
         }
@@ -11425,7 +11435,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -11488,7 +11498,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100-rc.1.25451.107/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

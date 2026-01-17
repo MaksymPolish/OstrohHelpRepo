@@ -25,19 +25,17 @@ public class UserGoogleAuthenticationHandler(
     private readonly FirebaseAuth _firebaseAuth = FirebaseAuth.DefaultInstance;
     public async Task<User> Handle(UserGoogleAuthenticationCommand request, CancellationToken ct)
     {
-        (string? googleId, string email, string? fullName) userInfo = (null, null!, null);
-        
+        (string? googleId, string? email, string? fullName) userInfo = (null, null, null);
+
         try
         {
             // Спробуємо Google OAuth токен
             var googlePayload = await ValidateGoogleTokenAsync(request.IdToken, ct);
-            
             userInfo = (
                 googleId: googlePayload.Subject,
                 email: googlePayload.Email,
                 fullName: googlePayload.Name
             );
-            
         }
         catch (InvalidGoogleTokenException)
         {
@@ -45,10 +43,15 @@ public class UserGoogleAuthenticationHandler(
             var firebaseUser = await ValidateFirebaseTokenAsync(request.IdToken, ct);
             userInfo = (
                 googleId: firebaseUser.Uid,
-                email: firebaseUser.Claims.GetValueOrDefault("email")?.ToString()
-                       ?? throw new InvalidFirebaseTokenException(),
+                email: firebaseUser.Claims.GetValueOrDefault("email")?.ToString(),
                 fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString()
             );
+        }
+
+        if (string.IsNullOrEmpty(userInfo.email))
+        {
+            _logger.LogError("Email not found in Google/Firebase token. Make sure you request 'userinfo.email' scope.");
+            throw new Exception("Email not found in token. Make sure you request 'userinfo.email' scope from Google.");
         }
 
         var user = await _userRepository.GetByGoogleIdOrEmailAsync(userInfo.googleId, userInfo.email, ct);
@@ -63,7 +66,7 @@ public class UserGoogleAuthenticationHandler(
             {
                 Id = UserId.New(),
                 GoogleId = userInfo.googleId,
-                Email = userInfo.email,
+                Email = userInfo.email!,
                 FullName = userInfo.fullName,
                 RoleId = studentRoleId,
                 CreatedAt = DateTime.UtcNow
@@ -76,7 +79,7 @@ public class UserGoogleAuthenticationHandler(
             user.FullName = userInfo.fullName;
             await _userRepository.UpdateAsync(user, ct);
         }
-        
+
         _logger.LogInformation("User authenticated successfully: {Email}", userInfo.email);
 
         var jwtToken = _authService.GenerateJwtToken(user);
