@@ -9,7 +9,7 @@ public class RoleProfile : Profile
     public RoleProfile()
     {
         CreateMap<Role, RoleDto>()
-            .ForMember(dest => dest.Id, opt => opt.ConvertUsing(new GuidToStringConverter(), src => src.Id))
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.Value))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
     }
 }

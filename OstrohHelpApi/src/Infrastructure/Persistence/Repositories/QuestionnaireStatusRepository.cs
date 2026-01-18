@@ -50,12 +50,11 @@ public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQue
             .ToListAsync(ct);
     }
 
-    public async Task<Option<QuestionaryStatuses>> GetByNameAsync(string name, CancellationToken ct)
+    public async Task<Option<QuestionaryStatuses>> GetByEnumAsync(QuestionaryStatusEnum status, CancellationToken ct)
     {
         var entity = await _context.QuestionnaireStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Name == name, ct);
-        
+            .FirstOrDefaultAsync(x => x.Status == status, ct);
         return entity == null ? Option.None<QuestionaryStatuses>() : Option.Some(entity);
     }
 } 

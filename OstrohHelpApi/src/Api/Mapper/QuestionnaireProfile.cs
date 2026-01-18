@@ -9,9 +9,9 @@ public class QuestionnaireProfile : Profile
     public QuestionnaireProfile()
     {
         CreateMap<Questionary, QuestionnaireDto>()
-            .ForMember(dest => dest.Id, opt => opt.ConvertUsing(new GuidToStringConverter(), src => src.Id))
-            .ForMember(dest => dest.UserId, opt => opt.ConvertUsing(new GuidToStringConverter(), src => src.UserId))
-            .ForMember(dest => dest.StatusId, opt => opt.ConvertUsing(new GuidToStringConverter(), src => src.StatusId))
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.Value))
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.Value))
+            .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId.Value))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.IsAnonymous, opt => opt.MapFrom(src => src.IsAnonymous))
             .ForMember(dest => dest.SubmittedAt, opt => opt.MapFrom(src => src.SubmittedAt))

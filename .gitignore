@@ -36,3 +36,6 @@ docker-compose-build/
 
 # Ignore obj in Api
 src/Api/obj/
+/OstrohHelpApi/tests/Api.Tests.Integration/obj
+/OstrohHelpApi/tests/Api.Tests.Integration/obj
+/OstrohHelpApi/tests/Tests.Common/obj
