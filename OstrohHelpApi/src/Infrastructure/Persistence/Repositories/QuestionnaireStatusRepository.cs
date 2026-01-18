@@ -9,8 +9,27 @@ using Optional;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class QuestionnaireStatusRepository(ApplicationDbContext _context) : IQuestionnaireStatusRepository, IQuestionnaireStatusQuery
+public class QuestionnaireStatusRepository : IQuestionnaireStatusRepository, IQuestionnaireStatusQuery
 {
+    private readonly ApplicationDbContext _context;
+    public QuestionnaireStatusRepository(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    [Obsolete("Use GetByEnumAsync instead")]
+    public async Task<Option<QuestionaryStatuses>> GetByNameAsync(string name, CancellationToken ct)
+    {
+        // Map name to enum (adjust mapping as needed)
+        var statusEnum = name switch
+        {
+            "Принято" => QuestionaryStatusEnum.Accepted,
+            "Відхилено" => QuestionaryStatusEnum.Rejected,
+            "Очікує підтвердження" => QuestionaryStatusEnum.Pending,
+            _ => QuestionaryStatusEnum.Pending
+        };
+        return await GetByEnumAsync(statusEnum, ct);
+    }
     public async Task AddAsync(QuestionaryStatuses status, CancellationToken ct)
     {
         await _context.QuestionnaireStatuses.AddAsync(status, ct);

@@ -58,9 +58,9 @@ public class UserGoogleAuthenticationHandler(
 
         if (user == null)
         {
-            var studentRoleId = await _roleQuery.GetRoleIdByNameAsync("Студент", ct);
-            if (studentRoleId is null)
-                throw new RoleNotFoundException("Студент");
+            // Використовуємо enum для ролі Студент
+            var studentRoleGuid = Domain.Users.Roles.Role.GetGuidByEnum(Domain.Users.Roles.RoleEnum.Student);
+            var studentRoleId = new Domain.Users.Roles.RoleId(studentRoleGuid);
 
             user = new User
             {
