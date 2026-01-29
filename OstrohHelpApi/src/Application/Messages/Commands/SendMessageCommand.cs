@@ -14,7 +14,8 @@ namespace Application.Messages.Commands;
 public record SendMessageCommand(
     Guid ConsultationId,
     Guid SenderId,
-    string Text) 
+    string Text,
+    List<string>? MediaPaths = null) 
     : IRequest<Result<Message, MessageExceptions>>;
 
 public class SendMessageCommandHandler(
@@ -39,6 +40,7 @@ public class SendMessageCommandHandler(
                     : consultation.StudentId;
                 
                 // --- Створення повідомлення ---
+
                 var message = Message.Create(
                     id: new MessageId(Guid.NewGuid()),
                     consultationId: consultation.Id,
@@ -49,6 +51,7 @@ public class SendMessageCommandHandler(
                     sentAt: DateTime.UtcNow,
                     deletedAt: null
                 );
+                // Додавання вкладень буде реалізовано окремо через MessageAttachment
 
                 // --- Збереження через репозиторій ---
                 var result = await _messageRepository.AddAsync(message, ct);

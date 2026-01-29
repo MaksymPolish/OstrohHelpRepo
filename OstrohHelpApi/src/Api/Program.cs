@@ -93,29 +93,20 @@ app.UseAuthorization();
 //await app.InitialiseDb();
 app.MapControllers();
 
-var imagesPath = Path.Combine(builder.Environment.ContentRootPath, "data/images");
 
-if (!Directory.Exists(imagesPath))
+
+
+
+// Universal static files setup for media
+var mediaPath = Path.Combine(builder.Environment.ContentRootPath, "data/media");
+if (!Directory.Exists(mediaPath))
 {
-    Directory.CreateDirectory(imagesPath);
-    
-    var containersPath = Path.Combine(imagesPath, "containers");
-    if (!Directory.Exists(containersPath))
-    {
-        Directory.CreateDirectory(containersPath);
-    }
-    
-    var productsPath = Path.Combine(imagesPath, "products");
-    if (!Directory.Exists(productsPath))
-    {
-        Directory.CreateDirectory(productsPath);
-    }
+    Directory.CreateDirectory(mediaPath);
 }
-
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(imagesPath),
-    RequestPath = "/images"
+    FileProvider = new PhysicalFileProvider(mediaPath),
+    RequestPath = "/media"
 });
 
 

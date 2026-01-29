@@ -18,7 +18,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Questionary> Questionnaires { get; set; }
     public DbSet<ConsultationStatuses> ConsultationStatuses { get; set; }
     public DbSet<Consultations> Consultations { get; set; }
+
     public DbSet<Message> Messages { get; set; }
+    public DbSet<MessageAttachment> MessageAttachments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

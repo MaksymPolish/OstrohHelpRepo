@@ -13,4 +13,5 @@ public class MessageDto
     public DateTime SentAt { get; set; }
     public string FullNameSender { get; set; }
     public string FullNameReceiver { get; set; }
+    public List<MessageAttachmentDto> Attachments { get; set; }
 }

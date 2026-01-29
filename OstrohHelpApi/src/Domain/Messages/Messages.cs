@@ -6,7 +6,6 @@ namespace Domain.Messages;
 public class Message
 {
     public MessageId Id { get; set; }
-    
     public Consultations Consultations { get; set; }
     public ConsultationsId ConsultationId { get; set; }
     public UserId SenderId { get; set; }
@@ -15,10 +14,12 @@ public class Message
     public bool IsRead { get; set; }
     public DateTime SentAt { get; set; }
     public DateTime? DeletedAt { get; set; }
-    
+
+    public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
+
     public static Message Create(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
         new(id, consultationId, senderId, receiverId, text, isRead, sentAt, deletedAt);
-    
+
     Message(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
     {
         Id = id;
@@ -30,12 +31,12 @@ public class Message
         SentAt = sentAt;
         DeletedAt = deletedAt;
     }
-    
+
     public void UpdateText(string newText)
     {
         Text = newText;
     }
-    
+
     public void MarkAsRead()
     {
         IsRead = true;

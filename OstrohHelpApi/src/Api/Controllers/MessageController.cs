@@ -61,13 +61,15 @@ public class MessageController(IMediator _mediator,
     [HttpPost("Send")]
     public async Task<IActionResult> Send([FromBody] SendMessageCommand command, CancellationToken ct)
     {
+        // command.MediaPaths може бути null або списком шляхів до медіа
         var result = await _mediator.Send(command, ct);
 
         return result.Match<IActionResult>(
             message => CreatedAtAction(nameof(Send), new { id = message.Id }, message),
-            errors => BadRequest(new {Error = errors.Message})
+            errors => BadRequest(new { Error = errors.Message })
         );
     }
+
     //Delete
     [HttpDelete("Delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteMessageCommand command, CancellationToken ct)
@@ -80,7 +82,6 @@ public class MessageController(IMediator _mediator,
         );
     }
     
-    
     //Read
     [HttpPut("mark-as-read")]
     public async Task<IActionResult> Read([FromBody] MarkMessageAsReadCommand command, CancellationToken ct)
@@ -92,7 +93,5 @@ public class MessageController(IMediator _mediator,
             errors => BadRequest(new {Error = errors.Message})
         );
     }
-    //Update
-    
     
 }
