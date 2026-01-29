@@ -1,6 +1,7 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Api.Services;
 
@@ -12,10 +13,11 @@ public class CloudinaryService
     {
         var configPath = Path.Combine(AppContext.BaseDirectory, "cloudinary-token.json");
         var json = File.ReadAllText(configPath);
-        dynamic secrets = System.Text.Json.JsonSerializer.Deserialize<dynamic>(json);
-        string apiKey = secrets["API_KEY"];
-        string apiSecret = secrets["API_SECRET"];
-        string cloudName = secrets["CLOUD_NAME"];
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        string apiKey = root.GetProperty("API_KEY").GetString()!;
+        string apiSecret = root.GetProperty("API_SECRET").GetString()!;
+        string cloudName = root.GetProperty("CLOUD_NAME").GetString()!;
         _cloudinary = new Cloudinary(new Account(cloudName, apiKey, apiSecret));
     }
 

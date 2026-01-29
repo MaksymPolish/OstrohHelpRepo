@@ -59,7 +59,7 @@ public class MessageController : ControllerBase
 
         return Ok(new { url, fileType = file.ContentType });
     }
-
+    
     [HttpGet("Recive")]
     public async Task<IActionResult> Recive([FromQuery] Guid idConsultation, CancellationToken ct)
     {
