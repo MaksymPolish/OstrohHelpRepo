@@ -13,12 +13,53 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/Message")]
-public class MessageController(IMediator _mediator, 
-    IMessageQuery _messageQuery, 
-    IMapper _mapper,
-    IUserQuery _userQuery) : ControllerBase
+public class MessageController : ControllerBase
 {
-    //Recive by Consultation
+    private readonly IMediator _mediator;
+    private readonly IMessageQuery _messageQuery;
+    private readonly IMapper _mapper;
+    private readonly IUserQuery _userQuery;
+    private readonly Api.Services.CloudinaryService _cloudinaryService;
+
+    public MessageController(
+        IMediator mediator,
+        IMessageQuery messageQuery,
+        IMapper mapper,
+        IUserQuery userQuery,
+        Api.Services.CloudinaryService cloudinaryService)
+    {
+        _mediator = mediator;
+        _messageQuery = messageQuery;
+        _mapper = mapper;
+        _userQuery = userQuery;
+        _cloudinaryService = cloudinaryService;
+    }
+
+    //Upload file to Cloudinary
+    /// Uploads a file (image/video/any) to Cloudinary for a specific user.
+    [HttpPost("UploadToCloud/{userId}")]
+    [Consumes("multipart/form-data")]
+    [ApiExplorerSettings(IgnoreApi = false)]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> UploadToCloud([FromRoute] string userId, IFormFile file, CancellationToken ct)
+    {
+        if (file == null || file.Length == 0 || string.IsNullOrWhiteSpace(userId))
+            return BadRequest("No file or userId provided");
+
+        var folder = $"users/{userId}";
+        string url;
+        using (var stream = file.OpenReadStream())
+        {
+            url = await _cloudinaryService.UploadFileAsync(stream, file.FileName, folder, file.ContentType);
+        }
+        if (string.IsNullOrEmpty(url))
+            return StatusCode(500, "Upload to cloud failed");
+
+        return Ok(new { url, fileType = file.ContentType });
+    }
+
     [HttpGet("Recive")]
     public async Task<IActionResult> Recive([FromQuery] Guid idConsultation, CancellationToken ct)
     {
