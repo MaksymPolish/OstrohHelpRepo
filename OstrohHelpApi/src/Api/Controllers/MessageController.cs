@@ -20,19 +20,22 @@ public class MessageController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IUserQuery _userQuery;
     private readonly Api.Services.CloudinaryService _cloudinaryService;
+    private readonly IMessageAttachmentRepository _attachmentRepository;
 
     public MessageController(
         IMediator mediator,
         IMessageQuery messageQuery,
         IMapper mapper,
         IUserQuery userQuery,
-        Api.Services.CloudinaryService cloudinaryService)
+        Api.Services.CloudinaryService cloudinaryService,
+        IMessageAttachmentRepository attachmentRepository)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
         _mapper = mapper;
         _userQuery = userQuery;
         _cloudinaryService = cloudinaryService;
+        _attachmentRepository = attachmentRepository;
     }
 
     //Upload file to Cloudinary
@@ -58,6 +61,35 @@ public class MessageController : ControllerBase
             return StatusCode(500, "Upload to cloud failed");
 
         return Ok(new { url, fileType = file.ContentType });
+    }
+
+    /// <summary>
+    /// Add attachment to existing message. Use after uploading file to Cloudinary.
+    /// </summary>
+    [HttpPost("AddAttachment")]
+    public async Task<IActionResult> AddAttachment([FromBody] AddAttachmentRequest request, CancellationToken ct)
+    {
+        if (request.MessageId == Guid.Empty || string.IsNullOrWhiteSpace(request.FileUrl) || string.IsNullOrWhiteSpace(request.FileType))
+            return BadRequest("Invalid attachment data");
+
+        var attachment = new MessageAttachment
+        {
+            Id = Guid.NewGuid(),
+            MessageId = new MessageId(request.MessageId),
+            FileUrl = request.FileUrl,
+            FileType = request.FileType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await _attachmentRepository.AddAsync(attachment, ct);
+
+        return Ok(new MessageAttachmentDto
+        {
+            Id = result.Id,
+            FileUrl = result.FileUrl,
+            FileType = result.FileType,
+            CreatedAt = result.CreatedAt
+        });
     }
     
     [HttpGet("Recive")]

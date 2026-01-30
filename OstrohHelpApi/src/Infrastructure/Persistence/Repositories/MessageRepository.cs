@@ -43,6 +43,7 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
     {
         var entity = await context.Messages
             .AsNoTracking()
+            .Include(m => m.Attachments)
             .Where(x => x.ConsultationId == id).ToListAsync(cancellationToken);
         
         return entity == null ? Option.None<List<Message>>() : Option.Some(entity);
@@ -52,6 +53,7 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
     {
         var entity = await context.Messages
             .AsNoTracking()
+            .Include(m => m.Attachments)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         
         return entity == null ? Option.None<Message>() : Option.Some(entity);

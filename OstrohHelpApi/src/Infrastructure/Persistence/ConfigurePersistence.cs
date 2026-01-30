@@ -60,6 +60,8 @@ public static class ConfigurePersistence
         services.AddScoped<IMessageQuery, MessageRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
         
+        services.AddScoped<IMessageAttachmentRepository, MessageAttachmentRepository>();
+        
         services.AddSingleton<IAuthService, AuthService>();
     }
 }
