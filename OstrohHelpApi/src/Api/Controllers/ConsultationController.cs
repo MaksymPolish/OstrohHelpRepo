@@ -73,7 +73,7 @@ public class ConsultationController(
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var consultationId = new ConsultationsId(id);
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var option = await _consultationQuery.GetByIdWithDetailsAsync(consultationId, ct);
 
         return option.Match<IActionResult>(
@@ -95,7 +95,7 @@ public class ConsultationController(
     {
         var userId = new UserId(Id);
     
-        // ✅ Один запит до БД з Include замість N+1
+        //  Один запит до БД з Include замість N+1
         var consultations = await _consultationQuery.GetAllByUserIdWithDetailsAsync(userId, ct);
 
         if (!consultations.Any())

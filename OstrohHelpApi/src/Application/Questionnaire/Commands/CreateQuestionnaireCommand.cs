@@ -2,7 +2,6 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Application.Questionnaire.Exceptions;
-using Application.QuestionnaireStatus.Exceptions;
 using Domain.Inventory;
 using Domain.Inventory.Statuses;
 using Domain.Users;
@@ -26,32 +25,33 @@ public class CreateQuestionnaireCommandHandler(IQuestionnaireRepository _reposit
         const string statusName = "Обробляється";
         var questionaryStatus = await _repositoryStatusQuery.GetByNameAsync(statusName, ct);
 
-        return await questionaryStatus.Match(
-            async status =>
-            {
-                try
-                {
-                    var questionnaire = Questionary.Create(
-                        id: QuestionaryId.New(),
-                        userId: new UserId(command.UserId),
-                        statusId: status.Id,
-                        description: command.Description,
-                        isAnonymous: command.IsAnonymous,
-                        submittedAt: command.SubmittedAt
-                    );
+        if (!questionaryStatus.HasValue)
+        {
+            return new QuestionnaireStatusNotFoundException(statusName);
+        }
 
-                    await _repository.AddAsync(questionnaire, ct);
-                
-                    return questionnaire; // ✅ Неявне Result.Success(...)
-                }
-                catch (Exception ex)
-                {
-                    return new QuestionnaireUnknownException(QuestionaryId.New(), ex);
-                }
-            },
-            () => Task.FromResult<Result<Questionary, QuestionnairesException>>(
-                new QuestionnaireStatusNotFoundException(statusName)
-            )
-        );
+        var status = questionaryStatus.Match(
+            some: s => s,
+            none: () => throw new QuestionnaireStatusNotFoundException(statusName));
+
+        try
+        {
+            var questionnaire = Questionary.Create(
+                id: QuestionaryId.New(),
+                userId: new UserId(command.UserId),
+                statusId: status!.Id,
+                description: command.Description,
+                isAnonymous: command.IsAnonymous,
+                submittedAt: command.SubmittedAt
+            );
+
+            await _repository.AddAsync(questionnaire, ct);
+
+            return questionnaire;
+        }
+        catch (Exception ex)
+        {
+            return new QuestionnaireUnknownException(QuestionaryId.New(), ex);
+        }
     }
 }

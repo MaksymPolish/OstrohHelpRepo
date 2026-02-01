@@ -1,12 +1,11 @@
-﻿using Application.ConsultationStatus.Exceptions;
+﻿using Optional;
 using Domain.Conferences.Statuses;
-using Optional;
 
 namespace Application.Common.Interfaces.Queries;
 
 public interface IConsultationStatusQuery
 {
-    Task<IEnumerable<ConsultationStatuses>> GetAllAsync(CancellationToken cancellationToken);
+    Task<Option<List<ConsultationStatuses>>> GetAllAsync(CancellationToken cancellationToken);
     
     Task<Option<ConsultationStatuses>> GetByIdAsync(ConsultationStatusesId id, CancellationToken cancellationToken);
     

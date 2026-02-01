@@ -43,7 +43,7 @@ public class AuthController(
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
         var userId = new UserId(id);
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var userOption = await _userQuery.GetByIdWithRoleAsync(userId, ct);
 
         return userOption.Match<IActionResult>(
@@ -60,7 +60,7 @@ public class AuthController(
     [HttpGet("get-by-email")]
     public async Task<IActionResult> GetByEmail([FromQuery] string email, CancellationToken ct)
     {
-        // ✅ Один запит до БД з Include замість N+1
+        //Один запит до БД з Include замість N+1
         var userOption = await _userQuery.GetByEmailWithRoleAsync(email, ct);
 
         return userOption.Match<IActionResult>(
@@ -77,7 +77,7 @@ public class AuthController(
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var users = await _userQuery.GetAllWithRolesAsync(ct);
 
         var dtos = users.Select(user =>

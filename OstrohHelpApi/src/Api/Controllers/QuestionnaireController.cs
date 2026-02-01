@@ -31,7 +31,7 @@ public class QuestionnaireController(
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var questionnaires = await _questionnaireQuery.GetAllWithDetailsAsync(ct);
 
         var dtos = questionnaires.Select(q =>
@@ -50,7 +50,7 @@ public class QuestionnaireController(
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var questionnaireId = new QuestionaryId(id);
-        // ✅ Один запит до БД з Include замість N+1
+        //Один запит до БД з Include замість N+1
         var option = await _questionnaireQuery.GetByIdWithDetailsAsync(questionnaireId, ct);
 
         return option.Match<IActionResult>(
@@ -71,7 +71,7 @@ public class QuestionnaireController(
     public async Task<IActionResult> GetByUserId(Guid id, CancellationToken ct)
     {
         var idUser = new UserId(id);
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var questionnaires = await _questionnaireQuery.GetAllByUserIdWithDetailsAsync(idUser, ct);
 
         var dtos = questionnaires.Select(q =>
@@ -90,7 +90,7 @@ public class QuestionnaireController(
     public async Task<IActionResult> GetAllByUserId(Guid id, CancellationToken ct)
     {
         var userId = new UserId(id);
-        // ✅ Один запит до БД з Include замість N+1
+        // Один запит до БД з Include замість N+1
         var questionnaires = await _questionnaireQuery.GetAllByUserIdWithDetailsAsync(userId, ct);
 
         var dtos = questionnaires.Select(q =>

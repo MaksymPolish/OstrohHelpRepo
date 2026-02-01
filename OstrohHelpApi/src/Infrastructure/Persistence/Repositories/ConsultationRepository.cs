@@ -38,9 +38,7 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
         return await context.Consultations.ToListAsync(cancellationToken);
     }
 
-    /// <summary>
     /// Отримати всі консультації з деталями (1 запит замість N+1)
-    /// </summary>
     public async Task<IEnumerable<Consultations>> GetAllWithDetailsAsync(CancellationToken cancellationToken)
     {
         return await context.Consultations
@@ -80,9 +78,7 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
         return resultList;
     }
 
-    /// <summary>
     /// Отримати всі консультації користувача з деталями (1 запит замість N+1)
-    /// </summary>
     public async Task<IEnumerable<Consultations>> GetAllByUserIdWithDetailsAsync(UserId id, CancellationToken ct)
     {
         return await context.Consultations

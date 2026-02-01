@@ -1,7 +1,5 @@
-﻿using Application.Common;
-using Application.Common.Interfaces.Queries;
+﻿using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
-using Application.ConsultationStatus.Exceptions;
 using Domain.Conferences.Statuses;
 using Microsoft.EntityFrameworkCore;
 using Optional;
@@ -50,31 +48,11 @@ public class ConsultationStatusRepository : IConsultationStatusQuery, IConsultat
         };
         return await GetByEnumAsync(statusEnum, cancellationToken);
     }
-    public async Task AddAsync(ConsultationStatuses status, CancellationToken ct)
+    
+    public async Task<Option<List<ConsultationStatuses>>> GetAllAsync(CancellationToken cancellationToken)
     {
-        await context.ConsultationStatuses.AddAsync(status, ct);
-        await context.SaveChangesAsync(ct);
-    }
-
-    public Task<Result<ConsultationStatuses, ConsultationStatusExceptions>> UpdateAsync(ConsultationStatuses status, CancellationToken ct)
-    {
-        context.ConsultationStatuses.Update(status);
-        context.SaveChanges();
-        
-        return Task.FromResult<Result<ConsultationStatuses, ConsultationStatusExceptions>>(status);
-    }
-
-    public Task<Result<ConsultationStatuses, ConsultationStatusExceptions>> DeleteAsync(ConsultationStatuses status, CancellationToken ct)
-    {
-        context.ConsultationStatuses.Remove(status);
-        context.SaveChanges();
-        
-        return Task.FromResult<Result<ConsultationStatuses, ConsultationStatusExceptions>>(status);
-    }
-
-    public async Task<IEnumerable<ConsultationStatuses>> GetAllAsync(CancellationToken cancellationToken)
-    {
-        return await context.ConsultationStatuses.ToListAsync(cancellationToken);   
+        var list = await context.ConsultationStatuses.ToListAsync(cancellationToken);
+        return list.Count > 0 ? Option.Some(list) : Option.None<List<ConsultationStatuses>>();
     }
 
     public async Task<Option<ConsultationStatuses>> GetByIdAsync(ConsultationStatusesId id, CancellationToken cancellationToken)

@@ -8,7 +8,7 @@ public class User
     public UserId Id { get; set; }
     public RoleId RoleId { get; set; }
     
-    // Навігаційна властивість для Role (вирішує N+1 проблему)
+    // Навігаційна властивість для Role
     public Role? Role { get; set; }
     
     public string GoogleId { get; set; }

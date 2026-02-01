@@ -970,3 +970,5 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.pdb
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.genruntimeconfig.cache
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\ref\Tests.Common.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\cloudinary-token.json
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\CloudinaryDotNet.dll

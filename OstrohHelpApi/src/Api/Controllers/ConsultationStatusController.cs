@@ -1,6 +1,5 @@
 ﻿using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
-using Application.ConsultationStatus.Commands;
 using Domain.Conferences.Statuses;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;

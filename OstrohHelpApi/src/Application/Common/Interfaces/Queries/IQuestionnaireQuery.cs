@@ -20,8 +20,6 @@ public interface IQuestionnaireQuery
     
     Task<IEnumerable<Questionary>> GetAllByUserIdAsync(UserId id, CancellationToken ct);
     
-    /// <summary>
     /// Отримати всі анкети користувача з деталями - вирішує N+1
-    /// </summary>
     Task<IEnumerable<Questionary>> GetAllByUserIdWithDetailsAsync(UserId id, CancellationToken ct);
 }

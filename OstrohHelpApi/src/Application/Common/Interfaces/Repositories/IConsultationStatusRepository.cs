@@ -1,14 +1,8 @@
-﻿using Application.ConsultationStatus.Exceptions;
-using Domain.Conferences.Statuses;
-using Optional;
+﻿// Методи для додавання/оновлення/видалення не потрібні — статуси додаються через сідер.
 
 namespace Application.Common.Interfaces.Repositories;
 
 public interface IConsultationStatusRepository
 {
-    Task AddAsync(ConsultationStatuses status, CancellationToken ct);
-    
-    Task<Result<ConsultationStatuses, ConsultationStatusExceptions>> UpdateAsync (ConsultationStatuses status, CancellationToken ct);
-    
-    Task<Result<ConsultationStatuses, ConsultationStatusExceptions>> DeleteAsync(ConsultationStatuses status, CancellationToken ct);
+    // Статуси додаються через сідер один раз, CRUD операції не потрібні
 }
