@@ -4,7 +4,6 @@ using Application.Services.Interface;
 using Application.Users.Commands;
 using AutoMapper;
 using Domain.Users;
-using Domain.Users.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +12,11 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService _authService, IMapper _mapper, IMediator _mediator, IUserQuery _userQuery, IRoleQuery _roleQuery) : ControllerBase
+public class AuthController(
+    IAuthService _authService, 
+    IMapper _mapper, 
+    IMediator _mediator, 
+    IUserQuery _userQuery) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("google-login")]
@@ -40,70 +43,49 @@ public class AuthController(IAuthService _authService, IMapper _mapper, IMediato
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
         var userId = new UserId(id);
-        var userOption = await _userQuery.GetByIdAsync(userId, ct);
+        // ✅ Один запит до БД з Include замість N+1
+        var userOption = await _userQuery.GetByIdWithRoleAsync(userId, ct);
 
-        return await userOption.Match<Task<IActionResult>>(
-            async user =>
+        return userOption.Match<IActionResult>(
+            user =>
             {
-                // --- Отримай роль ---
-                var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
-                string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
-
-                // --- Мапінг до DTO ---
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = roleName;
-
+                dto.RoleName = user.Role?.Name ?? "Невідома роль";
                 return Ok(dto);
             },
-            () => Task.FromResult<IActionResult>(
-                NotFound(new { Message = $"User with ID '{id}' was not found" })
-            )
+            () => NotFound(new { Message = $"User with ID '{id}' was not found" })
         );
     }
     
     [HttpGet("get-by-email")]
     public async Task<IActionResult> GetByEmail([FromQuery] string email, CancellationToken ct)
     {
-        var userOption = await _userQuery.GetByEmailAsync(email, ct);
+        // ✅ Один запит до БД з Include замість N+1
+        var userOption = await _userQuery.GetByEmailWithRoleAsync(email, ct);
 
-        return await userOption.Match<Task<IActionResult>>(
-            async user =>
+        return userOption.Match<IActionResult>(
+            user =>
             {
-                // --- Отримай роль ---
-                var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
-                string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
-
-                // --- Мапінг до DTO ---
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = roleName;
-
+                dto.RoleName = user.Role?.Name ?? "Невідома роль";
                 return Ok(dto);
             },
-            () => Task.FromResult<IActionResult>(
-                NotFound(new { Message = $"User with email '{email}' was not found" })
-            )
+            () => NotFound(new { Message = $"User with email '{email}' was not found" })
         );
     }
 
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var users = await _userQuery.GetAllAsync(ct);
+        // ✅ Один запит до БД з Include замість N+1
+        var users = await _userQuery.GetAllWithRolesAsync(ct);
 
-        var dtos = new List<UserDto>();
-
-        foreach (var user in users)
+        var dtos = users.Select(user =>
         {
-            // --- Отримай роль ---
-            var roleOption = await _roleQuery.GetByIdAsync(user.RoleId, ct);
-            string roleName = roleOption.Map(r => r.Name).ValueOr("Невідома роль");
-
-            // --- Мапінг до DTO ---
             var dto = _mapper.Map<UserDto>(user);
-            dto.RoleName = roleName;
-
-            dtos.Add(dto);
-        }
+            dto.RoleName = user.Role?.Name ?? "Невідома роль";
+            return dto;
+        }).ToList();
 
         return Ok(dtos);
     }

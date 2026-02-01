@@ -12,18 +12,6 @@ namespace Api.Controllers;
 public class ConsultationStatusController(IConsultationStatusQuery _consultationStatusQuery,
     IMediator _mediator) : ControllerBase 
 {
-    //Add
-    [HttpPost("Add-ConsultationStatus")]
-    public async Task<IActionResult> Add([FromBody] CreateConsultationStatusCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        
-        return result.Match<IActionResult>(
-            status => CreatedAtAction(nameof(Add), new { id = status.Id }, status),
-            ex => BadRequest(new { Error = ex.Message })
-        );
-    }
-    
     //GetAll
     [HttpGet("Get-All-ConsultationStatuses")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -42,30 +30,6 @@ public class ConsultationStatusController(IConsultationStatusQuery _consultation
         return roleOption.Match<IActionResult>(
             r => Ok(r),
             () => NotFound(new { Message = $"Role with ID '{id}' was not found" })
-        );
-    }
-    
-    //Update
-    [HttpPut("Update-ConsultationStatus")]
-    public async Task<IActionResult> Update([FromBody] UpdateConsultationStatusCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-
-        return result.Match<IActionResult>(
-            _ => NoContent(),
-            ex => BadRequest(new { Error = ex.Message })
-        );
-    }
-    //Delete
-    [HttpDelete("Delete-ConsultationStatus")]
-    public async Task<IActionResult> Delete([FromBody]Guid id, CancellationToken ct)
-    {
-        var command = new DeleteConsultationStatusCommand(id);
-        var result = await _mediator.Send(command, ct);
-
-        return result.Match<IActionResult>(
-            _ => NoContent(),
-            ex => BadRequest(new { Error = ex.Message })
         );
     }
 }

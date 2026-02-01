@@ -35,7 +35,6 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
-//builder.Services.SetupServices();
 
 //Google authentication configuration
 builder.Services.AddAuthentication(options =>
@@ -74,7 +73,6 @@ if (File.Exists(firebaseJsonPath))
     });
 }
 
-
 var app = builder.Build();
 
 // Глобальна обробка помилок
@@ -92,12 +90,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication(); 
 app.UseAuthorization();
 
-//await app.InitialiseDb();
 app.MapControllers();
-
-
-
-
 
 // Universal static files setup for media
 var mediaPath = Path.Combine(builder.Environment.ContentRootPath, "data/media");
@@ -110,8 +103,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(mediaPath),
     RequestPath = "/media"
 });
-
-
 
 app.Run();
 

@@ -37,7 +37,7 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
             .HasColumnType("uuid");
 
         //User 1 - Student
-        builder.HasOne(c => c.User)
+        builder.HasOne(c => c.Student)
             .WithMany()
             .HasForeignKey(c => c.StudentId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -48,7 +48,7 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
             .HasColumnType("uuid");
 
         //User 2 - Psychologist
-        builder.HasOne(c => c.User)
+        builder.HasOne(c => c.Psychologist)
             .WithMany()
             .HasForeignKey(c => c.PsychologistId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -59,7 +59,7 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
             .HasColumnType("uuid");
 
         //Status of Consultation
-        builder.HasOne(c => c.ConsultationStatuses)
+        builder.HasOne(c => c.Status)
             .WithMany()
             .HasForeignKey(c => c.StatusId)
             .OnDelete(DeleteBehavior.Restrict);

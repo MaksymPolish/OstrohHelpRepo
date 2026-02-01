@@ -8,13 +8,17 @@ public class Consultations
 {
     public ConsultationsId Id { get; set; }
 
-    public Questionary Questionary { get; set; }
+    public Questionary? Questionary { get; set; }
     public QuestionaryId? QuestionnaireId { get; set; }
 
-    public User User { get; set; }
+    // Навігаційні властивості для вирішення N+1 проблеми
+    public User? Student { get; set; }
     public UserId StudentId { get; set; }
+    
+    public User? Psychologist { get; set; }
     public UserId PsychologistId { get; set; }
-    public ConsultationStatuses ConsultationStatuses { get; set; }
+    
+    public ConsultationStatuses? Status { get; set; }
     public ConsultationStatusesId StatusId { get; set; }
     public DateTime ScheduledTime { get; set; }
     public DateTime CreatedAt { get; set; }

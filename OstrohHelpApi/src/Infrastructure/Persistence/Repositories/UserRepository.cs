@@ -44,6 +44,19 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
         return entity == null ? Option.None<User>() : Option.Some(entity);
     }
 
+    /// <summary>
+    /// Отримати користувача з роллю (1 запит замість N+1)
+    /// </summary>
+    public async Task<Option<User>> GetByIdWithRoleAsync(UserId userId, CancellationToken ct)
+    {
+        var entity = await context.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(x => x.Id == userId, ct);
+
+        return entity == null ? Option.None<User>() : Option.Some(entity);
+    }
+
     public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct)
     {
         return await context
@@ -52,10 +65,35 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
             .ToListAsync(ct); 
     }
 
+    /// <summary>
+    /// Отримати всіх користувачів разом з ролями (1 запит замість N+1)
+    /// </summary>
+    public async Task<IReadOnlyList<User>> GetAllWithRolesAsync(CancellationToken ct)
+    {
+        return await context
+            .Users
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .ToListAsync(ct);
+    }
+
     public async Task<Option<User>> GetByEmailAsync(string email, CancellationToken ct)
     {
         var entity = await context.Users
             .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Email == email, ct);
+
+        return entity == null ? Option.None<User>() : Option.Some(entity);
+    }
+
+    /// <summary>
+    /// Отримати користувача з роллю за email (1 запит замість N+1)
+    /// </summary>
+    public async Task<Option<User>> GetByEmailWithRoleAsync(string email, CancellationToken ct)
+    {
+        var entity = await context.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
             .FirstOrDefaultAsync(x => x.Email == email, ct);
 
         return entity == null ? Option.None<User>() : Option.Some(entity);
