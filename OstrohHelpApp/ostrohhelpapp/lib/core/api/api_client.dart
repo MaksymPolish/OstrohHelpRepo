@@ -1,26 +1,40 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../auth/token_storage.dart';
 
 class ApiClient {
   final String baseUrl;
   final http.Client _httpClient;
+  final TokenStorage _tokenStorage;
 
   ApiClient({
     required this.baseUrl,
     http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+    TokenStorage? tokenStorage,
+  }) : _httpClient = httpClient ?? http.Client(),
+       _tokenStorage = tokenStorage ?? TokenStorage();
+
+  Future<Map<String, String>> _getHeaders({Map<String, String>? additionalHeaders}) async {
+    final token = await _tokenStorage.getToken();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      ...?additionalHeaders,
+    };
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
 
   Future<Map<String, dynamic>> post(
     String endpoint,
     Map<String, dynamic> body, {
     Map<String, String>? headers,
   }) async {
+      final requestHeaders = await _getHeaders(additionalHeaders: headers);
     final response = await _httpClient.post(
       Uri.parse('$baseUrl$endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        ...?headers,
-      },
+      headers: requestHeaders,
       body: json.encode(body),
     );
 
@@ -36,14 +50,12 @@ class ApiClient {
 
   Future<Map<String, dynamic>> get(
     String endpoint, {
+      final requestHeaders = await _getHeaders(additionalHeaders: headers);
     Map<String, String>? headers,
   }) async {
     final response = await _httpClient.get(
       Uri.parse('$baseUrl$endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        ...?headers,
-      },
+      headers: requestHeaders,
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -60,13 +72,11 @@ class ApiClient {
     String endpoint, {
     Map<String, String>? headers,
     Object? body,
+    final requestHeaders = await _getHeaders(additionalHeaders: headers);
   }) async {
     final response = await _httpClient.delete(
       Uri.parse('$baseUrl$endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        ...?headers,
-      },
+      headers: requestHeaders,
       body: body != null ? json.encode(body) : null,
     );
 
@@ -79,16 +89,14 @@ class ApiClient {
   }
 
   Future<void> put(
+      final requestHeaders = await _getHeaders(additionalHeaders: headers);
     String endpoint,
     Map<String, dynamic> body, {
     Map<String, String>? headers,
   }) async {
     final response = await _httpClient.put(
       Uri.parse('$baseUrl$endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        ...?headers,
-      },
+      headers: requestHeaders,
       body: json.encode(body),
     );
 

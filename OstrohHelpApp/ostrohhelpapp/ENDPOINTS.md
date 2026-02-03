@@ -19,6 +19,7 @@
   "id": "guid",
   "email": "string",
   "fullName": "string",
+  "photoUrl": "string",
   "roleId": "guid",
   "jwtToken": "string",
   "refreshToken": "string",

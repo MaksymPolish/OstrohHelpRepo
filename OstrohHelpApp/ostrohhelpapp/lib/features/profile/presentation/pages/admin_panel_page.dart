@@ -58,10 +58,10 @@ class AdminPanelPage extends StatelessWidget {
                         child: const Icon(Icons.assignment, color: Colors.white, size: 32),
                       ),
                       const SizedBox(width: 24),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Анкети',
                               style: TextStyle(
@@ -129,10 +129,10 @@ class AdminPanelPage extends StatelessWidget {
                         child: const Icon(Icons.people, color: Colors.white, size: 32),
                       ),
                       const SizedBox(width: 24),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Користувачі',
                               style: TextStyle(

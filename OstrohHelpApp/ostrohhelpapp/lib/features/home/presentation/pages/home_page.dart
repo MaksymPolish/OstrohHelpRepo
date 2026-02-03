@@ -20,9 +20,9 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.psychology, color: Color(0xFF7FB3D5), size: 40),
                   SizedBox(width: 12),
                   Text(
@@ -62,10 +62,10 @@ class HomePage extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
                           child: Column(
-                            children: const [
+                            children: [
                               Icon(Icons.assignment, size: 40, color: Color(0xFF7FB3D5)),
                               SizedBox(height: 12),
                               Text(
@@ -92,10 +92,10 @@ class HomePage extends StatelessWidget {
                         onTap: () {
                           Navigator.pushNamed(context, '/consultations');
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
                           child: Column(
-                            children: const [
+                            children: [
                               Icon(Icons.people, size: 40, color: Color(0xFF7FB3D5)),
                               SizedBox(height: 12),
                               Text(

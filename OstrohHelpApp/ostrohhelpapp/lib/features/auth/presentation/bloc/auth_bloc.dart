@@ -6,7 +6,8 @@ import '../../data/services/auth_api_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../../../core/di/injection_container.dart';
-import '../widgets/course_input_dialog.dart';
+import '../../../../core/auth/token_storage.dart';
+import '../../../../core/auth/user_storage.dart';
 import 'package:flutter/material.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -15,6 +16,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     signInOption: SignInOption.standard,
   );
   final AuthApiService _apiService = sl<AuthApiService>();
+    final TokenStorage _tokenStorage = TokenStorage();
+    final UserStorage _userStorage = UserStorage();
   final BuildContext context;
 
   AuthBloc(this.context) : super(AuthInitial()) {
@@ -28,18 +31,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckAuthStatus event,
     Emitter<AuthState> emit,
   ) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      try {
-        final userData = await _apiService.getUserById(currentUser.uid);
-        final user = _mapApiUser(userData);
-        emit(Authenticated(user));
-      } catch (e) {
-        emit(AuthError(e.toString()));
-      }
-    } else {
-      emit(Unauthenticated());
+    final token = await _tokenStorage.getToken();
+    final cachedUser = await _userStorage.getUser();
+    final isTokenExpired = await _tokenStorage.isTokenExpired();
+    final isSessionExpired = await _userStorage.isSessionExpired();
+
+    // Перевіряємо, чи токен і сесія валідні
+    if (token != null && cachedUser != null && !isTokenExpired && !isSessionExpired) {
+      emit(Authenticated(cachedUser));
+      return;
     }
+
+    // Якщо щось застаріло - очищаємо все
+    if (isTokenExpired || isSessionExpired) {
+      await _tokenStorage.clearTokens();
+      await _userStorage.clearUser();
+    }
+
+    emit(Unauthenticated());
   }
 
   Future<void> _onSignInWithGoogleRequested(
@@ -60,16 +69,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         idToken: googleAuth.idToken,
       );
 
-      final firebase_auth.UserCredential userCredential = await _auth.signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
 
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(googleAuth.idToken!);
         final user = _mapApiUser(userData);
-
-        final fullUserData = await _apiService.getUserById(user.id!);
-        final fullUser = _mapApiUser(fullUserData);
-
-        emit(Authenticated(fullUser));
+        await _userStorage.saveUser(user);
+        emit(Authenticated(user));
       } else {
         throw Exception('Failed to get ID token from Google');
       }
@@ -87,6 +93,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await Future.wait([
         _auth.signOut(),
         _googleSignIn.signOut(),
+        _tokenStorage.clearTokens(),
+        _userStorage.clearUser(),
       ]);
       emit(Unauthenticated());
     } catch (e) {
@@ -101,7 +109,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _apiService.updateUserCourse(event.userId, event.course);
       final userData = await _apiService.getUserById(event.userId);
-      emit(Authenticated(_mapApiUser(userData)));
+      final updatedUser = _mapApiUser(userData);
+      await _userStorage.saveUser(updatedUser);
+      emit(Authenticated(updatedUser));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -111,11 +121,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     return app_user.User(
       id: userData['id'],
       email: userData['email'],
-      displayName: userData['displayName'],
+      displayName: userData['fullName'] ?? userData['displayName'],
+      fullName: userData['fullName'],
       photoUrl: userData['photoUrl'],
       roleId: userData['roleId'],
-      roleName: userData['roleName'],
-      course: userData['course'],
+      roleName: userData['roleName'], // може бути null при login
+      course: userData['course']?.toString(), // може бути null при login
     );
   }
 } 

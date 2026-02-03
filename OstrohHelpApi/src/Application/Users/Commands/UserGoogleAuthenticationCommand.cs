@@ -25,7 +25,7 @@ public class UserGoogleAuthenticationHandler(
     private readonly FirebaseAuth _firebaseAuth = FirebaseAuth.DefaultInstance;
     public async Task<User> Handle(UserGoogleAuthenticationCommand request, CancellationToken ct)
     {
-        (string? googleId, string? email, string? fullName) userInfo = (null, null, null);
+        (string? googleId, string? email, string? fullName, string? photoUrl) userInfo = (null, null, null, null);
 
         try
         {
@@ -34,7 +34,8 @@ public class UserGoogleAuthenticationHandler(
             userInfo = (
                 googleId: googlePayload.Subject,
                 email: googlePayload.Email,
-                fullName: googlePayload.Name
+                fullName: googlePayload.Name,
+                photoUrl: googlePayload.Picture // URL фото з Google
             );
         }
         catch (InvalidGoogleTokenException)
@@ -44,7 +45,8 @@ public class UserGoogleAuthenticationHandler(
             userInfo = (
                 googleId: firebaseUser.Uid,
                 email: firebaseUser.Claims.GetValueOrDefault("email")?.ToString(),
-                fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString()
+                fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString(),
+                photoUrl: firebaseUser.Claims.GetValueOrDefault("picture")?.ToString() // URL фото з Firebase
             );
         }
 
@@ -68,6 +70,7 @@ public class UserGoogleAuthenticationHandler(
                 GoogleId = userInfo.googleId,
                 Email = userInfo.email!,
                 FullName = userInfo.fullName,
+                PhotoUrl = userInfo.photoUrl, // Зберігаємо URL фото
                 RoleId = studentRoleId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -77,6 +80,7 @@ public class UserGoogleAuthenticationHandler(
         else
         {
             user.FullName = userInfo.fullName;
+            user.PhotoUrl = userInfo.photoUrl; // Оновлюємо фото при кожному логіні
             await _userRepository.UpdateAsync(user, ct);
         }
 

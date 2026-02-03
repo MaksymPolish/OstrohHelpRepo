@@ -33,6 +33,7 @@ public class AuthController(
             Id = user.Id.ToString(),
             Email = user.Email,
             FullName = user.FullName,
+            PhotoUrl = user.PhotoUrl, // URL фото профілю
             RoleId = user.RoleId.ToString(),
             JwtToken = jwtToken,
             RefreshToken = refreshToken,

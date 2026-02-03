@@ -97,10 +97,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             backgroundImage: user.photoUrl != null
                                 ? NetworkImage(user.photoUrl!)
                                 : null,
+                            backgroundColor: const Color(0xFFE3F2FD),
                             child: user.photoUrl == null
                                 ? const Icon(Icons.person, size: 48, color: Color(0xFF7FB3D5))
                                 : null,
-                            backgroundColor: const Color(0xFFE3F2FD),
                           ),
                           const SizedBox(height: 20),
                           Text(

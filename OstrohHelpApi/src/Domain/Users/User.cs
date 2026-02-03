@@ -15,6 +15,7 @@ public class User
     public string FullName { get; set; }
     public string? Course { get; set; }
     public string Email { get; set; }
+    public string? PhotoUrl { get; set; } // URL фото профілю з Google
     public bool IsLoggedIn { get; set; }
     public DateTime CreatedAt { get; set; }
     

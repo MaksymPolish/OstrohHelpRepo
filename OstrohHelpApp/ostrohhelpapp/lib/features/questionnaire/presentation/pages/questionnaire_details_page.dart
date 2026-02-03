@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../data/services/questionnaire_api_service.dart';
-import 'package:intl/intl.dart';
 
 class QuestionnaireDetailsPage extends StatelessWidget {
   final String questionnaireId;

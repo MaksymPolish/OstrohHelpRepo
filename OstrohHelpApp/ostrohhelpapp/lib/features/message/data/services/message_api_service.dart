@@ -1,12 +1,28 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../../core/auth/token_storage.dart';
 
 class MessageApiService {
-  final String baseUrl = 'http://10.0.2.2:5132/api';
+  final String baseUrl = 'http://10.0.2.2:5000/api';
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await _tokenStorage.getToken();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
 
   Future<List<Map<String, dynamic>>> getMessages(String consultationId) async {
+      final headers = await _getHeaders();
     final response = await http.get(
       Uri.parse('$baseUrl/Message/Recive?idConsultation=$consultationId'),
+      headers: headers,
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -21,9 +37,10 @@ class MessageApiService {
   }
 
   Future<void> sendMessage(Map<String, dynamic> message) async {
+      final headers = await _getHeaders();
     final response = await http.post(
       Uri.parse('$baseUrl/Message/Send'),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: json.encode(message),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -32,9 +49,10 @@ class MessageApiService {
   }
 
   Future<void> deleteMessage(String messageId) async {
+      final headers = await _getHeaders();
     final response = await http.delete(
       Uri.parse('$baseUrl/Message/Delete'),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: json.encode({'messageId': messageId}),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -43,9 +61,10 @@ class MessageApiService {
   }
 
   Future<void> markAsRead(String messageId) async {
+      final headers = await _getHeaders();
     final response = await http.put(
       Uri.parse('$baseUrl/Message/mark-as-read'),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: json.encode({'id': messageId}),
     );
     if (response.statusCode != 200) {
