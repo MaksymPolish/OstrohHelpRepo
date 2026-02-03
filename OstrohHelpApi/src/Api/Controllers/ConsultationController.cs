@@ -6,18 +6,21 @@ using AutoMapper;
 using Domain.Conferences;
 using Domain.Users;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/Consultations")]
+[Authorize] // Вимагає автентифікацію для всіх ендпоінтів
 public class ConsultationController(
     IMediator _mediator, 
     IConsultationQuery _consultationQuery,
     IMapper _mapper) : ControllerBase
 {
     //Accept
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpPost("Accept-Questionnaire")]
     public async Task<IActionResult> Accept([FromBody] AcceptQuestionnaireCommand command, CancellationToken ct)
     {
@@ -29,6 +32,7 @@ public class ConsultationController(
     }
     
     //Update
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpPut("Update-Consultation")]
     public async Task<IActionResult> Update([FromBody] UpdateConsultationCommand command, CancellationToken ct)
     {
@@ -39,6 +43,7 @@ public class ConsultationController(
         );
     }
     //Delete
+    [Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби
     [HttpDelete("Delete-Consultation")]
     public async Task<IActionResult> Delete([FromBody] DeleteConsultationCommand command, CancellationToken ct)
     {
@@ -49,6 +54,7 @@ public class ConsultationController(
         );
     }
     
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {

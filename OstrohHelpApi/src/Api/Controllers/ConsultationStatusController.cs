@@ -2,12 +2,14 @@
 using Application.Common.Interfaces.Repositories;
 using Domain.Conferences.Statuses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/ConsultationStatus")]
+[Authorize] // Вимагає автентифікацію
 public class ConsultationStatusController(IConsultationStatusQuery _consultationStatusQuery,
     IMediator _mediator) : ControllerBase 
 {

@@ -3,12 +3,14 @@ using Application.Common.Interfaces.Repositories;
 using Application.Roles.Commands;
 using Domain.Users.Roles;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби може керувати ролями
 public class RoleController(IMediator _mediator, IRoleQuery _roleQuery) : ControllerBase
 {
     [HttpGet("Get-All-Roles")]

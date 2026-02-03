@@ -7,12 +7,14 @@ using AutoMapper;
 using Domain.Conferences;
 using Domain.Messages;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/Message")]
+[Authorize] // Вимагає автентифікацію для всіх ендпоінтів
 public class MessageController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -63,9 +65,7 @@ public class MessageController : ControllerBase
         return Ok(new { url, fileType = file.ContentType });
     }
 
-    /// <summary>
     /// Add attachment to existing message. Use after uploading file to Cloudinary.
-    /// </summary>
     [HttpPost("AddAttachment")]
     public async Task<IActionResult> AddAttachment([FromBody] AddAttachmentRequest request, CancellationToken ct)
     {

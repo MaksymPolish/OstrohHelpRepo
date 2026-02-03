@@ -1,8 +1,12 @@
 //using Api.Modules;
+using System.Text;
 using Application;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
@@ -18,12 +22,50 @@ builder.Services.AddSingleton<Api.Services.CloudinaryService>();
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Swagger з підтримкою JWT авторизації
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "OstrohHelp API",
+        Version = "v1",
+        Description = "API для системи психологічної допомоги"
+    });
+    
+    // Налаштування JWT авторизації в Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Введіть JWT токен.\n\nПриклад: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    });
+    
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Application.ApplicationAssemblyMarker>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
 
 // Add CORS configuration
 builder.Services.AddCors(options =>
@@ -36,11 +78,30 @@ builder.Services.AddCors(options =>
     });
 });
 
-//Google authentication configuration
+// JWT Bearer Authentication configuration
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
 builder.Services.AddAuthentication(options =>
     {
-        options.DefaultScheme = "Cookies";
-        options.DefaultChallengeScheme = "Google";
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!)),
+            ClockSkew = TimeSpan.Zero // Без затримки при перевірці терміну дії токена
+        };
     })
     .AddCookie("Cookies")
     .AddGoogle("Google", options =>
@@ -61,6 +122,31 @@ builder.Services.AddAuthentication(options =>
         options.SignInScheme = "Cookies";
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
     });
+
+// Authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    // Політика для студентів (всі автентифіковані користувачі)
+    options.AddPolicy("RequireAuthenticated", policy => 
+        policy.RequireAuthenticatedUser());
+    
+    // Політика тільки для студентів
+    options.AddPolicy("RequireStudent", policy => 
+        policy.RequireRole("Student", "Psychologist", "HeadOfService"));
+    
+    // Політика для психологів та керівників
+    options.AddPolicy("RequirePsychologist", policy => 
+        policy.RequireRole("Psychologist", "HeadOfService"));
+    
+    // Політика тільки для керівника служби
+    options.AddPolicy("RequireHeadOfService", policy => 
+        policy.RequireRole("HeadOfService"));
+    
+    // Політика для персоналу (психологи та керівники)
+    options.AddPolicy("RequireStaff", policy => 
+        policy.RequireRole("Psychologist", "HeadOfService"));
+});
+
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // Ініціалізація Firebase Admin SDK (тільки якщо файл існує)

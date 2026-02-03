@@ -12,13 +12,14 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[Authorize] // Вимагає автентифікацію за замовчуванням
 public class AuthController(
     IAuthService _authService, 
     IMapper _mapper, 
     IMediator _mediator, 
     IUserQuery _userQuery) : ControllerBase
 {
-    [AllowAnonymous]
+    [AllowAnonymous] // Дозволяємо анонімний доступ для логіну
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] UserGoogleAuthenticationCommand command, CancellationToken ct)
     {
@@ -74,6 +75,7 @@ public class AuthController(
         );
     }
 
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники можуть бачити всіх користувачів
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -90,6 +92,7 @@ public class AuthController(
         return Ok(dtos);
     }
 
+    [Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби може видаляти користувачів
     [HttpDelete("User-Delete")]
     public async Task<IActionResult> Delete([FromBody] Guid id, CancellationToken ct)
     {
@@ -112,6 +115,7 @@ public class AuthController(
         return NoContent(); 
     }
     
+    [Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби може змінювати ролі
     [HttpPut("User-Role-Update")]
     public async Task<IActionResult> Update([FromBody] UpdateUserCommand command, CancellationToken ct)
     {

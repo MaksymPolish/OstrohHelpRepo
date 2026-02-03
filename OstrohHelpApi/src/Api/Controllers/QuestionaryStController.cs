@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Repositories;
 using Domain.Inventory.Statuses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/QuestiStatController")]
+[Authorize] // Вимагає автентифікацію
 public class QuestionaryStController(IMediator _mediator, 
     IQuestionnaireStatusQuery _questionnaireStatusQuery) : ControllerBase
 {

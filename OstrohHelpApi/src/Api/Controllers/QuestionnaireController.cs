@@ -5,6 +5,7 @@ using AutoMapper;
 using Domain.Inventory;
 using Domain.Users;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/questionnaire")]
+[Authorize] // Вимагає автентифікацію для всіх ендпоінтів
 public class QuestionnaireController(
     IMediator _mediator, 
     IQuestionnaireQuery _questionnaireQuery,
@@ -28,6 +30,7 @@ public class QuestionnaireController(
         );
     }
     
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -105,6 +108,7 @@ public class QuestionnaireController(
         return Ok(dtos);
     }
     
+    [Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби
     [HttpDelete("Delete-Questionnaire")]
     public async Task<IActionResult> Delete([FromBody]Guid id, CancellationToken ct)
     {
@@ -130,6 +134,7 @@ public class QuestionnaireController(
         );
     }
     
+    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpPut("Update-StatusQuestionnaire")]
     public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusCommand command, CancellationToken ct)
     {
