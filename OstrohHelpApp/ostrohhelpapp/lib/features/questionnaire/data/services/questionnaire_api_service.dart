@@ -28,7 +28,7 @@ class QuestionnaireApiService {
       final List<dynamic> data = json.decode(response.body);
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('Failed to load questionnaires');
+    throw Exception('Failed to load questionnaires: ${response.statusCode} - ${response.body}');
   }
 
   Future<Map<String, dynamic>> getQuestionnaireById(String id) async {
@@ -40,7 +40,7 @@ class QuestionnaireApiService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     }
-    throw Exception('Failed to load questionnaire');
+    throw Exception('Failed to load questionnaire: ${response.statusCode} - ${response.body}');
   }
 
   Future<List<Map<String, dynamic>>> getQuestionnairesByUserId(String userId) async {
@@ -54,55 +54,55 @@ class QuestionnaireApiService {
       print('Questionnaires for user $userId: $data');
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('Failed to load user questionnaires');
+    throw Exception('Failed to load user questionnaires: ${response.statusCode} - ${response.body}');
   }
 
   Future<Map<String, dynamic>> createQuestionnaire(Map<String, dynamic> questionnaire) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.post(
       Uri.parse('$baseUrl/questionnaire/Create-Questionnaire'),
       headers: headers,
       body: json.encode(questionnaire),
     );
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       return json.decode(response.body);
     }
-    throw Exception('Failed to create questionnaire');
+    throw Exception('Failed to create questionnaire: ${response.statusCode} - ${response.body}');
   }
 
   Future<void> updateQuestionnaire(String id, Map<String, dynamic> questionnaire) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.put(
       Uri.parse('$baseUrl/questionnaire/Update-Questionnaire'),
       headers: headers,
       body: json.encode(questionnaire),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update questionnaire');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to update questionnaire: ${response.statusCode} - ${response.body}');
     }
   }
 
   Future<void> updateQuestionnaireStatus(String id, String statusId) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.put(
       Uri.parse('$baseUrl/questionnaire/Update-StatusQuestionnaire'),
       headers: headers,
-      body: json.encode({'id': id, 'statusId': statusId}),
+      body: json.encode({'questionnaireId': id, 'statusId': statusId}),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update questionnaire status');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to update questionnaire status: ${response.statusCode} - ${response.body}');
     }
   }
 
   Future<void> deleteQuestionnaire(String id) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.delete(
       Uri.parse('$baseUrl/questionnaire/Delete-Questionnaire'),
       headers: headers,
-      body: json.encode({'id': id}),
+      body: json.encode(id),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete questionnaire');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to delete questionnaire: ${response.statusCode} - ${response.body}');
     }
   }
 } 

@@ -5,6 +5,8 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'package:intl/intl.dart';
 import '../../../consultation/data/services/consultation_api_service.dart';
+import '../../../../core/auth/role_checker.dart';
+import '../../../../core/status/status_constants.dart';
 
 class AdminQuestionnairesPage extends StatefulWidget {
   const AdminQuestionnairesPage({super.key});
@@ -54,13 +56,13 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
   }
 
   Future<void> _acceptQuestionnaire(String questionnaireId, String psychologistId) async {
-    const acceptedStatusId = 'c71269cb-f0a3-4020-b25a-e423e7daa398';
+    const acceptedStatusId = QuestionnaireStatusIds.accepted;
     try {
       final scheduledTime = await showDateTimePicker(context);
       if (scheduledTime == null) return;
 
       await _consultationApiService.acceptConsultation({
-        'questionaryId': questionnaireId,
+        'questionnaireId': questionnaireId,
         'psychologistId': psychologistId,
         'scheduledTime': scheduledTime.toIso8601String(),
       });
@@ -85,9 +87,18 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is! Authenticated) {
+            // 🔐 ПЕРЕВІРКА РОЛІ: Тільки автентифіковані користувачі
             return const Center(child: Text('Увійдіть як адміністратор або психолог.'));
           }
           final user = state.user;
+          if (!RoleChecker.isAdminOrPsychologist(user.roleId) &&
+              !RoleChecker.isAdminOrPsychologistByName(user.roleName)) {
+            return Center(
+              child: Text(
+                'Недостатньо прав для перегляду анкет. RoleId: ${user.roleId ?? 'null'}, RoleName: ${user.roleName ?? 'null'}',
+              ),
+            );
+          }
           return FutureBuilder<List<Map<String, dynamic>>>(
             future: _apiService.getAllQuestionnaires(),
             builder: (context, snapshot) {
@@ -97,9 +108,9 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
               if (snapshot.hasError) {
                 return Center(child: Text('Помилка: ${snapshot.error}'));
               }
-              final questionnaires = (snapshot.data ?? [])
-                  .where((q) => q['statusId'] != 'c71269cb-f0a3-4020-b25a-e423e7daa398')
-                  .toList();
+                  final questionnaires = (snapshot.data ?? [])
+                    .where((q) => q['statusId'] != QuestionnaireStatusIds.accepted)
+                    .toList();
               if (questionnaires.isEmpty) {
                 return const Center(child: Text('Анкет немає.'));
               }
@@ -120,8 +131,8 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                             Text('Дата: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(q['submittedAt']))}'),
                         ],
                       ),
-                      trailing: (user.roleId == '0c79cd0c-86a8-4a02-803d-d4af6f6ef266' ||
-                                user.roleId == 'cf9e7046-d455-480c-970e-0dc55f5ef42c')
+                      // 🔐 ПЕРЕВІРКА РОЛІ: Показати кнопку прийняття анкети тільки для Адміністратора або Психолога
+                      trailing: RoleChecker.isAdminOrPsychologist(user.roleId)
                           ? ElevatedButton(
                               onPressed: () => _acceptQuestionnaire(q['id'], user.id ?? ''),
                               child: const Text('Прийняти'),

@@ -5,6 +5,7 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
 import '../../../auth/data/services/auth_api_service.dart';
+import '../../../../core/auth/role_checker.dart';
 import 'admin_panel_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -169,8 +170,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  if (user.roleId == '0c79cd0c-86a8-4a02-803d-d4af6f6ef266' ||
-                      user.roleId == 'cf9e7046-d455-480c-970e-0dc55f5ef42c')
+                  // 🔐 ПЕРЕВІРКА РОЛІ: Показати кнопку адмін панелі для Адміністратора або Психолога
+                  if (RoleChecker.isAdminOrPsychologist(user.roleId))
                     ElevatedButton.icon(
                       onPressed: () {
                         Navigator.push(

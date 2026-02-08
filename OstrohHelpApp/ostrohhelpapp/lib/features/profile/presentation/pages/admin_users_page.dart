@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../auth/data/services/auth_api_service.dart';
+import '../../../../core/auth/role_checker.dart';
 
 class AdminUsersPage extends StatefulWidget {
   final String currentUserId;
@@ -17,14 +18,19 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   String? get currentUserId => widget.currentUserId;
 
+  // 🔐 ПЕРЕВІРКА РОЛІ: Список доступних ролей для зміни (посилаються на UserRole константи)
   final List<Map<String, dynamic>> _roles = [
     {
-      "id": {"value": "0b601285-06a9-4620-98fd-e38cbd930e31"},
+      "id": {"value": UserRole.studentId},
       "name": "Студент"
     },
     {
-      "id": {"value": "0c79cd0c-86a8-4a02-803d-d4af6f6ef266"},
+      "id": {"value": UserRole.psychologistId},
       "name": "Психолог"
+    },
+    {
+      "id": {"value": UserRole.serviceManagerId},
+      "name": "Керівник психологічної служби"
     }
   ];
 
@@ -123,6 +129,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                     );
                   },
                 ),
+              // 🔐 ПЕРЕВІРКА РОЛІ: Дозволити змінювати роль тільки іншим користувачам, не собі
               if (!isSelf)
                 ListTile(
                   leading: const Icon(Icons.admin_panel_settings),

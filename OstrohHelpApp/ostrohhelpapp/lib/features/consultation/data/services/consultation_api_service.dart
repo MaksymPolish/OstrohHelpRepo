@@ -24,11 +24,14 @@ class ConsultationApiService {
       Uri.parse('$baseUrl/Consultations/all'),
       headers: headers,
     );
+    if (response.statusCode == 204) {
+      return [];
+    }
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('Failed to load consultations');
+    throw Exception('Failed to load consultations: ${response.statusCode} - ${response.body}');
   }
 
   Future<Map<String, dynamic>> getConsultationById(String id) async {
@@ -49,48 +52,53 @@ class ConsultationApiService {
       Uri.parse('$baseUrl/Consultations/Get-All-Consultations-By-UserId/$userId'),
       headers: headers,
     );
+    if (response.statusCode == 204) {
+      return [];
+    }
+    if (response.statusCode == 404) {
+      return [];
+    }
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       print('Consultation for user $userId: $data');
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('Failed to load user questionnaires');
+    throw Exception('Failed to load user consultations: ${response.statusCode} - ${response.body}');
   }
 
-  Future<Map<String, dynamic>> acceptConsultation(Map<String, dynamic> consultation) async {
-      final headers = await _getHeaders();
+  Future<void> acceptConsultation(Map<String, dynamic> consultation) async {
+    final headers = await _getHeaders();
     final response = await http.post(
       Uri.parse('$baseUrl/Consultations/Accept-Questionnaire'),
       headers: headers,
       body: json.encode(consultation),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      return json.decode(response.body);
+      throw Exception('Failed to accept consultation: ${response.statusCode} - ${response.body}');
     }
-    throw Exception('Failed to accept consultation');
   }
 
   Future<void> updateConsultation(String id, Map<String, dynamic> consultation) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.put(
       Uri.parse('$baseUrl/Consultations/Update-Consultation'),
       headers: headers,
       body: json.encode(consultation),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update questionnaire');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to update consultation: ${response.statusCode} - ${response.body}');
     }
   }
 
   Future<void> deleteConsultation(String id) async {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
     final response = await http.delete(
       Uri.parse('$baseUrl/Consultations/Delete-Consultation'),
       headers: headers,
-      body: json.encode({'id': id}),
+      body: json.encode({'consultationId': id}),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete consultation');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to delete consultation: ${response.statusCode} - ${response.body}');
     }
   }
 

@@ -70,7 +70,7 @@ class ConsultationListPage extends StatelessWidget {
               final consultations = snapshot.data ?? [];
 
               if (consultations.isEmpty) {
-                return const Center(child: Text('Немає доступних консультацій'));
+                return const Center(child: Text('Список консультацій порожній'));
               }
 
               return ListView.builder(

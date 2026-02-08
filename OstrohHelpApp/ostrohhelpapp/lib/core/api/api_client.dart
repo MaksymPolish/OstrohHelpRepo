@@ -50,9 +50,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> get(
     String endpoint, {
-      final requestHeaders = await _getHeaders(additionalHeaders: headers);
     Map<String, String>? headers,
   }) async {
+    final requestHeaders = await _getHeaders(additionalHeaders: headers);
     final response = await _httpClient.get(
       Uri.parse('$baseUrl$endpoint'),
       headers: requestHeaders,
@@ -72,8 +72,8 @@ class ApiClient {
     String endpoint, {
     Map<String, String>? headers,
     Object? body,
-    final requestHeaders = await _getHeaders(additionalHeaders: headers);
   }) async {
+    final requestHeaders = await _getHeaders(additionalHeaders: headers);
     final response = await _httpClient.delete(
       Uri.parse('$baseUrl$endpoint'),
       headers: requestHeaders,
@@ -89,11 +89,11 @@ class ApiClient {
   }
 
   Future<void> put(
-      final requestHeaders = await _getHeaders(additionalHeaders: headers);
     String endpoint,
     Map<String, dynamic> body, {
     Map<String, String>? headers,
   }) async {
+    final requestHeaders = await _getHeaders(additionalHeaders: headers);
     final response = await _httpClient.put(
       Uri.parse('$baseUrl$endpoint'),
       headers: requestHeaders,
