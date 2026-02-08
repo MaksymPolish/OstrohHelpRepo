@@ -18,9 +18,9 @@ class UserRole {
 
   /// Назви ролей для відображення
   static const Map<String, String> roleNames = {
-    studentId: 'Студент',
-    psychologistId: 'Психолог',
-    serviceManagerId: 'Керівник психологічної служби',
+    studentId: 'Student',
+    psychologistId: 'Psychologist',
+    serviceManagerId: 'HeadOfService',
   };
 }
 
@@ -51,7 +51,7 @@ class RoleChecker {
   static bool isAdminOrPsychologistByName(String? roleName) {
     if (roleName == null) return false;
     final normalized = roleName.trim().toLowerCase();
-    return normalized == 'психолог' || normalized == 'керівник психологічної служби';
+    return normalized.contains('psychologist') || normalized.contains('headofservice');
   }
 
   /// Отримати назву ролі за ID

@@ -33,7 +33,7 @@ public class AuthService : IAuthService
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7), // 🔥 Термін дії токена — 7 днів
+            expires: DateTime.UtcNow.AddDays(7), // Термін дії токена — 7 днів
             signingCredentials: credentials
         );
 

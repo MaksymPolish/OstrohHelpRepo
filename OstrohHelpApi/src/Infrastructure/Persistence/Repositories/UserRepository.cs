@@ -11,6 +11,8 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
     public async Task<User?> GetByGoogleIdOrEmailAsync(string googleId, string email, CancellationToken ct)
     {
         return await context.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.GoogleId == googleId || u.Email == email, ct);
     }
 

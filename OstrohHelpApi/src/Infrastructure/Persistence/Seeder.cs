@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence
         {
             // Roles
             modelBuilder.Entity<Role>().HasData(
-                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000001")), "Студент"),
-                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000002")), "Психолог"),
-                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000003")), "Керівник психологічної служби")
+                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000001")), "Student"),
+                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000002")), "Psychologist"),
+                Role.Create(new Domain.Users.Roles.RoleId(Guid.Parse("00000000-0000-0000-0000-000000000003")), "HeadOfService")
             );
 
             // QuestionaryStatuses

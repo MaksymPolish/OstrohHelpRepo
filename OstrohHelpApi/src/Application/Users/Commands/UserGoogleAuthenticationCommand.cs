@@ -18,7 +18,7 @@ public class UserGoogleAuthenticationCommand : IRequest<User>
 
 public class UserGoogleAuthenticationHandler(
     IUserRepository _userRepository, 
-    IRoleQuery _roleQuery, 
+    IUserQuery _userQuery,
     ILogger<UserGoogleAuthenticationHandler> _logger,
     IAuthService _authService) : IRequestHandler<UserGoogleAuthenticationCommand, User>
 {
@@ -76,12 +76,20 @@ public class UserGoogleAuthenticationHandler(
             };
 
             await _userRepository.AddAsync(user, ct);
+            
+            // ВАЖЛИВО: Завантажити користувача з ролью з БД
+            var userWithRole = await _userQuery.GetByIdWithRoleAsync(user.Id, ct);
+            user = userWithRole.ValueOr(user);
         }
         else
         {
             user.FullName = userInfo.fullName;
             user.PhotoUrl = userInfo.photoUrl; // Оновлюємо фото при кожному логіні
             await _userRepository.UpdateAsync(user, ct);
+            
+            // ВАЖЛИВО: Завантажити користувача з ролью з БД
+            var userWithRole = await _userQuery.GetByIdWithRoleAsync(user.Id, ct);
+            user = userWithRole.ValueOr(user);
         }
 
         _logger.LogInformation("User authenticated successfully: {Email}", userInfo.email);

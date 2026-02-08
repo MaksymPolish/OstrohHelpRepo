@@ -1,5 +1,6 @@
 //using Api.Modules;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 using Application;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -82,6 +83,9 @@ builder.Services.AddCors(options =>
 var jwtSecret = builder.Configuration["Jwt:Secret"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+// Важливо: Вимкнути автоматичне перейменування claims
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services.AddAuthentication(options =>
     {

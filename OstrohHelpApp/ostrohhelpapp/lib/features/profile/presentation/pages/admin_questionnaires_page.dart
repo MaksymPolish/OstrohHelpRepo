@@ -106,7 +106,12 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return Center(child: Text('Помилка: ${snapshot.error}'));
+                return Center(
+                  child: Text(
+                    'Помилка: ${snapshot.error}\nRoleId: ${user.roleId ?? 'null'}\nRoleName: ${user.roleName ?? 'null'}\nСпробуйте вийти та увійти знову.',
+                    textAlign: TextAlign.center,
+                  ),
+                );
               }
                   final questionnaires = (snapshot.data ?? [])
                     .where((q) => q['statusId'] != QuestionnaireStatusIds.accepted)
