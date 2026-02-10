@@ -12,7 +12,6 @@ import 'features/consultation/presentation/pages/consultation_list_page.dart';
 import 'features/consultation/presentation/pages/chat_page.dart';
 import 'features/profile/presentation/pages/admin_panel_page.dart';
 import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
-import 'features/auth/presentation/widgets/course_input_dialog.dart';
 import 'features/profile/presentation/pages/admin_users_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
@@ -146,53 +145,20 @@ class AuthRoot extends StatefulWidget {
 class _AuthRootState extends State<AuthRoot> {
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) {
-        // Показати діалог тільки якщо:
-        // 1. Користувач щойно увійшов і курс не заповнений
-        // 2. У попередньому стані курс був заповнений, а тепер порожній (не повинно бути, але безпека)
-        if (current is! Authenticated) return false;
-        
-        final courseEmpty = current.user.course == null || current.user.course!.trim().isEmpty;
-        final wasPreviouslyAuthenticated = previous is Authenticated;
-        final wasPreviouslyCourseEmpty = 
-            (previous as Authenticated?)?.user.course == null || 
-            (previous as Authenticated?)?.user.course?.trim().isEmpty == true;
-        
-        // Показати діалог тільки якщо курс порожній та це новий вхід або врешті змінилось на порожне
-        return courseEmpty && (!wasPreviouslyAuthenticated || !wasPreviouslyCourseEmpty);
-      },
-      listener: (context, state) {
-        if (state is Authenticated &&
-            (state.user.course == null || state.user.course!.trim().isEmpty)) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) => CourseInputDialog(
-              userId: state.user.id!,
-              onSubmit: (userId, course) {
-                dialogContext.read<AuthBloc>().add(UpdateUserCourse(userId, course));
-                Navigator.pop(dialogContext);
-              },
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
             ),
           );
         }
+        if (state is Authenticated) {
+          return const HomePage();
+        }
+        return const LoginPage();
       },
-      child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthLoading) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          if (state is Authenticated) {
-            return const HomePage();
-          }
-          return const LoginPage();
-        },
-      ),
     );
   }
 }

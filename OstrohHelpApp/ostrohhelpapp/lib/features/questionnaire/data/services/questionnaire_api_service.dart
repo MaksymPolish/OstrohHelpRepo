@@ -87,7 +87,7 @@ class QuestionnaireApiService {
     final response = await http.put(
       Uri.parse('$baseUrl/questionnaire/Update-StatusQuestionnaire'),
       headers: headers,
-      body: json.encode({'questionnaireId': id, 'statusId': statusId}),
+      body: json.encode({'id': id, 'statusId': statusId}),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to update questionnaire status: ${response.statusCode} - ${response.body}');
