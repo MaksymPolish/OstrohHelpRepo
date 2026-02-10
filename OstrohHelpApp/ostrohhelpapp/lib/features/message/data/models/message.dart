@@ -5,6 +5,7 @@ class Message {
   final String text;
   final DateTime sentAt;
   final bool isRead;
+  final List<String> mediaPaths;
 
   Message({
     required this.id,
@@ -13,16 +14,25 @@ class Message {
     required this.text,
     required this.sentAt,
     required this.isRead,
+    required this.mediaPaths,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    final rawMedia = json['mediaPaths'];
+    final mediaPaths = rawMedia is List
+        ? rawMedia.map((item) => item.toString()).toList()
+        : <String>[];
+    final rawText = json['text'] ?? json['content'] ?? '';
+    final rawSentAt = json['sentAt'] ?? json['createdAt'] ?? DateTime.now().toIso8601String();
+
     return Message(
       id: json['id'] is Map ? json['id']['value'] ?? '' : (json['id'] ?? ''),
       consultationId: json['consultationId'] ?? '',
       senderId: json['senderId'] ?? '',
-      text: json['text'] ?? '',
-      sentAt: DateTime.parse(json['sentAt']),
+      text: rawText,
+      sentAt: DateTime.tryParse(rawSentAt) ?? DateTime.now(),
       isRead: json['isRead'] ?? false,
+      mediaPaths: mediaPaths,
     );
   }
 } 
