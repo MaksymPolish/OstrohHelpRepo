@@ -83,6 +83,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:3000",      // React
             "http://localhost:5000",      // Test HTML
+            "http://127.0.0.1:5500",      // Local static server (e.g., Live Server)
             "http://localhost:5173",      // Vite
             "http://localhost:4200",      // Angular
             "http://localhost:7000",      // Self (for testing)
@@ -124,20 +125,20 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.Zero // Без затримки при перевірці терміну дії токена
         };
         
-        // SignalR WebSocket support - читання токену з query string
+        // SignalR support - читання токену з query string
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
                 var accessToken = context.Request.Query["access_token"];
-                
-                // Якщо це WebSocket з'єднання на SignalR Hub
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    context.HttpContext.WebSockets.IsWebSocketRequest)
+                var path = context.HttpContext.Request.Path;
+
+                // Дозволити access_token для negotiate + WebSocket на /hubs/chat
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
                 {
                     context.Token = accessToken;
                 }
-                
+
                 return Task.CompletedTask;
             }
         };

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/auth/token_storage.dart';
 
@@ -19,32 +20,38 @@ class AuthApiService {
   }
 
   Future<Map<String, dynamic>> googleLogin(String idToken) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/google-login'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: json.encode({
-        'idToken': idToken.toString(),
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/google-login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'idToken': idToken.toString(),
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      // Save JWT and refresh tokens with expiration
-      if (data['jwtToken'] != null) {
-        await _tokenStorage.saveToken(
-          data['jwtToken'],
-          expiresAt: data['expiresAt'],
-        );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // Save JWT and refresh tokens with expiration
+        if (data['jwtToken'] != null) {
+          await _tokenStorage.saveToken(
+            data['jwtToken'],
+            expiresAt: data['expiresAt'],
+          );
+        }
+        if (data['refreshToken'] != null) {
+          await _tokenStorage.saveRefreshToken(data['refreshToken']);
+        }
+        return data;
       }
-      if (data['refreshToken'] != null) {
-        await _tokenStorage.saveRefreshToken(data['refreshToken']);
-      }
-      return data;
+      throw Exception('Failed to authenticate with Google: Status ${response.statusCode} - ${response.body}');
+    } catch (e) {
+      debugPrint('Google Login Error: $e');
+      rethrow;
     }
-    throw Exception('Failed to authenticate with Google: ${response.body}');
   }
 
   Future<Map<String, dynamic>> getUserById(String id) async {

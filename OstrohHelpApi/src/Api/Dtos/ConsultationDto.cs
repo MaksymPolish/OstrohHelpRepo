@@ -12,7 +12,9 @@ public class ConsultationDto
     public string PsychologistId { get; set; } = null!;
     public string StatusName { get; set; } = "Невідомий";
     public string StudentName { get; set; } = "Невідомий";
+    public string? StudentPhotoUrl { get; set; }
     public string PsychologistName { get; set; } = "Невідомий";
+    public string? PsychologistPhotoUrl { get; set; }
     public DateTime ScheduledTime { get; set; }
     public DateTime CreatedAt { get; set; }
 }

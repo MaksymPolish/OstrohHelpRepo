@@ -57,6 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(AuthLoading());
+      
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         emit(Unauthenticated());
@@ -69,7 +70,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
+      // Try to sign in with Firebase, but don't fail if there's a Pigeon error
+      try {
+        await _auth.signInWithCredential(credential);
+      } catch (firebaseError) {
+        // Continue anyway - we don't really need Firebase, just the API
+        debugPrint('Firebase Sign In warning (continuing with API): $firebaseError');
+      }
 
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(googleAuth.idToken!);

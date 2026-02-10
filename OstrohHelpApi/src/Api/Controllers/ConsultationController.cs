@@ -1,13 +1,14 @@
 ﻿using Api.Dtos;
+using Api.Hubs;
 using Application.Common.Interfaces.Queries;
 using Application.Consultations.Commands;
-using Application.Questionnaire.Commands;
 using AutoMapper;
 using Domain.Conferences;
 using Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Api.Controllers;
 
@@ -17,7 +18,9 @@ namespace Api.Controllers;
 public class ConsultationController(
     IMediator _mediator, 
     IConsultationQuery _consultationQuery,
-    IMapper _mapper) : ControllerBase
+    IUserQuery _userQuery,
+    IMapper _mapper,
+    IHubContext<ChatHub> _hubContext) : ControllerBase
 {
     //Accept
     [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
@@ -26,9 +29,30 @@ public class ConsultationController(
     {
         var command = new AcceptQuestionnaireCommand(request.QuestionaryId, request.PsychologistId, request.ScheduledTime);
         var result = await _mediator.Send(command, ct);
-        return result.Match<IActionResult>(
-            _ => NoContent(),
-            ex => BadRequest(new { Error = ex.Message })
+        return await result.Match<Task<IActionResult>>(
+            async consultation =>
+            {
+                var dto = _mapper.Map<ConsultationDto>(consultation);
+
+                var student = await _userQuery.GetByIdAsync(consultation.StudentId, ct);
+                var psychologist = await _userQuery.GetByIdAsync(consultation.PsychologistId, ct);
+
+                if (student.HasValue)
+                {
+                    dto.StudentName = student.ValueOr((Domain.Users.User)null)?.FullName ?? "Невідомий";
+                    dto.StudentPhotoUrl = student.ValueOr((Domain.Users.User)null)?.PhotoUrl;
+                }
+                if (psychologist.HasValue)
+                {
+                    dto.PsychologistName = psychologist.ValueOr((Domain.Users.User)null)?.FullName ?? "Невідомий";
+                    dto.PsychologistPhotoUrl = psychologist.ValueOr((Domain.Users.User)null)?.PhotoUrl;
+                }
+
+                await NotifyConsultationStarted(consultation.Id.Value, dto, ct);
+
+                return CreatedAtAction(nameof(GetById), new { id = consultation.Id.Value }, dto);
+            },
+            ex => Task.FromResult<IActionResult>(BadRequest(new { Error = ex.Message }))
         );
     }
     
@@ -67,7 +91,9 @@ public class ConsultationController(
             var dto = _mapper.Map<ConsultationDto>(c);
             dto.StatusName = c.Status?.Name ?? "Невідомий";
             dto.StudentName = c.Student?.FullName ?? "Невідомий";
+            dto.StudentPhotoUrl = c.Student?.PhotoUrl;
             dto.PsychologistName = c.Psychologist?.FullName ?? "Невідомий";
+            dto.PsychologistPhotoUrl = c.Psychologist?.PhotoUrl;
             return dto;
         }).ToList();
 
@@ -89,7 +115,9 @@ public class ConsultationController(
                 var dto = _mapper.Map<ConsultationDto>(c);
                 dto.StatusName = c.Status?.Name ?? "Невідомий";
                 dto.StudentName = c.Student?.FullName ?? "Невідомий";
+                dto.StudentPhotoUrl = c.Student?.PhotoUrl;
                 dto.PsychologistName = c.Psychologist?.FullName ?? "Невідомий";
+                dto.PsychologistPhotoUrl = c.Psychologist?.PhotoUrl;
                 
                 return Ok(dto);
             },
@@ -113,11 +141,43 @@ public class ConsultationController(
             var dto = _mapper.Map<ConsultationDto>(c);
             dto.StatusName = c.Status?.Name ?? "Невідомий";
             dto.StudentName = c.Student?.FullName ?? "Невідомий";
+            dto.StudentPhotoUrl = c.Student?.PhotoUrl;
             dto.PsychologistName = c.Psychologist?.FullName ?? "Невідомий";
+            dto.PsychologistPhotoUrl = c.Psychologist?.PhotoUrl;
             return dto;
         }).ToList();
 
         return Ok(dtos);
+    }
+
+    private async Task NotifyConsultationStarted(Guid consultationId, ConsultationDto consultationInfo, CancellationToken ct)
+    {
+        try
+        {
+            var notificationData = new
+            {
+                ConsultationId = consultationId.ToString(),
+                StudentId = consultationInfo.StudentId,
+                PsychologistId = consultationInfo.PsychologistId,
+                StudentName = consultationInfo.StudentName,
+                StudentPhotoUrl = consultationInfo.StudentPhotoUrl,
+                PsychologistName = consultationInfo.PsychologistName,
+                PsychologistPhotoUrl = consultationInfo.PsychologistPhotoUrl,
+                ScheduledTime = consultationInfo.ScheduledTime,
+                Message = $"Консультація розпочалась! {consultationInfo.StudentName} та {consultationInfo.PsychologistName}",
+                Timestamp = DateTime.UtcNow
+            };
+
+            await _hubContext.Clients.User(consultationInfo.StudentId)
+                .SendAsync("ConsultationStarted", notificationData, ct);
+
+            await _hubContext.Clients.User(consultationInfo.PsychologistId)
+                .SendAsync("ConsultationStarted", notificationData, ct);
+        }
+        catch
+        {
+            // Ignore notification failures. Consultation is already created.
+        }
     }
     
     

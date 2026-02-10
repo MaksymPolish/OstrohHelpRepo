@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,9 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ostrohhelpapp/features/message/data/services/message_api_service.dart';
 import 'package:ostrohhelpapp/features/message/data/models/message.dart';
+import 'package:ostrohhelpapp/features/consultation/data/services/chat_service.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_state.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/consultation_api_service.dart';
+import 'package:ostrohhelpapp/core/auth/token_storage.dart';
+import 'package:signalr_netcore/signalr_client.dart';
 import 'package:video_player/video_player.dart';
 
 class ChatPage extends StatefulWidget {
@@ -21,86 +24,164 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final MessageApiService _messageApiService = MessageApiService();
+  final ChatService _chatService = ChatService();
+  final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
-  late Future<List<Message>> _messagesFuture;
+  final List<Message> _messages = [];
   late Future<Map<String, dynamic>> _consultationFuture;
+  final List<StreamSubscription> _subscriptions = [];
   bool _isUploading = false;
+  bool _isConnected = false;
+  bool _isTyping = false;
+  bool _otherUserTyping = false;
+  bool _otherUserOnline = false;
+  Timer? _typingTimer;
+  Timer? _typingIndicatorTimer;
+  bool _didInitChat = false;
+  late final String _hubBaseUrl;
 
   @override
   void initState() {
     super.initState();
-    _messagesFuture = _loadMessages();
     _consultationFuture = _consultationApiService.getConsultationById(widget.consultationId);
+    _hubBaseUrl = _messageApiService.baseUrl.replaceFirst('/api', '');
   }
 
-  Future<List<Message>> _loadMessages() async {
+  Future<void> _initializeChat(String userId) async {
     try {
-      final raw = await _messageApiService.getMessages(widget.consultationId);
-      return raw.map((json) => Message.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Failed to load messages: $e');
-      return [];
-    }
-  }
-
-  Future<String> _resolveReceiverId(String userId) async {
-    final consultation = await _consultationFuture;
-    final studentId = consultation['studentId']?.toString() ?? '';
-    final psychologistId = consultation['psychologistId']?.toString() ?? '';
-    if (userId == studentId) return psychologistId;
-    return studentId;
-  }
-
-  Future<String?> _getLatestMessageIdForUser(String userId) async {
-    final raw = await _messageApiService.getMessages(widget.consultationId);
-    final messages = raw.map((json) => Message.fromJson(json)).toList();
-    final mine = messages.where((msg) => msg.senderId == userId).toList();
-    if (mine.isEmpty) return null;
-    mine.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-    return mine.last.id;
-  }
-
-  Future<String?> _sendMessage(
-    String userId, {
-    String? text,
-    List<String>? mediaPaths,
-  }) async {
-    final content = (text ?? _controller.text).trim();
-    final attachments = mediaPaths ?? <String>[];
-    if (content.isEmpty && attachments.isEmpty) return null;
-    final textPayload = content.isEmpty && attachments.isNotEmpty ? 'Attachment' : content;
-
-    try {
-      final receiverId = await _resolveReceiverId(userId);
-      final created = await _messageApiService.sendMessage({
-        'consultationId': widget.consultationId,
-        'senderId': userId,
-        'receiverId': receiverId,
-        'text': textPayload,
-        'content': content,
-        'mediaPaths': attachments,
-      });
-      final messageId = created['id']?.toString();
-
-      // --- Очищення текстового поля ---
-      if (text == null || text == _controller.text) {
-        _controller.clear();
+      final token = await _tokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не вдалося отримати токен доступу.')),
+        );
+        return;
       }
 
-      // --- Оновлення списку повідомлень ---
-      setState(() {
-        _messagesFuture = _loadMessages();
-      });
-      return messageId;
+      await _chatService.initialize(
+        serverUrl: _hubBaseUrl,
+        accessToken: token,
+        currentUserId: userId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isConnected = _chatService.isConnected;
+        });
+      }
+
+      _subscriptions.add(
+        _chatService.messages.listen((message) {
+          if (!mounted) return;
+          if (_messages.any((m) => m.id == message.id)) return;
+          setState(() {
+            _messages.add(message);
+            _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+          });
+          _scrollToBottom();
+          if (message.senderId != userId && !message.isRead) {
+            _chatService.markAsRead(
+              messageId: message.id,
+              consultationId: widget.consultationId,
+            );
+          }
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messagesLoaded.listen((messages) {
+          if (!mounted) return;
+          setState(() {
+            _messages
+              ..clear()
+              ..addAll(messages);
+            _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+          });
+          for (final message in messages) {
+            if (message.senderId != userId && !message.isRead) {
+              _chatService.markAsRead(
+                messageId: message.id,
+                consultationId: widget.consultationId,
+              );
+            }
+          }
+          _scrollToBottom();
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.connectionState.listen((state) {
+          if (!mounted) return;
+          setState(() {
+            _isConnected = state == HubConnectionState.Connected;
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.userOnline.listen((event) {
+          if (!mounted) return;
+          setState(() {
+            _otherUserOnline = event.isOnline;
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.typingUsers.listen((typingUserId) {
+          if (!mounted || typingUserId == userId) return;
+          setState(() {
+            _otherUserTyping = true;
+          });
+          _typingIndicatorTimer?.cancel();
+          _typingIndicatorTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _otherUserTyping = false;
+              });
+            }
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messageRead.listen((messageId) {
+          if (!mounted) return;
+          final index = _messages.indexWhere((m) => m.id == messageId);
+          if (index == -1) return;
+          setState(() {
+            _messages[index] = _messages[index].copyWith(isRead: true);
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messageDeleted.listen((messageId) {
+          if (!mounted) return;
+          setState(() {
+            _messages.removeWhere((m) => m.id == messageId);
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.errors.listen((error) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Помилка: $error')),
+          );
+        }),
+      );
+
+      await _chatService.joinConsultation(widget.consultationId);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не вдалося відправити повідомлення: $e')),
+        SnackBar(content: Text('Не вдалося підключитися: $e')),
       );
     }
-    return null;
   }
 
   Future<void> _uploadAndSendFile({
@@ -124,18 +205,27 @@ class _ChatPageState extends State<ChatPage> {
         throw Exception('Upload returned empty url');
       }
       final rawCaption = (caption ?? _controller.text).trim();
-      final messageId = await _getLatestMessageIdForUser(userId);
-      if (messageId == null || messageId.isEmpty) {
-        throw Exception('Message id is missing for attachment');
-      }
-      await _messageApiService.addAttachment(
-        messageId: messageId,
-        fileUrl: url,
-        fileType: fileType,
+      final textPayload = rawCaption.isEmpty ? 'Attachment' : rawCaption;
+      await _chatService.sendMessage(
+        consultationId: widget.consultationId,
+        text: textPayload,
+        attachments: [
+          ChatAttachment(
+            fileUrl: url,
+            fileType: fileType,
+          ),
+        ],
       );
-      setState(() {
-        _messagesFuture = _loadMessages();
-      });
+      if (rawCaption.isNotEmpty || caption == null) {
+        _controller.clear();
+      }
+      _typingTimer?.cancel();
+      if (_isTyping) {
+        setState(() {
+          _isTyping = false;
+        });
+      }
+      await _chatService.stopTyping(widget.consultationId);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Не вдалося завантажити файл: $e')),
@@ -195,10 +285,10 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _deleteMessage(String messageId) async {
     try {
-      await _messageApiService.deleteMessage(messageId);
-      setState(() {
-        _messagesFuture = _loadMessages();
-      });
+      await _chatService.deleteMessage(
+        messageId: messageId,
+        consultationId: widget.consultationId,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Помилка видалення: $e')),
@@ -220,6 +310,65 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
+  }
+
+  void _handleTextChanged(String text) {
+    if (!_isConnected) return;
+
+    if (text.isNotEmpty && !_isTyping) {
+      setState(() {
+        _isTyping = true;
+      });
+      _chatService.typing(widget.consultationId);
+    }
+
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+        });
+        _chatService.stopTyping(widget.consultationId);
+      }
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    if (!_isConnected) return;
+
+    final content = _controller.text.trim();
+    if (content.isEmpty) return;
+
+    try {
+      await _chatService.sendMessage(
+        consultationId: widget.consultationId,
+        text: content,
+      );
+      _controller.clear();
+      _typingTimer?.cancel();
+      if (_isTyping) {
+        setState(() {
+          _isTyping = false;
+        });
+      }
+      await _chatService.stopTyping(widget.consultationId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не вдалося відправити повідомлення: $e')),
+      );
+    }
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   String _formatTime(DateTime value) {
@@ -373,6 +522,14 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                  Text(
+                    _otherUserOnline ? 'Online' : 'Offline',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _otherUserOnline
+                          ? Colors.green
+                          : colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -398,95 +555,102 @@ class _ChatPageState extends State<ChatPage> {
           }
 
           final userId = state.user.id ?? '';
+          if (!_didInitChat) {
+            _didInitChat = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _initializeChat(userId);
+            });
+          }
           return Column(
             children: [
               Expanded(
-                child: FutureBuilder<List<Message>>(
-                  future: _messagesFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          _isConnected ? 'Повідомлень ще немає.' : 'Підключення до чату...',
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        reverse: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          final isMe = msg.senderId == userId;
+                          final bubbleColor = isMe
+                              ? colorScheme.primary.withOpacity(0.18)
+                              : colorScheme.surface;
+                          final textColor = colorScheme.onSurface;
+                          final attachments = msg.mediaPaths;
 
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Помилка: ${snapshot.error}'));
-                    }
-
-                    final messages = (snapshot.data ?? [])
-                      ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
-
-                    if (messages.isEmpty) {
-                      return const Center(child: Text('Повідомлень ще немає.'));
-                    }
-
-                    return ListView.builder(
-                      controller: _scrollController,
-                      reverse: false,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isMe = msg.senderId == userId;
-                        final bubbleColor = isMe
-                            ? colorScheme.primary.withOpacity(0.18)
-                            : colorScheme.surface;
-                        final textColor = colorScheme.onSurface;
-                        final attachments = msg.mediaPaths;
-
-                        return GestureDetector(
-                          onLongPress: () => _showDeleteMenu(context, msg.id),
-                          child: Align(
-                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.72,
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: bubbleColor,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(16),
-                                    topRight: const Radius.circular(16),
-                                    bottomLeft: Radius.circular(isMe ? 16 : 4),
-                                    bottomRight: Radius.circular(isMe ? 4 : 16),
-                                  ),
+                          return GestureDetector(
+                            onLongPress: () => _showDeleteMenu(context, msg.id),
+                            child: Align(
+                              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.72,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                  children: [
-                                    if (msg.text.trim().isNotEmpty)
-                                      Text(
-                                        msg.text,
-                                        style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
-                                      ),
-                                    if (attachments.isNotEmpty) ...[
-                                      if (msg.text.trim().isNotEmpty) const SizedBox(height: 10),
-                                      ...attachments.map((url) => Padding(
-                                            padding: const EdgeInsets.only(bottom: 8),
-                                            child: _buildAttachment(context, url),
-                                          )),
-                                    ],
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      _formatTime(msg.sentAt),
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: textColor.withOpacity(0.6),
-                                      ),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: bubbleColor,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                      bottomRight: Radius.circular(isMe ? 4 : 16),
                                     ),
-                                  ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      if (msg.text.trim().isNotEmpty)
+                                        Text(
+                                          msg.text,
+                                          style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
+                                        ),
+                                      if (attachments.isNotEmpty) ...[
+                                        if (msg.text.trim().isNotEmpty) const SizedBox(height: 10),
+                                        ...attachments.map((url) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: _buildAttachment(context, url),
+                                            )),
+                                      ],
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        _formatTime(msg.sentAt),
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: textColor.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          );
+                        },
+                      ),
               ),
+              if (_otherUserTyping)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Набирає повідомлення...',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               SafeArea(
                 top: false,
                 child: Container(
@@ -523,6 +687,7 @@ class _ChatPageState extends State<ChatPage> {
                           controller: _controller,
                           minLines: 1,
                           maxLines: 4,
+                          enabled: _isConnected && !_isUploading,
                           decoration: InputDecoration(
                             hintText: 'Введіть повідомлення...',
                             filled: true,
@@ -536,11 +701,12 @@ class _ChatPageState extends State<ChatPage> {
                               borderSide: BorderSide.none,
                             ),
                           ),
+                          onChanged: _handleTextChanged,
                         ),
                       ),
                       const SizedBox(width: 8),
                       FloatingActionButton.small(
-                        onPressed: _isUploading ? null : () => _sendMessage(userId),
+                        onPressed: _isUploading ? null : _sendMessage,
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
                         child: _isUploading
@@ -560,6 +726,20 @@ class _ChatPageState extends State<ChatPage> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _typingTimer?.cancel();
+    _typingIndicatorTimer?.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _chatService.leaveConsultation(widget.consultationId);
+    _chatService.dispose();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _showVideoPreview(String url) {

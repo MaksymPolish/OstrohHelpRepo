@@ -17,6 +17,26 @@ class Message {
     required this.mediaPaths,
   });
 
+  Message copyWith({
+    String? id,
+    String? consultationId,
+    String? senderId,
+    String? text,
+    DateTime? sentAt,
+    bool? isRead,
+    List<String>? mediaPaths,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      consultationId: consultationId ?? this.consultationId,
+      senderId: senderId ?? this.senderId,
+      text: text ?? this.text,
+      sentAt: sentAt ?? this.sentAt,
+      isRead: isRead ?? this.isRead,
+      mediaPaths: mediaPaths ?? this.mediaPaths,
+    );
+  }
+
   factory Message.fromJson(Map<String, dynamic> json) {
     // Parse attachments array to extract fileUrl values
     final rawAttachments = json['attachments'];
