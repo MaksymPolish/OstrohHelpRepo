@@ -80,10 +80,19 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:4200") // Додайте ваші frontend URLs
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials(); // Важливо для SignalR
+        policy.WithOrigins(
+            "http://localhost:3000",      // React
+            "http://localhost:5000",      // Test HTML
+            "http://localhost:5173",      // Vite
+            "http://localhost:4200",      // Angular
+            "http://localhost:7000",      // Self (for testing)
+            "https://localhost:7000",
+            "http://localhost:7001",
+            "https://localhost:7001"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials(); // Важливо для SignalR
     });
 });
 
@@ -113,6 +122,24 @@ builder.Services.AddAuthentication(options =>
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!)),
             ClockSkew = TimeSpan.Zero // Без затримки при перевірці терміну дії токена
+        };
+        
+        // SignalR WebSocket support - читання токену з query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                
+                // Якщо це WebSocket з'єднання на SignalR Hub
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    context.HttpContext.WebSockets.IsWebSocketRequest)
+                {
+                    context.Token = accessToken;
+                }
+                
+                return Task.CompletedTask;
+            }
         };
     })
     .AddCookie("Cookies")

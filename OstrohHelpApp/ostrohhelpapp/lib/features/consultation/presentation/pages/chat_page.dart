@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -413,7 +412,8 @@ class _ChatPageState extends State<ChatPage> {
                       return Center(child: Text('Помилка: ${snapshot.error}'));
                     }
 
-                    final messages = snapshot.data ?? [];
+                    final messages = (snapshot.data ?? [])
+                      ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
 
                     if (messages.isEmpty) {
                       return const Center(child: Text('Повідомлень ще немає.'));
@@ -421,16 +421,12 @@ class _ChatPageState extends State<ChatPage> {
 
                     return ListView.builder(
                       controller: _scrollController,
-                      reverse: true,
+                      reverse: false,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
-                        final msg = messages[messages.length - 1 - index];
+                        final msg = messages[index];
                         final isMe = msg.senderId == userId;
-                        
-                        // Debug logging
-                        debugPrint('Message ${index + 1}: senderId=${msg.senderId}, userId=$userId, isMe=$isMe');
-                        
                         final bubbleColor = isMe
                             ? colorScheme.primary.withOpacity(0.18)
                             : colorScheme.surface;

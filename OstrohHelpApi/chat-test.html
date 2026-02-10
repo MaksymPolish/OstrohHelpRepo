@@ -288,8 +288,7 @@
 
             try {
                 connection = new signalR.HubConnectionBuilder()
-                    .withUrl(`${serverUrl}/hubs/chat`, {
-                        accessTokenFactory: () => jwtToken,
+                    .withUrl(`${serverUrl}/hubs/chat?access_token=${encodeURIComponent(jwtToken)}`, {
                         transport: signalR.HttpTransportType.WebSockets | 
                                   signalR.HttpTransportType.ServerSentEvents |
                                   signalR.HttpTransportType.LongPolling
