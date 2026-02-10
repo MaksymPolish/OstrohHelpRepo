@@ -11,10 +11,10 @@ public class ConsultationStatusRepository : IConsultationStatusQuery, IConsultat
     // Mapping between enum and Guid
     private static readonly Dictionary<ConsultationStatusEnum, Guid> StatusEnumToGuid = new()
     {
-        { ConsultationStatusEnum.Assigned, new Guid("00000000-0000-0000-0000-000000000011") },
-        { ConsultationStatusEnum.Rejected, new Guid("00000000-0000-0000-0000-000000000012") },
-        { ConsultationStatusEnum.Pending, new Guid("00000000-0000-0000-0000-000000000013") },
-        // Додайте інші статуси за потреби
+        { ConsultationStatusEnum.Assigned, new Guid("00000000-0000-0000-0000-000000000021") },
+        { ConsultationStatusEnum.Rejected, new Guid("00000000-0000-0000-0000-000000000022") },
+        { ConsultationStatusEnum.Completed, new Guid("00000000-0000-0000-0000-000000000023") },
+        { ConsultationStatusEnum.Pending, new Guid("00000000-0000-0000-0000-000000000024") },
     };
 
     private static readonly Dictionary<Guid, ConsultationStatusEnum> GuidToStatusEnum = StatusEnumToGuid.ToDictionary(kv => kv.Value, kv => kv.Key);
@@ -67,9 +67,10 @@ public class ConsultationStatusRepository : IConsultationStatusQuery, IConsultat
     public async Task<Option<ConsultationStatuses>> GetByEnumAsync(ConsultationStatusEnum status, CancellationToken cancellationToken)
     {
         var guid = GetGuidByEnum(status);
+        var id = new ConsultationStatusesId(guid);
         var entity = await context.ConsultationStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id.Value == guid, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         return entity == null ? Option.None<ConsultationStatuses>() : Option.Some(entity);
     }
     

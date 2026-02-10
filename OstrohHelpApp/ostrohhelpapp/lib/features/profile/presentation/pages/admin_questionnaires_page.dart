@@ -62,7 +62,7 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
       if (scheduledTime == null) return;
 
       await _consultationApiService.acceptConsultation({
-        'questionnaireId': questionnaireId,
+        'questionaryId': questionnaireId,
         'psychologistId': psychologistId,
         'scheduledTime': scheduledTime.toIso8601String(),
       });

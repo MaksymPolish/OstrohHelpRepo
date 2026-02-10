@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:ostrohhelpapp/features/message/data/services/message_api_service.dart';
 import 'package:ostrohhelpapp/features/message/data/models/message.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
@@ -89,17 +90,24 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  String _formatTime(DateTime value) {
+    return DateFormat('HH:mm').format(value.toLocal());
+  }
+
+  void _showAttachmentHint(String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label у розробці')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Чат'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+        title: const Text('Чат із психологом'),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
@@ -131,28 +139,54 @@ class _ChatPageState extends State<ChatPage> {
                     return ListView.builder(
                       controller: _scrollController,
                       reverse: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final msg = messages[messages.length - 1 - index];
                         final isMe = msg.senderId == userId;
+                        final bubbleColor = isMe
+                            ? colorScheme.primary.withOpacity(0.18)
+                            : colorScheme.surface;
+                        final textColor = colorScheme.onSurface;
 
                         return GestureDetector(
                           onLongPress: () => _showDeleteMenu(context, msg.id),
                           child: Align(
-                            alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isMe ? Colors.blue[100] : Colors.green[100],
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(12),
-                                  topRight: const Radius.circular(12),
-                                  bottomLeft: Radius.circular(isMe ? 0 : 12),
-                                  bottomRight: Radius.circular(isMe ? 12 : 0),
+                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width * 0.72,
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: bubbleColor,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(16),
+                                    topRight: const Radius.circular(16),
+                                    bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                    bottomRight: Radius.circular(isMe ? 4 : 16),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      msg.text,
+                                      style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatTime(msg.sentAt),
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: textColor.withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Text(msg.text),
                             ),
                           ),
                         );
@@ -161,25 +195,61 @@ class _ChatPageState extends State<ChatPage> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Введіть повідомлення...',
-                          border: OutlineInputBorder(),
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => _showAttachmentHint('Зображення'),
+                        icon: const Icon(Icons.image_outlined),
+                        tooltip: 'Зображення',
+                      ),
+                      IconButton(
+                        onPressed: () => _showAttachmentHint('Фото'),
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        tooltip: 'Фото',
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: 'Введіть повідомлення...',
+                            filled: true,
+                            fillColor: colorScheme.background,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => _sendMessage(userId),
-                      child: const Text('Відправити'),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      FloatingActionButton.small(
+                        onPressed: () => _sendMessage(userId),
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        child: const Icon(Icons.send),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

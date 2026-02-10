@@ -52,12 +52,12 @@ public class AcceptQuestionnaireCommandHandler(
             return new Exception($"This questionary is already accepted. ID: {q.Id}");
 
         // 3. Отримай статус для консультації
-        var consultationStatusOption = await _consultationStatusQuery.GetByNameAsync("Назначено", ct);
+        var consultationStatusOption = await _consultationStatusQuery.GetByEnumAsync(ConsultationStatusEnum.Assigned, ct);
         if (!consultationStatusOption.HasValue)
-            return new Exception("Consultation status 'Назначено' not found.");
+            return new Exception("Consultation status 'Assigned' not found.");
         var consultationStatus = consultationStatusOption.ValueOr((ConsultationStatuses)null);
         if (consultationStatus == null)
-            return new Exception("Consultation status 'Назначено' not found.");
+            return new Exception("Consultation status 'Assigned' not found.");
 
         // 4. Отримай психолога
         var psychologistOption = await _userQuery.GetByIdAsync(psychologistId, ct);
@@ -67,17 +67,7 @@ public class AcceptQuestionnaireCommandHandler(
         if (p == null)
             return new Exception("Psychologist not found.");
 
-        // 5. Перевірка ролі
-        var roleOption = await _roleQuery.GetByIdAsync(p.RoleId, ct);
-        if (!roleOption.HasValue)
-            return new Exception("Role not found.");
-        var r = roleOption.ValueOr((Domain.Users.Roles.Role)null);
-        if (r == null)
-            return new Exception("Role not found.");
-        if (r.Name != "Психолог")
-            return new Exception($"User with ID '{psychologistId}' is not a psychologist.");
-
-        // 6. Створення консультації
+        // 5. Створення консультації
         var studentId = q.UserId ?? throw new Exception("Student ID is null");
         var consultation = Domain.Conferences.Consultations.Create(
             id: ConsultationsId.New(),

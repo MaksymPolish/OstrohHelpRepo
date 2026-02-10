@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../data/services/questionnaire_api_service.dart';
 
 class QuestionnaireDetailsPage extends StatelessWidget {
@@ -10,11 +11,28 @@ class QuestionnaireDetailsPage extends StatelessWidget {
     required this.questionnaireId,
   });
 
+  String _formatDate(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return 'Невідома дата';
+    try {
+      final parsed = DateTime.parse(raw).toLocal();
+      return DateFormat('dd.MM.yyyy, HH:mm').format(parsed);
+    } catch (_) {
+      return 'Невідома дата';
+    }
+  }
+
+  Color _statusColor(BuildContext context, String? status) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (status == null) return colorScheme.secondary;
+    if (status == 'Обробляється') return Colors.orange;
+    return Colors.green;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Questionnaire Details'),
+        title: const Text('Деталі анкети'),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _apiService.getQuestionnaireById(questionnaireId),
@@ -24,14 +42,20 @@ class QuestionnaireDetailsPage extends StatelessWidget {
           }
           if (snapshot.hasError) {
             return Center(
-              child: Text('Error: ${snapshot.error}'),
+              child: Text('Помилка: ${snapshot.error}'),
             );
           }
           if (!snapshot.hasData) {
-            return const Center(child: Text('No data available'));
+            return const Center(child: Text('Дані відсутні'));
           }
 
           final questionnaire = snapshot.data!;
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
+          final statusName = questionnaire['statusName'] as String?;
+          final statusColor = _statusColor(context, statusName);
+          final submittedAt = _formatDate(questionnaire['submittedAt'] as String?);
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -43,50 +67,52 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Questionnaire #${questionnaire['id']}',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Анкета #${questionnaire['id']}',
+                                style: theme.textTheme.headlineSmall,
+                              ),
+                            ),
+                            Chip(
+                              label: Text(statusName ?? 'Невідомо'),
+                              labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              backgroundColor: statusColor.withOpacity(0.12),
+                              side: BorderSide(color: statusColor.withOpacity(0.3)),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Description:',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(questionnaire['description'] ?? 'No description'),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Status:',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          'Опис звернення',
+                          style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          questionnaire['statusName'] ?? 'Unknown',
-                          style: TextStyle(
-                            color: questionnaire['statusName'] == 'Обробляється'
-                                ? Colors.orange
-                                : Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          questionnaire['description'] ?? 'Опис відсутній',
+                          style: theme.textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          'Submitted on:',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          questionnaire['submittedAt'] != null
-                              ? DateTime.parse(questionnaire['submittedAt']).toLocal().toString()
-                              : 'Unknown date',
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 16, color: colorScheme.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              submittedAt,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
                         ),
                         if (questionnaire['isAnonymous'] == true) ...[
                           const SizedBox(height: 16),
                           const Text(
-                            'Submitted anonymously',
+                            'Подано анонімно',
                             style: TextStyle(
                               fontStyle: FontStyle.italic,
                               color: Colors.grey,

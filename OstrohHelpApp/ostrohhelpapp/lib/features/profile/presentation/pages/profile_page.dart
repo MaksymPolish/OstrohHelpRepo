@@ -7,6 +7,7 @@ import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
 import '../../../auth/data/services/auth_api_service.dart';
 import '../../../../core/auth/role_checker.dart';
 import 'admin_panel_page.dart';
+import '../../../../core/theme/app_theme_controller.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -170,6 +171,51 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: AppThemeController.instance.themeMode,
+                    builder: (context, mode, _) {
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('Тема застосунку'),
+                                subtitle: Text(
+                                  'Оберіть режим, який менше напружує очі',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                              RadioListTile<ThemeMode>(
+                                value: ThemeMode.light,
+                                groupValue: mode,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    AppThemeController.instance.setTheme(value);
+                                  }
+                                },
+                                title: const Text('Академічна теплота'),
+                                subtitle: const Text('М\'які світлі відтінки для денного режиму'),
+                              ),
+                              RadioListTile<ThemeMode>(
+                                value: ThemeMode.dark,
+                                groupValue: mode,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    AppThemeController.instance.setTheme(value);
+                                  }
+                                },
+                                title: const Text('Нічний режим без тиску'),
+                                subtitle: const Text('М\'які темні відтінки для вечора'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
                   // 🔐 ПЕРЕВІРКА РОЛІ: Показати кнопку адмін панелі для Адміністратора або Психолога
                   if (RoleChecker.isAdminOrPsychologist(user.roleId))
                     ElevatedButton.icon(

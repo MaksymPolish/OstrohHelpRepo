@@ -75,60 +75,85 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Submit Questionnaire'),
+        title: const Text('Нова анкета'),
       ),
       body: Form(
         key: _formKey,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Please describe your situation...',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'Description must be at least 10 characters long';
-                  }
-                  return null;
-                },
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            Text(
+              'Опишіть, що вас турбує',
+              style: theme.textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ваше звернення буде доступне психологу ОА. Ми цінуємо конфіденційність.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.7),
               ),
-              const SizedBox(height: 24),
-              SwitchListTile(
-                title: const Text('Submit anonymously'),
-                value: _isAnonymous,
-                onChanged: (value) {
-                  setState(() {
-                    _isAnonymous = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _isSubmitting ? null : () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[300],
-                      foregroundColor: Colors.black87,
+            ),
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 6,
+                      decoration: const InputDecoration(
+                        labelText: 'Опис ситуації',
+                        hintText: 'Напишіть, що саме турбує і як ми можемо допомогти...',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Будь ласка, опишіть ситуацію';
+                        }
+                        if (value.trim().length < 10) {
+                          return 'Опис має бути не менше 10 символів';
+                        }
+                        return null;
+                      },
                     ),
-                    child: const Text('Cancel'),
+                    const SizedBox(height: 12),
+                    SwitchListTile.adaptive(
+                      title: const Text('Подати анонімно'),
+                      subtitle: const Text('Ваше ім\'я не буде показано психологу'),
+                      value: _isAnonymous,
+                      onChanged: (value) {
+                        setState(() {
+                          _isAnonymous = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                          },
+                    child: const Text('Скасувати'),
                   ),
-                  ElevatedButton(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
                     onPressed: _isSubmitting ? null : _submitQuestionnaire,
                     child: _isSubmitting
                         ? const SizedBox(
@@ -139,12 +164,12 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Send'),
+                        : const Text('Надіслати'),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -14,6 +14,8 @@ import 'features/profile/presentation/pages/admin_panel_page.dart';
 import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
 import 'features/auth/presentation/widgets/course_input_dialog.dart';
 import 'features/profile/presentation/pages/admin_users_page.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/app_theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +34,8 @@ void main() async {
   // Initialize dependency injection
   await di.init();
 
+  await AppThemeController.instance.loadTheme();
+
   runApp(const MyApp());
 }
 
@@ -44,12 +48,20 @@ class MyApp extends StatelessWidget {
       future: _initializeApp(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: Text('Error: ${snapshot.error}'),
-              ),
-            ),
+          return ValueListenableBuilder<ThemeMode>(
+            valueListenable: AppThemeController.instance.themeMode,
+            builder: (context, mode, _) {
+              return MaterialApp(
+                theme: AppTheme.light(),
+                darkTheme: AppTheme.dark(),
+                themeMode: mode,
+                home: Scaffold(
+                  body: Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  ),
+                ),
+              );
+            },
           );
         }
 
@@ -60,70 +72,55 @@ class MyApp extends StatelessWidget {
                 create: (context) => di.sl<AuthBloc>(param1: context)..add(CheckAuthStatus()),
               ),
             ],
-            child: MaterialApp(
-              title: 'OA Mind Care',
-              debugShowCheckedModeBanner: false,
-              theme: ThemeData(
-                primaryColor: const Color(0xFF7FB3D5),
-                scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: const Color(0xFF7FB3D5),
-                  primary: const Color(0xFF7FB3D5),
-                  secondary: const Color(0xFF98D8C8),
-                  surface: const Color(0xFFF5F5F5),
-                ),
-                elevatedButtonTheme: ElevatedButtonThemeData(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7FB3D5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                textTheme: const TextTheme(
-                  headlineLarge: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C3E50),
-                  ),
-                  bodyLarge: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF2C3E50),
-                  ),
-                ),
-              ),
-              routes: {
-                '/consultations': (context) => const ConsultationListPage(),
-                '/chat': (context) {
-                  final consultationId = ModalRoute.of(context)!.settings.arguments as String;
-                  return ChatPage(consultationId: consultationId);
-                },
-                '/admin-panel': (context) => const AdminPanelPage(),
-                '/admin-questionnaires': (context) => const AdminQuestionnairesPage(),
-                '/admin-users': (context) {
-                  return BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      if (state is Authenticated) {
-                        return AdminUsersPage(currentUserId: state.user.id ?? '');
-                      }
-                      return const Scaffold(body: Center(child: Text('Не авторизовано')));
+            child: ValueListenableBuilder<ThemeMode>(
+              valueListenable: AppThemeController.instance.themeMode,
+              builder: (context, mode, _) {
+                return MaterialApp(
+                  title: 'OA Mind Care',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.light(),
+                  darkTheme: AppTheme.dark(),
+                  themeMode: mode,
+                  routes: {
+                    '/consultations': (context) => const ConsultationListPage(),
+                    '/chat': (context) {
+                      final consultationId = ModalRoute.of(context)!.settings.arguments as String;
+                      return ChatPage(consultationId: consultationId);
                     },
-                  );
-                },
+                    '/admin-panel': (context) => const AdminPanelPage(),
+                    '/admin-questionnaires': (context) => const AdminQuestionnairesPage(),
+                    '/admin-users': (context) {
+                      return BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          if (state is Authenticated) {
+                            return AdminUsersPage(currentUserId: state.user.id ?? '');
+                          }
+                          return const Scaffold(body: Center(child: Text('Не авторизовано')));
+                        },
+                      );
+                    },
+                  },
+                  home: const AuthRoot(),
+                );
               },
-              home: const AuthRoot(),
             ),
           );
         }
 
-        return const MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: AppThemeController.instance.themeMode,
+          builder: (context, mode, _) {
+            return MaterialApp(
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: mode,
+              home: const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            );
+          },
         );
       },
     );

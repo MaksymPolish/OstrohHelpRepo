@@ -22,8 +22,9 @@ public class ConsultationController(
     //Accept
     [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpPost("Accept-Questionnaire")]
-    public async Task<IActionResult> Accept([FromBody] AcceptQuestionnaireCommand command, CancellationToken ct)
+    public async Task<IActionResult> Accept([FromBody] AcceptQuestionnaireRequest request, CancellationToken ct)
     {
+        var command = new AcceptQuestionnaireCommand(request.QuestionaryId, request.PsychologistId, request.ScheduledTime);
         var result = await _mediator.Send(command, ct);
         return result.Match<IActionResult>(
             _ => NoContent(),
