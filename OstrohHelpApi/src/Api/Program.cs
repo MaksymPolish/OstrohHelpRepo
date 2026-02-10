@@ -67,15 +67,23 @@ builder.Services.AddValidatorsFromAssemblyContaining<Application.ApplicationAsse
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
+// Add SignalR for real-time chat
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // Add CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:4200") // Додайте ваші frontend URLs
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials(); // Важливо для SignalR
     });
 });
 
@@ -177,10 +185,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Enable CORS
+app.UseCors("AllowAll");
+
 app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR Hub
+app.MapHub<Api.Hubs.ChatHub>("/hubs/chat");
 
 // Universal static files setup for media
 var mediaPath = Path.Combine(builder.Environment.ContentRootPath, "data/media");

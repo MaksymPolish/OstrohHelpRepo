@@ -144,39 +144,38 @@ class AuthRoot extends StatefulWidget {
 }
 
 class _AuthRootState extends State<AuthRoot> {
-  bool _dialogShown = false;
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listenWhen: (previous, current) {
-        // Діалог тільки якщо курс порожній і ще не показували
-        return current is Authenticated &&
-            (current.user.course == null || current.user.course!.trim().isEmpty) &&
-            !_dialogShown;
+        // Показати діалог тільки якщо:
+        // 1. Користувач щойно увійшов і курс не заповнений
+        // 2. У попередньому стані курс був заповнений, а тепер порожній (не повинно бути, але безпека)
+        if (current is! Authenticated) return false;
+        
+        final courseEmpty = current.user.course == null || current.user.course!.trim().isEmpty;
+        final wasPreviouslyAuthenticated = previous is Authenticated;
+        final wasPreviouslyCourseEmpty = 
+            (previous as Authenticated?)?.user.course == null || 
+            (previous as Authenticated?)?.user.course?.trim().isEmpty == true;
+        
+        // Показати діалог тільки якщо курс порожній та це новий вхід або врешті змінилось на порожне
+        return courseEmpty && (!wasPreviouslyAuthenticated || !wasPreviouslyCourseEmpty);
       },
       listener: (context, state) {
         if (state is Authenticated &&
-            (state.user.course == null || state.user.course!.trim().isEmpty) &&
-            !_dialogShown) {
-          _dialogShown = true;
+            (state.user.course == null || state.user.course!.trim().isEmpty)) {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => Builder(
-              builder: (dialogContext) => CourseInputDialog(
-                userId: state.user.id!,
-                onSubmit: (userId, course) {
-                  dialogContext.read<AuthBloc>().add(UpdateUserCourse(userId, course));
-                  _dialogShown = false; // Дозволити показати діалог знову, якщо курс знову стане порожнім
-                },
-              ),
+            builder: (dialogContext) => CourseInputDialog(
+              userId: state.user.id!,
+              onSubmit: (userId, course) {
+                dialogContext.read<AuthBloc>().add(UpdateUserCourse(userId, course));
+                Navigator.pop(dialogContext);
+              },
             ),
           );
-        }
-        // Скидаємо прапорець, якщо користувач розлогінився
-        if (state is! Authenticated) {
-          _dialogShown = false;
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
