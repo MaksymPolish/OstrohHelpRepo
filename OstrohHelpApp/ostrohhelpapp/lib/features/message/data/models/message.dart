@@ -18,10 +18,22 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    // Parse attachments array to extract fileUrl values
+    final rawAttachments = json['attachments'];
+    final attachmentUrls = rawAttachments is List
+        ? rawAttachments
+            .map((item) => item is Map<String, dynamic> ? item['fileUrl']?.toString() ?? '' : '')
+            .where((url) => url.isNotEmpty)
+            .toList()
+        : <String>[];
+    
+    // Fallback to mediaPaths if attachments is empty
     final rawMedia = json['mediaPaths'];
-    final mediaPaths = rawMedia is List
+    final mediaUrls = rawMedia is List
         ? rawMedia.map((item) => item.toString()).toList()
         : <String>[];
+    
+    final mediaPaths = attachmentUrls.isNotEmpty ? attachmentUrls : mediaUrls;
     final rawText = json['text'] ?? json['content'] ?? '';
     final rawSentAt = json['sentAt'] ?? json['createdAt'] ?? DateTime.now().toIso8601String();
 

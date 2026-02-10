@@ -251,18 +251,22 @@ class _ChatPageState extends State<ChatPage> {
     final colorScheme = theme.colorScheme;
 
     if (_isImageUrl(url)) {
-      return ClipRRect(
+      return InkWell(
         borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          height: 160,
-          width: double.infinity,
-          errorBuilder: (context, _, __) => Container(
+        onTap: () => _showImagePreview(url),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
             height: 160,
-            color: colorScheme.surface,
-            alignment: Alignment.center,
-            child: const Icon(Icons.broken_image_outlined),
+            width: double.infinity,
+            errorBuilder: (context, _, __) => Container(
+              height: 160,
+              color: colorScheme.surface,
+              alignment: Alignment.center,
+              child: const Icon(Icons.broken_image_outlined),
+            ),
           ),
         ),
       );
@@ -423,6 +427,10 @@ class _ChatPageState extends State<ChatPage> {
                       itemBuilder: (context, index) {
                         final msg = messages[messages.length - 1 - index];
                         final isMe = msg.senderId == userId;
+                        
+                        // Debug logging
+                        debugPrint('Message ${index + 1}: senderId=${msg.senderId}, userId=$userId, isMe=$isMe');
+                        
                         final bubbleColor = isMe
                             ? colorScheme.primary.withOpacity(0.18)
                             : colorScheme.surface;
@@ -564,6 +572,13 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context) => _VideoPreviewDialog(url: url),
     );
   }
+
+  void _showImagePreview(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => _ImagePreviewDialog(url: url),
+    );
+  }
 }
 
 class _VideoPreviewDialog extends StatefulWidget {
@@ -651,6 +666,68 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ImagePreviewDialog extends StatelessWidget {
+  const _ImagePreviewDialog({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Dialog(
+      backgroundColor: Colors.black87,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                errorBuilder: (context, _, __) => Container(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.broken_image_outlined,
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Не вдалося завантажити зображення',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black54,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
