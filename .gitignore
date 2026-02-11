@@ -48,3 +48,5 @@ OstrohHelpApi/REALTIME_CHAT_GUIDE.md
 OstrohHelpApi/FLUTTER_CONSULTATION_CHAT.md
 OstrohHelpApi/QUESTIONNAIRE_ACCEPTANCE_FLOW.md
 OstrohHelpApi/SIGNALR_HUB_GUIDE.md
+OstrohHelpApi/tests/Api.Tests.Integration/obj/Debug/net8.0/Api.Tests.Integration.csproj.FileListAbsolute.txt
+OstrohHelpApi/tests/Tests.Common/obj/Debug/net8.0/Tests.Common.csproj.FileListAbsolute.txt
