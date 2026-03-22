@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="OstrohHelp - вебзастосунок для допомоги студентам"
+    />
+    <title>OstrohHelp</title>
+    <script>
+      // Застосувати тему ДО загрузки React додатку
+      (function() {
+        const initStartTime = performance.now();
+        console.log(`🎨 [${initStartTime.toFixed(2)}ms] Почав ініціалізацію теми`);
+        
+        try {
+          const savedDarkMode = localStorage.getItem("darkMode");
+          const checkTime = performance.now();
+          console.log(`📖 [${checkTime.toFixed(2)}ms] Прочитав localStorage (+${(checkTime - initStartTime).toFixed(2)}ms)`);
+          
+          if (savedDarkMode === "true") {
+            document.documentElement.classList.add("dark");
+            const applyTime = performance.now();
+            console.log(`✅ [${applyTime.toFixed(2)}ms] Застосував темну тему до загрузки React (+${(applyTime - initStartTime).toFixed(2)}ms)`);
+          } else {
+            document.documentElement.classList.remove("dark");
+            const applyTime = performance.now();
+            console.log(`✅ [${applyTime.toFixed(2)}ms] Застосував світлу тему до загрузки React (+${(applyTime - initStartTime).toFixed(2)}ms)`);
+          }
+        } catch (e) {
+          console.warn("⚠️ Помилка при читанні localStorage:", e);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Вам потрібно увімкнути JavaScript для роботи цього додатку.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

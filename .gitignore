@@ -50,3 +50,9 @@ OstrohHelpApi/QUESTIONNAIRE_ACCEPTANCE_FLOW.md
 OstrohHelpApi/SIGNALR_HUB_GUIDE.md
 OstrohHelpApi/tests/Api.Tests.Integration/obj/Debug/net8.0/Api.Tests.Integration.csproj.FileListAbsolute.txt
 OstrohHelpApi/tests/Tests.Common/obj/Debug/net8.0/Tests.Common.csproj.FileListAbsolute.txt
+
+# Ignore in web client
+**/src/ostrohhelpweb/node_modules/
+**/src/ostrohhelpweb/build/
+**/src/ostrohhelpweb/dist/
+**/src/ostrohhelpweb/.env

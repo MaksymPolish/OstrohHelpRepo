@@ -489,3 +489,11 @@ C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integra
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.pdb
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.genruntimeconfig.cache
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\ref\Api.Tests.Integration.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\CoverletSourceRootsMapping_Api.Tests.Integration
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.csproj.AssemblyReference.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\MvcTestingAppManifest.json
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.GeneratedMSBuildEditorConfig.editorconfig
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.AssemblyInfoInputs.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.AssemblyInfo.cs
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.csproj.CoreCompileInputs.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\obj\Debug\net8.0\Api.Tests.Integration.sourcelink.json

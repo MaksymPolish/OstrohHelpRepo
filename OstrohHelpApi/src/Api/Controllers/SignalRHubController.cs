@@ -89,10 +89,7 @@ public class SignalRHubController : ControllerBase
         });
     }
 
-    /// <summary>
     /// Connection example for JavaScript/TypeScript
-    /// </summary>
-    /// <response code="200">JavaScript example code</response>
     [HttpGet("example-js")]
     [ProducesResponseType(typeof(string), 200)]
     public IActionResult GetJavaScriptExample()
@@ -120,7 +117,6 @@ await connection.invoke('SendMessage', 'consultation-id', 'Hello!', []);
     }
 
     /// Connection example for Flutter
-    /// <response code="200">Flutter example code</response>
     [HttpGet("example-flutter")]
     [ProducesResponseType(typeof(string), 200)]
     public IActionResult GetFlutterExample()
@@ -150,7 +146,6 @@ await hubConnection.invoke('SendMessage', args: ['consultation-id', 'Hello!', []
     }
 
     /// Connection example for C#/.NET
-    /// <response code="200">C# example code</response>
     [HttpGet("example-csharp")]
     [ProducesResponseType(typeof(string), 200)]
     public IActionResult GetCSharpExample()

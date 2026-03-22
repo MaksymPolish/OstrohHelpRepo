@@ -13,7 +13,6 @@ using System.Security.Claims;
 
 namespace Api.Hubs;
 
-/// <summary>
 /// SignalR Hub для real-time чату консультацій
 /// 
 /// Модель: 1-на-1 консультація (1 студент + 1 психолог)
@@ -23,7 +22,6 @@ namespace Api.Hubs;
 /// - При загрузці екрану чату -> JoinConsultation(consultationId)
 /// - При закриvassureEguюч екрану -> LeaveConsultation(consultationId)
 /// - При відправці -> SendMessage(consultationId, text, attachments)
-/// </summary>
 [Authorize]
 public class ChatHub : Hub
 {
@@ -50,11 +48,9 @@ public class ChatHub : Hub
         _attachmentRepository = attachmentRepository;
     }
 
-    /// <summary>
     /// Користувач відкрив чат консультації
     /// Автоматично приєднується до групи консультації
     /// Повідомляє другого користувача що він онлайн
-    /// </summary>
     public async Task JoinConsultation(string consultationId)
     {
         var userId = GetUserId();
@@ -74,10 +70,8 @@ public class ChatHub : Hub
         });
     }
 
-    /// <summary>
     /// Користувач закрив чат/вийшов з консультації
     /// Повідомляє другого користувача що він оффлайн
-    /// </summary>
     public async Task LeaveConsultation(string consultationId)
     {
         var userId = GetUserId();
@@ -96,10 +90,8 @@ public class ChatHub : Hub
         });
     }
 
-    /// <summary>
     /// Відправити повідомлення в консультацію
     /// receiverId визначається автоматично на основі консультації
-    /// </summary>
     public async Task SendMessage(string consultationId, string text, 
         List<AttachmentData>? attachments = null)
     {
@@ -184,9 +176,7 @@ public class ChatHub : Hub
         }
     }
 
-    /// <summary>
     /// Позначити повідомлення як прочитане
-    /// </summary>
     public async Task MarkAsRead(string messageId, string consultationId)
     {
         try
@@ -208,9 +198,7 @@ public class ChatHub : Hub
         }
     }
 
-    /// <summary>
     /// Показати індикатор що користувач друкує
-    /// </summary>
     public async Task Typing(string consultationId)
     {
         var userId = GetUserId();
@@ -222,9 +210,7 @@ public class ChatHub : Hub
         });
     }
 
-    /// <summary>
     /// Сховати індикатор набору
-    /// </summary>
     public async Task StopTyping(string consultationId)
     {
         var userId = GetUserId();
@@ -235,9 +221,7 @@ public class ChatHub : Hub
         });
     }
 
-    /// <summary>
     /// Видалити повідомлення (тільки для власника)
-    /// </summary>
     public async Task DeleteMessage(string messageId, string consultationId)
     {
         try
@@ -268,9 +252,7 @@ public class ChatHub : Hub
         }
     }
 
-    /// <summary>
     /// Отримати попередні повідомлення консультації
-    /// </summary>
     public async Task LoadMessages(string consultationId)
     {
         try
@@ -331,9 +313,7 @@ public class ChatHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    /// <summary>
     /// Helper для отримання userId з JWT
-    /// </summary>
     private string GetUserId()
     {
         return Context.User?.FindFirst("sub")?.Value 
@@ -342,9 +322,7 @@ public class ChatHub : Hub
     }
 }
 
-/// <summary>
 /// Клас для передачі даних про attachment
-/// </summary>
 public class AttachmentData
 {
     public string FileUrl { get; set; } = string.Empty;

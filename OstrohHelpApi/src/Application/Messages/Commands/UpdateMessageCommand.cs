@@ -22,10 +22,10 @@ public class UpdateMessageCommandHandler(
         return await messageOption.Match(
             async message =>
             {
-                // --- Оновлення тексту ---
+                // Оновлення тексту
                 message.UpdateText(command.text);
                 
-                // --- Збереження через репозиторій ---
+                // Збереження через репозиторій
                 return await _messageRepository.UpdateAsync(message, ct);
             },
             () => Task.FromResult<Result<Message, MessageExceptions>>(

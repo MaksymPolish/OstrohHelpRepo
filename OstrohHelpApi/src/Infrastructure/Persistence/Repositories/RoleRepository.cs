@@ -8,7 +8,7 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRepository
 {
-    // === IRoleQuery ===
+    // IRoleQuery
     public async Task<IEnumerable<Role>> GetAllAsync(CancellationToken ct)
     {
         return await context.Roles.ToListAsync(ct);
@@ -32,7 +32,7 @@ public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRep
         return role?.Id;
     }
 
-    // === IRoleRepository ===
+    // IRoleRepository
     public async Task AddAsync(Role role, CancellationToken ct)
     {
         await context.Roles.AddAsync(role, ct);
