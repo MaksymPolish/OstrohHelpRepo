@@ -4,7 +4,7 @@
   flex-direction: column;
 }
 
-/* Плавний перехід при смені сторінок */
+/* Smooth transition when changing pages */
 main {
   animation: fadeIn 0.3s ease-in-out;
 }

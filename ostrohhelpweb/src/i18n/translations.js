@@ -87,6 +87,24 @@ const translations = {
     receiveUpdates: "Отримуйте оновлення про консультації та анкети",
     logoutConfirm: "Ви впевнені, що хочете вийти з системи?",
     student: "Студент (oa.edu.ua Domain)",
+    
+    // Footer
+    footerAboutTitle: "OA Mind Care",
+    footerAboutDescription: "Платформа підтримки психічного здоров'я для студентів та фахівців.",
+    footerLinks: "Посилання",
+    footerLinksHome: "Головна",
+    footerLinksQuestionnaires: "Анкети",
+    footerLinksConsultations: "Консультації",
+    footerLinksProfile: "Профіль",
+    footerSupport: "Підтримка",
+    footerSupportHelp: "Центр допомоги",
+    footerSupportContacts: "Контакти",
+    footerSupportFAQ: "Часті питання",
+    footerLegal: "Правова інформація",
+    footerLegalPrivacy: "Політика приватності",
+    footerLegalTerms: "Умови використання",
+    footerLegalCookies: "Політика cookies",
+    footerCopyright: "© {year} OA Mind Care. Усі права захищені.",
   },
   en: {
     // Common
@@ -177,6 +195,24 @@ const translations = {
     receiveUpdates: "Receive updates about consultations and questionnaires",
     logoutConfirm: "Are you sure you want to log out?",
     student: "Student (oa.edu.ua Domain)",
+    
+    // Footer
+    footerAboutTitle: "OA Mind Care",
+    footerAboutDescription: "Mental health support platform for students and professionals.",
+    footerLinks: "Quick Links",
+    footerLinksHome: "Home",
+    footerLinksQuestionnaires: "Questionnaires",
+    footerLinksConsultations: "Consultations",
+    footerLinksProfile: "Profile",
+    footerSupport: "Support",
+    footerSupportHelp: "Help Center",
+    footerSupportContacts: "Contact Us",
+    footerSupportFAQ: "FAQ",
+    footerLegal: "Legal",
+    footerLegalPrivacy: "Privacy Policy",
+    footerLegalTerms: "Terms of Use",
+    footerLegalCookies: "Cookie Policy",
+    footerCopyright: "© {year} OA Mind Care. All rights reserved.",
   },
 };
 

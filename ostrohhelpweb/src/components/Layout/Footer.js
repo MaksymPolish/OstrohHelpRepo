@@ -1,6 +1,8 @@
 import React from "react";
+import { useLanguage } from "../../App";
 
 export default function Footer() {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -9,34 +11,38 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* About */}
           <div>
-            <h3 className="font-bold text-lg text-white mb-4">OA Mind Care</h3>
+            <h3 className="font-bold text-lg text-white mb-4">
+              {t("footerAboutTitle")}
+            </h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Платформа підтримки психічного здоров'я для студентів та фахівців.
+              {t("footerAboutDescription")}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Посилання</h4>
+            <h4 className="font-semibold text-white mb-4">
+              {t("footerLinks")}
+            </h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
-                <a href="#" className="hover:text-blue-400 transition-colors">
-                  Головна
+                <a href="/" className="hover:text-blue-400 transition-colors">
+                  {t("footerLinksHome")}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-400 transition-colors">
-                  Анкети
+                <a href="/questionnaires" className="hover:text-blue-400 transition-colors">
+                  {t("footerLinksQuestionnaires")}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-400 transition-colors">
-                  Консультації
+                <a href="/consultations" className="hover:text-blue-400 transition-colors">
+                  {t("footerLinksConsultations")}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-400 transition-colors">
-                  Профіль
+                <a href="/profile" className="hover:text-blue-400 transition-colors">
+                  {t("footerLinksProfile")}
                 </a>
               </li>
             </ul>
@@ -44,21 +50,23 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Підтримка</h4>
+            <h4 className="font-semibold text-white mb-4">
+              {t("footerSupport")}
+            </h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Центр допомоги
+                  {t("footerSupportHelp")}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Контакти
+                  {t("footerSupportContacts")}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Часті питання
+                  {t("footerSupportFAQ")}
                 </a>
               </li>
             </ul>
@@ -66,21 +74,23 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Правова інформація</h4>
+            <h4 className="font-semibold text-white mb-4">
+              {t("footerLegal")}
+            </h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Політика приватності
+                  {t("footerLegalPrivacy")}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Умови використання
+                  {t("footerLegalTerms")}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-blue-400 transition-colors">
-                  Політика cookies
+                  {t("footerLegalCookies")}
                 </a>
               </li>
             </ul>
@@ -89,7 +99,7 @@ export default function Footer() {
 
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-slate-400 text-sm">
-            © {currentYear} OA Mind Care. Усі права захищені.
+            {t("footerCopyright").replace("{year}", currentYear)}
           </p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <a

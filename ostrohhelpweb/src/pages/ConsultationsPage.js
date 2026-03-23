@@ -7,12 +7,6 @@ import { useLanguage } from "../App";
 export default function ConsultationsPage() {
   const { t, language } = useLanguage();
   const [msg, setMsg] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Force re-render when language changes
-  useEffect(() => {
-    setRefreshKey(prev => prev + 1);
-  }, [language]);
   
   const messages = [
     { id: 1, text: "Доброго дня! Як ви себе почуваєте сьогодні?", sender: 'doctor', time: '10:00' },
@@ -21,7 +15,7 @@ export default function ConsultationsPage() {
   ];
 
   return (
-    <div key={`consultations-${refreshKey}`} className="h-[calc(100vh-8rem)] flex bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+    <div className="h-[calc(100vh-8rem)] flex bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
       {/* Sidebar - Contacts */}
       <div className="w-80 border-r border-slate-100 dark:border-slate-700 hidden md:flex flex-col bg-slate-50/50 dark:bg-slate-800/50">
         <div className="p-4 border-b border-slate-100 dark:border-slate-700">

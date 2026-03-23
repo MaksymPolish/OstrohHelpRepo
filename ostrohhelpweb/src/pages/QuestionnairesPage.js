@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { CheckCircle } from "lucide-react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
@@ -7,19 +7,13 @@ import { useLanguage } from "../App";
 export default function QuestionnairesPage() {
   const { t, language } = useLanguage();
   const [step, setStep] = useState(1);
-  const [refreshKey, setRefreshKey] = useState(0);
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Force re-render when language changes
-  useEffect(() => {
-    setRefreshKey(prev => prev + 1);
-  }, [language]);
-
   if (isCompleted) {
     return (
-      <div key={`questionnaires-completed-${refreshKey}`} className="max-w-2xl mx-auto mt-12 animate-in zoom-in-95 duration-500">
+      <div className="max-w-2xl mx-auto mt-12 animate-in zoom-in-95 duration-500">
         <Card className="p-10 text-center">
           <div className="w-20 h-20 mx-auto bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mb-6">
             <CheckCircle size={40} />
@@ -33,7 +27,7 @@ export default function QuestionnairesPage() {
   }
 
   return (
-    <div key={`questionnaires-${refreshKey}`} className="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-300">
+    <div className="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-300">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{t("emotionalState")}</h1>
         <p className="text-slate-500">{t("pleaseAnswerHonestly")}</p>

@@ -32,7 +32,7 @@ html.dark body {
   color: #f3f4f6;
 }
 
-/* Миттєві стилі для темної теми */
+/* Instant styles for dark theme */
 html.dark {
   background-color: #0f172a;
   color: #f3f4f6;
@@ -42,7 +42,7 @@ html.dark * {
   border-color: inherit;
 }
 
-/* Видалити всі transitions при зміні теми */
+/* Remove all transitions when changing theme */
 html[data-theme-switching="true"] * {
   transition: none !important;
   animation: none !important;

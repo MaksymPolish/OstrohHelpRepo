@@ -13,24 +13,24 @@
       // Застосувати тему ДО загрузки React додатку
       (function() {
         const initStartTime = performance.now();
-        console.log(`🎨 [${initStartTime.toFixed(2)}ms] Почав ініціалізацію теми`);
+        console.log(`[THEME] [${initStartTime.toFixed(2)}ms] Starting theme initialization`);
         
         try {
           const savedDarkMode = localStorage.getItem("darkMode");
           const checkTime = performance.now();
-          console.log(`📖 [${checkTime.toFixed(2)}ms] Прочитав localStorage (+${(checkTime - initStartTime).toFixed(2)}ms)`);
+          console.log(`[STORAGE] [${checkTime.toFixed(2)}ms] Read localStorage (+${(checkTime - initStartTime).toFixed(2)}ms)`);
           
           if (savedDarkMode === "true") {
             document.documentElement.classList.add("dark");
             const applyTime = performance.now();
-            console.log(`✅ [${applyTime.toFixed(2)}ms] Застосував темну тему до загрузки React (+${(applyTime - initStartTime).toFixed(2)}ms)`);
+            console.log(`[DARK_MODE] [${applyTime.toFixed(2)}ms] Applied dark theme before React load (+${(applyTime - initStartTime).toFixed(2)}ms)`);
           } else {
             document.documentElement.classList.remove("dark");
             const applyTime = performance.now();
-            console.log(`✅ [${applyTime.toFixed(2)}ms] Застосував світлу тему до загрузки React (+${(applyTime - initStartTime).toFixed(2)}ms)`);
+            console.log(`[LIGHT_MODE] [${applyTime.toFixed(2)}ms] Applied light theme before React load (+${(applyTime - initStartTime).toFixed(2)}ms)`);
           }
         } catch (e) {
-          console.warn("⚠️ Помилка при читанні localStorage:", e);
+          console.warn("[ERROR] Error reading localStorage:", e);
         }
       })();
     </script>
@@ -38,5 +38,13 @@
   <body>
     <noscript>Вам потрібно увімкнути JavaScript для роботи цього додатку.</noscript>
     <div id="root"></div>
+    <script>
+      // Очистити весь кеш при завантаженні
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(reg => reg.unregister());
+        });
+      }
+    </script>
   </body>
 </html>

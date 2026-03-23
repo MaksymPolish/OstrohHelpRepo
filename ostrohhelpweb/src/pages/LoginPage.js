@@ -8,13 +8,13 @@ export default function LoginPage({ onLoginSuccess }) {
   const [error, setError] = useState("");
   const [language, setLanguage] = useState("uk");
 
-  // Завантажити мову з localStorage при монтуванні
+  // Load language from localStorage on mount
   useEffect(() => {
     const savedLanguage = localStorage.getItem("language") || "uk";
     setLanguage(savedLanguage);
   }, []);
 
-  // Helper функція для перекладу
+  // Helper function for translation
   const t = (key) => {
     return translations[language]?.[key] || key;
   };
@@ -24,11 +24,11 @@ export default function LoginPage({ onLoginSuccess }) {
     setError("");
 
     try {
-      // TODO: Реалізувати справжній Google OAuth
-      // Для тестування: створення mock токена
+      // TODO: Implement real Google OAuth
+      // For testing: creating mock token
       console.log("Google login initiated");
       
-      // Симуляція успішного входу з Google
+      // Simulate successful Google login
       const mockToken = "google_token_" + Date.now();
       localStorage.setItem("authToken", mockToken);
       localStorage.setItem("user", JSON.stringify({
@@ -37,7 +37,7 @@ export default function LoginPage({ onLoginSuccess }) {
         picture: "https://via.placeholder.com/150",
       }));
       
-      // Обробка успішного входу
+      // Handle successful login
       if (onLoginSuccess) {
         onLoginSuccess();
       }

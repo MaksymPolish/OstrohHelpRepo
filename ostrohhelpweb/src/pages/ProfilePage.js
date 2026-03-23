@@ -7,11 +7,10 @@ import { useLanguage } from "../App";
 export default function ProfilePage() {
   const { language, setLanguage, t } = useLanguage();
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Force re-render when language changes
+  // Add logging on component load and language change
   useEffect(() => {
-    setRefreshKey(prev => prev + 1);
+    console.log("[ProfilePage] Component rendered with language:", language);
   }, [language]);
 
   const profileData = {
@@ -32,7 +31,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div key={`profile-${refreshKey}`} className="bg-white dark:bg-slate-900">
+    <div className="bg-white dark:bg-slate-900">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2">
@@ -137,7 +136,10 @@ export default function ProfilePage() {
                   value={language}
                   onChange={(e) => {
                     const newLang = e.target.value;
+                    console.log("[ProfilePage] Language select changed to:", newLang);
+                    console.log("[ProfilePage] Calling setLanguage function:", typeof setLanguage);
                     setLanguage(newLang);
+                    console.log("[ProfilePage] Current localStorage after setLanguage:", localStorage.getItem("language"));
                   }}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
