@@ -1,5 +1,5 @@
 import React from "react";
-import { X, LogOut, Shield, Brain } from "lucide-react";
+import { X, Shield, Brain } from "lucide-react";
 import Button from "../Common/Button";
 import { useLanguage } from "../../App";
 
@@ -77,8 +77,8 @@ export default function Sidebar({
           </nav>
 
           {/* Bottom Section */}
-          <div className="p-4 mt-auto">
-            <div className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-2xl mb-4">
+          <div className="p-4 mt-auto border-t border-slate-200 dark:border-slate-700">
+            <div className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-2xl">
               <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-2">
                 <Shield size={16} />
                 <span className="text-xs font-bold uppercase tracking-wider">
@@ -89,13 +89,6 @@ export default function Sidebar({
                 {t("dataEncrypted")}
               </p>
             </div>
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <LogOut size={20} />
-              <span className="font-medium">{t("logout")}</span>
-            </button>
           </div>
         </div>
       </aside>

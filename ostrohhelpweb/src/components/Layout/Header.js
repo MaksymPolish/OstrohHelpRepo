@@ -10,6 +10,7 @@ export default function Header({
   currentView,
   userInitial = "ІП",
   userName = "Іван П.",
+  onLogout,
 }) {
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -45,6 +46,17 @@ export default function Header({
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden sm:block">
             {userName}
           </span>
+        </button>
+
+        <button
+          onClick={onLogout}
+          className="p-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg focus:outline-none text-sm font-medium flex items-center space-x-1"
+          title="Log Out"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="hidden sm:inline">Log Out</span>
         </button>
       </div>
     </header>

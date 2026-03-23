@@ -240,7 +240,7 @@ function AppContent() {
   return (
     <LanguageContext.Provider value={contextValue}>
       <div
-        className={`flex flex-col min-h-screen bg-white dark:bg-slate-900`}
+        className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
       >
         <Header
           onMenuToggle={handleSidebarToggle}
@@ -248,9 +248,10 @@ function AppContent() {
           onDarkModeToggle={handleDarkModeToggle}
           navItems={navItems}
           currentView={currentView}
+          onLogout={handleLogout}
         />
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
           <Sidebar
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
