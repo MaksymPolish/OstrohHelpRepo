@@ -45,7 +45,7 @@ public class UserGoogleAuthenticationHandler(
             userInfo = (
                 googleId: firebaseUser.Uid,
                 email: firebaseUser.Claims.GetValueOrDefault("email")?.ToString(),
-                fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString(),
+                fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString() ?? firebaseUser.Claims.GetValueOrDefault("name")?.ToString(),
                 photoUrl: firebaseUser.Claims.GetValueOrDefault("picture")?.ToString() // URL фото з Firebase
             );
         }
@@ -69,8 +69,8 @@ public class UserGoogleAuthenticationHandler(
                 Id = UserId.New(),
                 GoogleId = userInfo.googleId,
                 Email = userInfo.email!,
-                FullName = userInfo.fullName,
-                PhotoUrl = userInfo.photoUrl, // Зберігаємо URL фото
+                FullName = userInfo.fullName ?? "User", // Мінімальне значення якщо немає імені
+                PhotoUrl = userInfo.photoUrl, // Реальна URL фото з Google/Firebase
                 RoleId = studentRoleId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -83,9 +83,29 @@ public class UserGoogleAuthenticationHandler(
         }
         else
         {
-            user.FullName = userInfo.fullName;
-            user.PhotoUrl = userInfo.photoUrl; // Оновлюємо фото при кожному логіні
-            await _userRepository.UpdateAsync(user, ct);
+            // Визначаємо нові значення - тільки реальні дані з Google/Firebase
+            var newFullName = userInfo.fullName ?? user.FullName; // Зберігаємо старе якщо нема нового
+            var newPhotoUrl = userInfo.photoUrl ?? user.PhotoUrl; // Зберігаємо старе якщо нема нового
+            
+            // Перевіряємо, чи змінилось щось
+            bool hasChanges = false;
+            if (user.FullName != newFullName)
+            {
+                user.FullName = newFullName;
+                hasChanges = true;
+            }
+            
+            if (user.PhotoUrl != newPhotoUrl)
+            {
+                user.PhotoUrl = newPhotoUrl;
+                hasChanges = true;
+            }
+            
+            // Оновлюємо ТІЛЬКИ якщо є зміни
+            if (hasChanges)
+            {
+                await _userRepository.UpdateAsync(user, ct);
+            }
             
             // ВАЖЛИВО: Завантажити користувача з ролью з БД
             var userWithRole = await _userQuery.GetByIdWithRoleAsync(user.Id, ct);

@@ -91,9 +91,10 @@ builder.Services.AddCors(options =>
             "http://localhost:7001",
             "https://localhost:7001"
         )
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials(); // Важливо для SignalR
+        .AllowAnyMethod()          // GET, POST, PUT, DELETE, OPTIONS, etc.
+        .AllowAnyHeader()          // Any headers
+        .AllowCredentials()        // Important for SignalR and auth
+        .WithExposedHeaders("Content-Disposition", "X-Pagination"); // Expose custom headers if needed
     });
 });
 
@@ -213,8 +214,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
+// Enable CORS (MUST be before Authentication and Authorization)
 app.UseCors("AllowAll");
+
+// Handle preflight OPTIONS requests for CORS
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+        return;
+    }
+    await next.Invoke();
+});
 
 app.UseAuthentication(); 
 app.UseAuthorization();

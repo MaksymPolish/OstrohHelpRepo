@@ -28,10 +28,23 @@ ostrohhelpweb/
 npm install
 ```
 
-2. Налаштуйте `.env` файл з вашим API URL:
+2. Створіть `.env` на основі `.env.example` і налаштуйте змінні:
 ```
 REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_SIGNALR_HUB_URL=ws://localhost:5000/hubs/chat
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
+REACT_APP_USE_MOCK_AUTH=true
+REACT_APP_ENABLE_TOKEN_REFRESH=false
+REACT_APP_TOKEN_REFRESH_ENDPOINT=/auth/refresh-token
 ```
+
+Пояснення змінних:
+- `REACT_APP_API_URL` - базовий URL REST API.
+- `REACT_APP_SIGNALR_HUB_URL` - URL SignalR хабу для майбутнього чату в реальному часі.
+- `REACT_APP_GOOGLE_CLIENT_ID` - публічний Google OAuth Client ID (без client secret).
+- `REACT_APP_USE_MOCK_AUTH` - якщо `true`, кнопка логіну використовує тестовий вхід; якщо `false`, вмикається реальний Google OAuth потік.
+- `REACT_APP_ENABLE_TOKEN_REFRESH` - вмикає автооновлення JWT по refresh token при відповіді 401.
+- `REACT_APP_TOKEN_REFRESH_ENDPOINT` - endpoint оновлення токена, за замовчуванням `/auth/refresh-token`.
 
 ## Розробка
 
@@ -63,7 +76,13 @@ npm build
 API клієнт налаштований в `src/services/api.js` і підтримує:
 - Автоматичне додавання токена авторизації
 - Обробку помилок (401 редирект на логін)
-- Налаштовування базового URL через `.env`
+- Автоматичний refresh access token (коли увімкнено env-прапор)
+- Налаштовування базового URL через env контейнер (`src/config/env.js`)
+
+Google login інтеграція:
+- UI логіну: `src/pages/LoginPage.js`
+- Backend exchange: `src/services/authApi.js` -> `POST /auth/google-login`
+- Валідація env на старті: `src/config/validateEnv.js`
 
 ## Переносимість на мобільні пристрої
 

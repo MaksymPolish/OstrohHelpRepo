@@ -56,3 +56,6 @@ OstrohHelpApi/tests/Tests.Common/obj/Debug/net8.0/Tests.Common.csproj.FileListAb
 **/src/ostrohhelpweb/build/
 **/src/ostrohhelpweb/dist/
 **/src/ostrohhelpweb/.env
+OstrohHelpApi/ENDPOINTS.md
+ostrohhelpweb/ENDPOINTS.md
+/OstrohHelpApi/tests/Api.Tests.Integration/obj

@@ -21,24 +21,42 @@ public class AuthController(
 {
     [AllowAnonymous] // Дозволяємо анонімний доступ для логіну
     [HttpPost("google-login")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(AuthResultDto), 200)]
+    [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 401)]
     public async Task<IActionResult> GoogleLogin([FromBody] UserGoogleAuthenticationCommand command, CancellationToken ct)
     {
-        var user = await _mediator.Send(command, ct);
-
-        var jwtToken = _authService.GenerateJwtToken(user);
-        var refreshToken = _authService.GenerateRefreshToken();
-
-        return Ok(new AuthResultDto
+        try
         {
-            Id = user.Id.ToString(),
-            Email = user.Email,
-            FullName = user.FullName,
-            PhotoUrl = user.PhotoUrl, // URL фото профілю
-            RoleId = user.RoleId.ToString(),
-            JwtToken = jwtToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        });
+            if (string.IsNullOrWhiteSpace(command?.IdToken))
+                return BadRequest(new { Error = "IdToken is required" });
+
+            var user = await _mediator.Send(command, ct);
+
+            if (user == null)
+                return BadRequest(new { Error = "Failed to authenticate user" });
+
+            var jwtToken = _authService.GenerateJwtToken(user);
+            var refreshToken = _authService.GenerateRefreshToken();
+
+            return Ok(new AuthResultDto
+            {
+                Id = user.Id.ToString(),
+                Email = user.Email,
+                FullName = user.FullName ?? "User", // Мінімальне значення якщо null
+                PhotoUrl = user.PhotoUrl, // Реальна URL з Google/Firebase або null
+                RoleId = user.RoleId.ToString(),
+                JwtToken = jwtToken,
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
     }
     
     [HttpGet("{id}")]
