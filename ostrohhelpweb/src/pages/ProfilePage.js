@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import Badge from "../components/Common/Badge";

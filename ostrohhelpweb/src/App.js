@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
-import { Home, Users, ClipboardList, MessageSquare, User } from "lucide-react";
+import { Home, ClipboardList, MessageSquare, User } from "lucide-react";
 
 // Translations
 import translations from "./i18n/translations";
@@ -76,7 +76,7 @@ function AppContent() {
     { id: "consultations", label: t("consultations"), icon: MessageSquare },
     { id: "questionnaires", label: t("questionnaires"), icon: ClipboardList },
     { id: "profile", label: t("profile"), icon: User },
-  ], [language]);
+  ], [t]);
 
   // Update currentView when route changes
   useEffect(() => {

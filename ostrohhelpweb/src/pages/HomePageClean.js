@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { Activity, ClipboardList } from "lucide-react";
+import { Activity } from "lucide-react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import { useLanguage } from "../App";
 
 export default function HomePageClean() {
   const { t } = useLanguage();
-  const [userName, setUserName] = useState("Іван");
-
-  useEffect(() => {
-    const savedName = localStorage.getItem("userName");
-    if (savedName) setUserName(savedName);
-  }, []);
 
   return (
     <div className="space-y-6">

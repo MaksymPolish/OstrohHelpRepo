@@ -1,11 +1,10 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Paperclip, Send, Activity } from "lucide-react";
 import Button from "../components/Common/Button";
-import Card from "../components/Common/Card";
 import { useLanguage } from "../App";
 
 export default function ConsultationsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [msg, setMsg] = useState('');
   
   const messages = [

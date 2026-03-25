@@ -1,6 +1,5 @@
 import React from "react";
-import { X, Shield, Brain } from "lucide-react";
-import Button from "../Common/Button";
+import { Shield, Brain } from "lucide-react";
 import { useLanguage } from "../../App";
 
 export default function Sidebar({
@@ -11,7 +10,7 @@ export default function Sidebar({
   onNavigate,
   onLogout,
 }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   return (
     <>
       {/* Mobile Overlay */}

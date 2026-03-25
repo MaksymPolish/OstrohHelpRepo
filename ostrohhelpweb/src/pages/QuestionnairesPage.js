@@ -5,7 +5,7 @@ import Card from "../components/Common/Card";
 import { useLanguage } from "../App";
 
 export default function QuestionnairesPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
