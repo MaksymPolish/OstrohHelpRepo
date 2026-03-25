@@ -2,27 +2,27 @@ import React, { useState } from "react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import Badge from "../components/Common/Badge";
-import { useLanguage } from "../App";
+import { useLanguage, useSecurity } from "../App";
 
 export default function ProfilePage() {
   const { language, setLanguage, t } = useLanguage();
+  const { currentUser, handleLogout } = useSecurity();
   const [emailNotifications, setEmailNotifications] = useState(true);
 
-  const profileData = {
-    firstName: "Іван",
-    lastName: "Петренко",
-    email: "ivan.petrenko@student.oa.edu.ua",
-    university: "Острозька академія",
-    department: "Факультет інформатики",
-    enrollmentYear: "2024",
-    accountType: t("student"),
-  };
+  const resolvedFullName = currentUser?.fullName || "";
+  const fullNameParts = resolvedFullName.trim().split(/\s+/).filter(Boolean);
+  const firstNameFromSession = fullNameParts[0] || "Користувач";
+  const lastNameFromSession = fullNameParts.slice(1).join(" ") || "-";
+  const roleLabel = currentUser?.roleName || t("student");
+  const departmentLabel = currentUser?.department || currentUser?.faculty || (language === "uk" ? "Не вказано" : "Not specified");
 
-  const handleLogout = () => {
-    if (window.confirm(t("logoutConfirm"))) {
-      localStorage.removeItem("authToken");
-      window.location.href = "/";
-    }
+  const profileData = {
+    firstName: firstNameFromSession,
+    lastName: lastNameFromSession,
+    email: currentUser?.email || "-",
+    university: currentUser?.university || "Острозька академія",
+    department: departmentLabel,
+    accountType: roleLabel,
   };
 
   return (
@@ -38,9 +38,18 @@ export default function ProfilePage() {
 
             {/* Profile Picture */}
             <div className="mb-8">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mb-4 shadow-lg">
-                {profileData.firstName.charAt(0)}
-              </div>
+              {currentUser?.photoUrl ? (
+                <img
+                  src={currentUser.photoUrl}
+                  alt={resolvedFullName || "User"}
+                  className="w-24 h-24 rounded-2xl object-cover mb-4 shadow-lg"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mb-4 shadow-lg">
+                  {profileData.firstName.charAt(0)}
+                </div>
+              )}
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {t("syncedWithUniversity")}
               </p>
@@ -95,14 +104,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t("enrollmentYear")}
-                  </label>
-                  <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium">
-                    {profileData.enrollmentYear}
-                  </div>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     {t("accountType")}

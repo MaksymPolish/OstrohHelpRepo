@@ -90,6 +90,11 @@ const translations = {
     receiveUpdates: "Отримуйте оновлення про консультації та анкети",
     logoutConfirm: "Ви впевнені, що хочете вийти з системи?",
     student: "Студент (oa.edu.ua Domain)",
+
+    // Not Found Page
+    notFoundTitle: "Something went wrong",
+    notFoundDescription: "Схоже, ця сторінка поки не існує. Це місце зарезервовано для майбутнього адмін-модуля.",
+    goHome: "На головну",
     
     // Footer
     footerAboutTitle: "OA Mind Care",
@@ -201,6 +206,11 @@ const translations = {
     receiveUpdates: "Receive updates about consultations and questionnaires",
     logoutConfirm: "Are you sure you want to log out?",
     student: "Student (oa.edu.ua Domain)",
+
+    // Not Found Page
+    notFoundTitle: "Something went wrong",
+    notFoundDescription: "It looks like this page does not exist yet. This route is reserved for future admin features.",
+    goHome: "Go Home",
     
     // Footer
     footerAboutTitle: "OA Mind Care",

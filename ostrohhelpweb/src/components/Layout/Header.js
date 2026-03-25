@@ -10,6 +10,7 @@ export default function Header({
   currentView,
   userInitial = "ІП",
   userName = "Іван П.",
+  userPhotoUrl = null,
   onLogout,
 }) {
   return (
@@ -40,9 +41,18 @@ export default function Header({
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
 
         <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 pr-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
-            {userInitial}
-          </div>
+          {userPhotoUrl ? (
+            <img
+              src={userPhotoUrl}
+              alt={userName}
+              className="w-8 h-8 rounded-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+              {userInitial}
+            </div>
+          )}
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden sm:block">
             {userName}
           </span>

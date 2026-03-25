@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, createContext, useContext, use
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import { Home, ClipboardList, MessageSquare, User } from "lucide-react";
+import api from "./services/api";
 
 // Translations
 import translations from "./i18n/translations";
@@ -17,9 +18,11 @@ import HomePageClean from "./pages/HomePageClean";
 import QuestionnairesPage from "./pages/QuestionnairesPage";
 import ConsultationsPage from "./pages/ConsultationsPage";
 import ProfilePage from "./pages/ProfilePage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Create Language Context
 export const LanguageContext = createContext();
+export const SecurityContext = createContext();
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
@@ -29,9 +32,75 @@ export const useLanguage = () => {
   return context;
 };
 
+export const useSecurity = () => {
+  const context = useContext(SecurityContext);
+  if (!context) {
+    throw new Error("useSecurity must be used within SecurityContext provider");
+  }
+  return context;
+};
+
+const readStoredUser = () => {
+  try {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeSessionUser = (userData) => {
+  if (!userData || typeof userData !== "object") {
+    return null;
+  }
+
+  const nestedUser = userData.user && typeof userData.user === "object" ? userData.user : {};
+  const nestedProfile = userData.profile && typeof userData.profile === "object" ? userData.profile : {};
+
+  const pickFirst = (...values) => {
+    for (const value of values) {
+      if (value !== null && value !== undefined && value !== "") {
+        return value;
+      }
+    }
+    return null;
+  };
+
+  const courseValue = pickFirst(
+    userData.course,
+    userData.Course,
+    userData.courseNumber,
+    userData.CourseNumber,
+    userData.studyCourse,
+    userData.StudyCourse,
+    userData.userCourse,
+    userData.UserCourse,
+    nestedUser.course,
+    nestedUser.Course,
+    nestedProfile.course,
+    nestedProfile.Course
+  );
+
+  return {
+    id: pickFirst(userData.id, userData.Id, nestedUser.id, nestedUser.Id),
+    email: pickFirst(userData.email, userData.Email, nestedUser.email, nestedUser.Email),
+    fullName: pickFirst(userData.fullName, userData.FullName, userData.name, userData.Name, nestedUser.fullName, nestedUser.FullName),
+    photoUrl: pickFirst(userData.photoUrl, userData.PhotoUrl, userData.profile, userData.picture, nestedUser.photoUrl, nestedUser.PhotoUrl, nestedProfile.photoUrl, nestedProfile.PhotoUrl, nestedProfile.picture),
+    university: pickFirst(userData.university, userData.University, nestedUser.university, nestedUser.University),
+    faculty: pickFirst(userData.faculty, userData.Faculty, nestedUser.faculty, nestedUser.Faculty),
+    department: pickFirst(userData.department, userData.Department, nestedUser.department, nestedUser.Department),
+    course: courseValue,
+    enrollmentYear: pickFirst(userData.enrollmentYear, userData.EnrollmentYear, nestedUser.enrollmentYear, nestedUser.EnrollmentYear),
+    roleId: pickFirst(userData.roleId, userData.RoleId, nestedUser.roleId, nestedUser.RoleId),
+    roleName: pickFirst(userData.roleName, userData.RoleName, nestedUser.roleName, nestedUser.RoleName),
+    expiresAt: pickFirst(userData.expiresAt, userData.ExpiresAt, nestedUser.expiresAt, nestedUser.ExpiresAt),
+  };
+};
+
 // Wrapper to update currentView based on route
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -78,12 +147,13 @@ function AppContent() {
   useEffect(() => {
     const pathMap = {
       "/": "home",
+      "/homepage": "home",
       "/consultations": "consultations",
       "/questionnaires": "questionnaires",
       "/profile": "profile",
     };
     
-    const matchedView = pathMap[location.pathname] || "home";
+    const matchedView = pathMap[location.pathname] || "";
     setCurrentView(matchedView);
   }, [location.pathname]);
 
@@ -94,6 +164,39 @@ function AppContent() {
         setIsLoading(true);
         const token = localStorage.getItem("authToken");
         setIsAuthenticated(!!token);
+
+        const storedUser = token ? normalizeSessionUser(readStoredUser()) : null;
+        setCurrentUser(storedUser);
+
+        if (token && storedUser && (storedUser.id || storedUser.email)) {
+          try {
+            let refreshedUserData = null;
+
+            if (storedUser.id) {
+              const byIdResponse = await api.get(`/auth/${storedUser.id}`);
+              refreshedUserData = byIdResponse?.data || null;
+            } else if (storedUser.email) {
+              const byEmailResponse = await api.get("/auth/get-by-email", {
+                params: { email: storedUser.email },
+              });
+              refreshedUserData = byEmailResponse?.data || null;
+            }
+
+            if (refreshedUserData) {
+              const mergedUser = normalizeSessionUser({
+                ...storedUser,
+                ...refreshedUserData,
+              });
+
+              if (mergedUser) {
+                setCurrentUser(mergedUser);
+                localStorage.setItem("user", JSON.stringify(mergedUser));
+              }
+            }
+          } catch {
+            // Keep existing local session user if profile refresh is unavailable.
+          }
+        }
 
         // Load language settings
         const savedLanguage = localStorage.getItem("language") || "uk";
@@ -121,6 +224,16 @@ function AppContent() {
 
     checkAuth();
   }, []);
+
+  const handleLoginSuccess = useCallback((authData = null) => {
+    setIsAuthenticated(true);
+
+    const normalizedAuthData = normalizeSessionUser(authData);
+    const sessionUser = normalizedAuthData || normalizeSessionUser(readStoredUser());
+
+    setCurrentUser(sessionUser);
+    navigate("/homepage");
+  }, [navigate]);
 
   // Listen to changes in dark class on HTML element
   useEffect(() => {
@@ -182,13 +295,28 @@ function AppContent() {
     navigate(routeMap[viewId] || "/");
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     if (window.confirm(t("logoutConfirm"))) {
       localStorage.removeItem("authToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
       setIsAuthenticated(false);
+      setCurrentUser(null);
       navigate("/");
     }
-  };
+  }, [navigate, t]);
+
+  const userDisplayName = currentUser?.fullName || currentUser?.email || "User";
+  const userInitial = (userDisplayName || "U").trim().charAt(0).toUpperCase() || "U";
+
+  const securityContextValue = useMemo(() => {
+    return {
+      isAuthenticated,
+      currentUser,
+      setCurrentUser,
+      handleLogout,
+    };
+  }, [isAuthenticated, currentUser, handleLogout]);
 
   if (isLoading) {
     return (
@@ -205,78 +333,80 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return (
-      <LanguageContext.Provider value={contextValue}>
-        <Routes>
-          <Route
-            path="*"
-            element={
-              <LoginPage onLoginSuccess={() => {
-                setIsAuthenticated(true);
-                navigate('/homepage');
-              }} />
-            }
-          />
-        </Routes>
-      </LanguageContext.Provider>
+      <SecurityContext.Provider value={securityContextValue}>
+        <LanguageContext.Provider value={contextValue}>
+          <Routes>
+            <Route
+              path="*"
+              element={<LoginPage onLoginSuccess={handleLoginSuccess} />}
+            />
+          </Routes>
+        </LanguageContext.Provider>
+      </SecurityContext.Provider>
     );
   }
 
   return (
-    <LanguageContext.Provider value={contextValue}>
-      <div
-        className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
-      >
-        <Header
-          onMenuToggle={handleSidebarToggle}
-          isDarkMode={isDarkMode}
-          onDarkModeToggle={handleDarkModeToggle}
-          navItems={navItems}
-          currentView={currentView}
-          onLogout={handleLogout}
-        />
-
-        <div className="flex flex-1 overflow-hidden relative">
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
+    <SecurityContext.Provider value={securityContextValue}>
+      <LanguageContext.Provider value={contextValue}>
+        <div
+          className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
+        >
+          <Header
+            onMenuToggle={handleSidebarToggle}
+            isDarkMode={isDarkMode}
+            onDarkModeToggle={handleDarkModeToggle}
             navItems={navItems}
             currentView={currentView}
-            onNavigate={handleNavigation}
             onLogout={handleLogout}
+            userInitial={userInitial}
+            userName={userDisplayName}
+            userPhotoUrl={currentUser?.photoUrl || null}
           />
 
-          <main className="flex-1 overflow-y-auto">
-            {error && (
-              <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 m-4 rounded">
-                <p className="font-bold">Error</p>
-                <p>{error}</p>
+          <div className="flex flex-1 overflow-hidden relative">
+            <Sidebar
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              navItems={navItems}
+              currentView={currentView}
+              onNavigate={handleNavigation}
+              onLogout={handleLogout}
+            />
+
+            <main className="flex-1 overflow-y-auto">
+              {error && (
+                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 m-4 rounded">
+                  <p className="font-bold">Error</p>
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
+                {/* Direct component rendering based on location - solves Outlet hydration issue with language context */}
+                {(() => {
+                  switch (location.pathname) {
+                    case "/":
+                    case "/homepage":
+                      return <HomePageClean />;
+                    case "/questionnaires":
+                      return <QuestionnairesPage />;
+                    case "/consultations":
+                      return <ConsultationsPage />;
+                    case "/profile":
+                      return <ProfilePage />;
+                    default:
+                      return <NotFoundPage />;
+                  }
+                })()}
               </div>
-            )}
+            </main>
+          </div>
 
-            <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
-              {/* Direct component rendering based on location - solves Outlet hydration issue with language context */}
-              {(() => {
-                switch (location.pathname) {
-                  case "/":
-                  case "/homepage":
-                    return <HomePageClean />;
-                  case "/questionnaires":
-                    return <QuestionnairesPage />;
-                  case "/consultations":
-                    return <ConsultationsPage />;
-                  case "/profile":
-                    return <ProfilePage />;
-                  default:
-                    return <HomePageClean />;
-                }
-              })()}
-            </div>
-          </main>
+          <Footer />
         </div>
-
-        <Footer />
-      </div>
-    </LanguageContext.Provider>
+      </LanguageContext.Provider>
+    </SecurityContext.Provider>
   );
 }
 

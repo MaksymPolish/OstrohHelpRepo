@@ -86,7 +86,14 @@ export default function LoginPage({ onLoginSuccess }) {
         id: authData.id,
         email: authData.email,
         fullName: authData.fullName,
+        photoUrl: authData.photoUrl || authData.profile || authData.picture || null,
+        university: authData.university || authData.University || null,
+        faculty: authData.faculty || authData.Faculty || null,
+        department: authData.department || authData.Department || null,
+        course: authData.course ?? authData.Course ?? null,
+        enrollmentYear: authData.enrollmentYear || authData.EnrollmentYear || null,
         roleId: authData.roleId,
+        roleName: authData.roleName || null,
         expiresAt: authData.expiresAt,
       })
     );
@@ -99,19 +106,32 @@ export default function LoginPage({ onLoginSuccess }) {
     try {
       // Simulate successful Google login
       const mockToken = "google_token_" + Date.now();
+      const mockUser = {
+        id: "mock-user-id",
+        email: "john.student@example.com",
+        fullName: "John Student",
+        photoUrl: "https://via.placeholder.com/150",
+        university: "Острозька академія",
+        faculty: "Факультет інформатики",
+        department: "Факультет інформатики",
+        course: 2,
+        enrollmentYear: "2024",
+        roleId: "mock-role-id",
+        roleName: "Student",
+      };
+
       localStorage.setItem("authToken", mockToken);
       localStorage.setItem(
         "user",
-        JSON.stringify({
-          name: "John Student",
-          email: "john.student@example.com",
-          picture: "https://via.placeholder.com/150",
-        })
+        JSON.stringify(mockUser)
       );
 
       // Handle successful login
       if (onLoginSuccess) {
-        onLoginSuccess();
+        onLoginSuccess({
+          jwtToken: mockToken,
+          ...mockUser,
+        });
       }
     } catch (err) {
       setError(t("googleAuthFailed"));
@@ -140,10 +160,15 @@ export default function LoginPage({ onLoginSuccess }) {
       };
 
       const authData = await googleLogin(credentialToken, profileData);
-      persistUserSession(authData);
+      const normalizedAuthData = {
+        ...authData,
+        photoUrl: authData?.photoUrl || authData?.profile || profileData?.profile || null,
+      };
+
+      persistUserSession(normalizedAuthData);
 
       if (onLoginSuccess) {
-        onLoginSuccess();
+        onLoginSuccess(normalizedAuthData);
       }
     } catch (err) {
       if (err?.response?.status === 400) {
