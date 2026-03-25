@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import Badge from "../components/Common/Badge";
@@ -7,11 +7,6 @@ import { useLanguage } from "../App";
 export default function ProfilePage() {
   const { language, setLanguage, t } = useLanguage();
   const [emailNotifications, setEmailNotifications] = useState(true);
-
-  // Add logging on component load and language change
-  useEffect(() => {
-    console.log("[ProfilePage] Component rendered with language:", language);
-  }, [language]);
 
   const profileData = {
     firstName: "Іван",
@@ -135,11 +130,7 @@ export default function ProfilePage() {
                 <select
                   value={language}
                   onChange={(e) => {
-                    const newLang = e.target.value;
-                    console.log("[ProfilePage] Language select changed to:", newLang);
-                    console.log("[ProfilePage] Calling setLanguage function:", typeof setLanguage);
-                    setLanguage(newLang);
-                    console.log("[ProfilePage] Current localStorage after setLanguage:", localStorage.getItem("language"));
+                    setLanguage(e.target.value);
                   }}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >

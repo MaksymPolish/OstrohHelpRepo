@@ -48,11 +48,8 @@ function AppContent() {
   });
 
   const handleLanguageChange = useCallback((newLanguage) => {
-    console.log("[App.handleLanguageChange] Called with:", newLanguage);
     setLanguage(newLanguage);
-    console.log("[App.handleLanguageChange] State will update to:", newLanguage);
     localStorage.setItem("language", newLanguage);
-    console.log("[App.handleLanguageChange] Saved to localStorage:", newLanguage);
   }, []);
 
   // Helper function for translation - memoized
@@ -62,7 +59,6 @@ function AppContent() {
 
   // Memoize context value to recalculate only when language changes
   const contextValue = useMemo(() => {
-    console.log("[App] Creating context value with language:", language);
     return {
       language,
       setLanguage: handleLanguageChange,
@@ -140,18 +136,6 @@ function AppContent() {
 
     return () => observer.disconnect();
   }, []);
-
-  // Log language change
-  useEffect(() => {
-    console.log("[App] Language changed to:", language);
-    console.log("[App] Context will provide language:", language, "and t function");
-    // Check that translations are available in new language
-    const availableKeys = Object.keys(translations[language] || {});
-    console.log("[App] Available translation keys for", language, ":", availableKeys.length, "keys");
-    if (availableKeys.length === 0) {
-      console.error("[App] WARNING: No translations found for language:", language);
-    }
-  }, [language]);
 
   // Event handlers
   const handleDarkModeToggle = useCallback(() => {
@@ -272,23 +256,17 @@ function AppContent() {
             <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
               {/* Direct component rendering based on location - solves Outlet hydration issue with language context */}
               {(() => {
-                console.log("[App Switch] Current pathname:", location.pathname, "language:", language);
                 switch (location.pathname) {
                   case "/":
                   case "/homepage":
-                    console.log("[App Switch] Rendering HomePage");
                     return <HomePageClean />;
                   case "/questionnaires":
-                    console.log("[App Switch] Rendering QuestionnairesPage");
                     return <QuestionnairesPage />;
                   case "/consultations":
-                    console.log("[App Switch] Rendering ConsultationsPage");
                     return <ConsultationsPage />;
                   case "/profile":
-                    console.log("[App Switch] Rendering ProfilePage");
                     return <ProfilePage />;
                   default:
-                    console.log("[App Switch] Default - rendering HomePage");
                     return <HomePageClean />;
                 }
               })()}

@@ -112,7 +112,6 @@ export default function QuestionnaireDetailPage() {
   };
 
   const handleSubmit = () => {
-    console.log("Questionnaire answers:", answers);
     setCompleted(true);
   };
 

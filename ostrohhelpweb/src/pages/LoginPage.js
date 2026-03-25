@@ -97,8 +97,6 @@ export default function LoginPage({ onLoginSuccess }) {
     setError("");
 
     try {
-      console.log("Google login initiated");
-
       // Simulate successful Google login
       const mockToken = "google_token_" + Date.now();
       localStorage.setItem("authToken", mockToken);
