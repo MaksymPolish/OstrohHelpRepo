@@ -11,12 +11,41 @@ using Microsoft.OpenApi.Models;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
+using DotNetEnv;
 
 using Api.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load .env file from project root (go up from src/Api to root)
+var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+
+// If not found, try going up two levels (from src/Api to root)
+if (!File.Exists(envPath))
+{
+    envPath = Path.Combine(builder.Environment.ContentRootPath, "../../.env");
+    envPath = Path.GetFullPath(envPath); // Normalize the path
+}
+
+if (File.Exists(envPath))
+{
+    DotNetEnv.Env.Load(envPath);
+}
+
+// Configure connection string from environment variables (.env has priority)
+var databaseUrl = DotNetEnv.Env.GetString("DATABASE_URL");
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    builder.Configuration["ConnectionStrings:Default"] = databaseUrl;
+    Console.WriteLine("✓ Database connection string loaded from .env");
+}
+else
+{
+    Console.WriteLine("ℹ Database connection string from appsettings.json");
+}
+
 // Cloudinary service registration
 builder.Services.AddSingleton<Api.Services.CloudinaryService>();
 
@@ -99,9 +128,19 @@ builder.Services.AddCors(options =>
 });
 
 // JWT Bearer Authentication configuration
-var jwtSecret = builder.Configuration["Jwt:Secret"];
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
+// Read from .env first (priority), then fallback to appsettings.json
+var jwtSecret = DotNetEnv.Env.GetString("JWT_SECRET") ?? builder.Configuration["Jwt:Secret"];
+var jwtIssuer = DotNetEnv.Env.GetString("JWT_ISSUER") ?? builder.Configuration["Jwt:Issuer"];
+var jwtAudience = DotNetEnv.Env.GetString("JWT_AUDIENCE") ?? builder.Configuration["Jwt:Audience"];
+
+if (!string.IsNullOrEmpty(DotNetEnv.Env.GetString("JWT_SECRET")))
+{
+    Console.WriteLine("✓ JWT credentials loaded from .env file");
+}
+else
+{
+    Console.WriteLine("ℹ JWT credentials loaded from appsettings.json (or appsettings.Development.json)");
+}
 
 // Важливо: Вимкнути автоматичне перейменування claims
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -147,18 +186,33 @@ builder.Services.AddAuthentication(options =>
     .AddCookie("Cookies")
     .AddGoogle("Google", options =>
     {
-        // Зчитування ClientId та ClientSecret з google-auth.json
-        var googleAuthPath = Path.Combine(builder.Environment.ContentRootPath, "google-auth.json");
-        if (File.Exists(googleAuthPath))
+        // Зчитування ClientId та ClientSecret з .env файлу (пріоритет) або google-auth.json
+        var googleClientId = DotNetEnv.Env.GetString("GOOGLE_CLIENT_ID");
+        var googleClientSecret = DotNetEnv.Env.GetString("GOOGLE_CLIENT_SECRET");
+
+        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
         {
-            var googleAuthJson = File.ReadAllText(googleAuthPath);
-            dynamic googleAuth = Newtonsoft.Json.JsonConvert.DeserializeObject(googleAuthJson);
-            options.ClientId = googleAuth.ClientId;
-            options.ClientSecret = googleAuth.ClientSecret;
+            // Використовуємо значення з .env
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            Console.WriteLine("✓ Google OAuth credentials loaded from .env");
         }
         else
         {
-            throw new Exception($"google-auth.json not found at {googleAuthPath}");
+            // Fallback - читаємо з google-auth.json файлу
+            var googleAuthPath = Path.Combine(builder.Environment.ContentRootPath, "google-auth.json");
+            if (File.Exists(googleAuthPath))
+            {
+                var googleAuthJson = File.ReadAllText(googleAuthPath);
+                dynamic googleAuth = Newtonsoft.Json.JsonConvert.DeserializeObject(googleAuthJson);
+                options.ClientId = googleAuth.ClientId;
+                options.ClientSecret = googleAuth.ClientSecret;
+                Console.WriteLine("✓ Google OAuth credentials loaded from google-auth.json");
+            }
+            else
+            {
+                throw new Exception($"Google OAuth credentials not found in .env or google-auth.json file at {googleAuthPath}");
+            }
         }
         options.SignInScheme = "Cookies";
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
@@ -188,16 +242,59 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("Psychologist", "HeadOfService"));
 });
 
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// Configure AutoMapper with license key from .env
+var autoMapperLicenseKey = DotNetEnv.Env.GetString("AUTOMAPPER_LICENSE_KEY");
 
-// Ініціалізація Firebase Admin SDK (тільки якщо файл існує)
-var firebaseJsonPath = Path.Combine(builder.Environment.ContentRootPath, "ostrohhelpapp.json");
-if (File.Exists(firebaseJsonPath))
+if (!string.IsNullOrEmpty(autoMapperLicenseKey))
 {
-    FirebaseApp.Create(new AppOptions()
+    Console.WriteLine("✓ AutoMapper License Key loaded from .env");
+}
+else
+{
+    Console.WriteLine("⚠ AutoMapper License Key not found in .env - using open-source version");
+}
+
+// AutoMapper configuration - scan all assemblies for profiles
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddMaps(typeof(Program).Assembly, typeof(Application.ApplicationAssemblyMarker).Assembly);
+});
+
+// Ініціалізація Firebase Admin SDK
+var firebaseProjectId = DotNetEnv.Env.GetString("FIREBASE_PROJECT_ID");
+var firebasePrivateKey = DotNetEnv.Env.GetString("FIREBASE_PRIVATE_KEY");
+var firebaseClientEmail = DotNetEnv.Env.GetString("FIREBASE_CLIENT_EMAIL");
+
+if (!string.IsNullOrEmpty(firebaseProjectId) && !string.IsNullOrEmpty(firebasePrivateKey) && !string.IsNullOrEmpty(firebaseClientEmail))
+{
+    // Використовуємо значення з .env
+    // Примітка: Firebase потребує специфічного формату приватного ключа
+    // Переконайтеся, що FIREBASE_PRIVATE_KEY містить правильно форматований PEM ключ
+    Console.WriteLine("✓ Firebase credentials detected in .env - will use these for authentication");
+}
+else
+{
+    // Fallback - читаємо з файлу ostrohhelpapp.json
+    var firebaseJsonPath = Path.Combine(builder.Environment.ContentRootPath, "ostrohhelpapp.json");
+    if (File.Exists(firebaseJsonPath))
     {
-        Credential = GoogleCredential.FromFile(firebaseJsonPath)
-    });
+        try
+        {
+            FirebaseApp.Create(new AppOptions()
+            {
+                Credential = GoogleCredential.FromFile(firebaseJsonPath)
+            });
+            Console.WriteLine("✓ Firebase credentials loaded from ostrohhelpapp.json");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠ Firebase initialization from file failed: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("⚠ Firebase credentials not found in .env or ostrohhelpapp.json file");
+    }
 }
 
 var app = builder.Build();

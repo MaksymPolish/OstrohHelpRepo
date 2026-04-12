@@ -1,9 +1,14 @@
 # Sensitive configs
 src/Api/appsettings.Development.json
 src/Api/google-auth.json
-# Build artifacts
+
+# Build artifacts - Global
 **/bin/
 **/obj/
+
+# Build artifacts - OstrohHelpApi (recursive)
+OstrohHelpApi/**/bin/
+OstrohHelpApi/**/obj/
 
 # EF Core Migrations
 **/Persistence/Migrations/
@@ -33,32 +38,25 @@ docker-compose-build/
 *.json
 !src/Api/appsettings.json
 !src/Api/appsettings.Development.json
-
-# Ignore obj in Api
-src/Api/obj/
-/OstrohHelpApi/tests/Api.Tests.Integration/obj
-/OstrohHelpApi/tests/Api.Tests.Integration/obj
-/OstrohHelpApi/tests/Tests.Common/obj
+# Documentation files (OstrohHelpApi)
 OstrohHelpApi/OPTIMIZATION.md
 OstrohHelpApi/IMPROVEMENTS.md
-OstrohHelpApp/ostrohhelpapp/ROLE_CHECKS_LIST.md
 OstrohHelpApi/FLUTTER_SIGNALR_INTEGRATION.md
 OstrohHelpApi/QUICKSTART.md
 OstrohHelpApi/REALTIME_CHAT_GUIDE.md
 OstrohHelpApi/FLUTTER_CONSULTATION_CHAT.md
 OstrohHelpApi/QUESTIONNAIRE_ACCEPTANCE_FLOW.md
 OstrohHelpApi/SIGNALR_HUB_GUIDE.md
-OstrohHelpApi/tests/Api.Tests.Integration/obj/Debug/net8.0/Api.Tests.Integration.csproj.FileListAbsolute.txt
-OstrohHelpApi/tests/Tests.Common/obj/Debug/net8.0/Tests.Common.csproj.FileListAbsolute.txt
+OstrohHelpApi/ENDPOINTS.md
 
-# Ignore in web client
+# External documentation
+OstrohHelpApp/ostrohhelpapp/ROLE_CHECKS_LIST.md
+ostrohhelpweb/ENDPOINTS.md
+
+# Web client ignores
 **/src/ostrohhelpweb/node_modules/
 **/src/ostrohhelpweb/build/
 **/src/ostrohhelpweb/dist/
 **/src/ostrohhelpweb/.env
-OstrohHelpApi/ENDPOINTS.md
-ostrohhelpweb/ENDPOINTS.md
-/OstrohHelpApi/tests/Api.Tests.Integration/obj
 /ostrohhelpweb/node_modules
 /ostrohhelpweb/build
-/OstrohHelpApi/tests/Api.Tests.Integration/obj

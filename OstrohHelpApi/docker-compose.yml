@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ostrohelpapi-db
+    environment:
+      POSTGRES_USER: ostrohelpuser
+      POSTGRES_PASSWORD: OstroHelpPass123!
+      POSTGRES_DB: ostrohelpdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ostrohelpuser -d ostrohelpdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ostrohelpapi-network
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api-runtime
+    container_name: ostrohelpapi-app
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ostrohelpdb;Username=ostrohelpuser;Password=OstroHelpPass123!"
+      # Add other environment variables as needed:
+      # GOOGLE_CLIENT_ID: your-google-client-id
+      # CLOUDINARY_CLOUD_NAME: your-cloudinary-cloud-name
+      # CLOUDINARY_API_KEY: your-cloudinary-api-key
+      # CLOUDINARY_API_SECRET: your-cloudinary-api-secret
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ostrohelpapi-network
+    restart: unless-stopped
+
+  # Security Tests Service
+  security-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+      target: security-tests
+    container_name: ostrohelpapi-security-tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+    depends_on:
+      - postgres
+    volumes:
+      - ./test-results:/testresults
+    networks:
+      - ostrohelpapi-network
+    profiles:
+      - tests
+
+  # Integration Tests Service
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+      target: integration-tests
+    container_name: ostrohelpapi-integration-tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ostrohelpdb_tests;Username=ostrohelpuser;Password=OstroHelpPass123!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./test-results:/testresults
+    networks:
+      - ostrohelpapi-network
+    profiles:
+      - tests
+
+  # All Tests Service (runs security + integration tests)
+  all-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+      target: all-tests
+    container_name: ostrohelpapi-all-tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ostrohelpdb_tests;Username=ostrohelpuser;Password=OstroHelpPass123!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./test-results:/testresults
+    networks:
+      - ostrohelpapi-network
+    profiles:
+      - tests
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ostrohelpapi-network:
+    driver: bridge

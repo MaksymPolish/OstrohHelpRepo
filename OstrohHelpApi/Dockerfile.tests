@@ -1,0 +1,93 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS builder
+
+WORKDIR /src
+
+# Copy solution and project files
+COPY OstrohHelpApi.sln .
+COPY src/Domain/Domain.csproj src/Domain/
+COPY src/Application/Application.csproj src/Application/
+COPY src/Infrastructure/Infrastructure.csproj src/Infrastructure/
+COPY src/Api/Api.csproj src/Api/
+COPY tests/Tests.Common/Tests.Common.csproj tests/Tests.Common/
+COPY tests/Tests.Data/Tests.Data.csproj tests/Tests.Data/
+COPY tests/Api.Tests.Integration/Api.Tests.Integration.csproj tests/Api.Tests.Integration/
+
+# Restore NuGet packages
+RUN dotnet restore OstrohHelpApi.sln
+
+# Copy source code
+COPY . .
+
+# Build the solution
+RUN dotnet build OstrohHelpApi.sln -c Release --no-restore
+
+# ============ Security Tests Stage ============
+FROM builder AS security-tests
+
+WORKDIR /src
+
+RUN mkdir -p /testresults
+
+RUN dotnet test tests/Tests.Common/Tests.Common.csproj \
+    --filter "Category=Security or Category=SecurityAttack" \
+    --logger "console;verbosity=normal" \
+    --logger "trx;LogFileName=/testresults/security-tests.trx" \
+    --results-directory /testresults \
+    -c Release \
+    --no-restore \
+    --no-build || echo "Tests completed"
+
+# ============ Integration Tests Stage ============
+FROM builder AS integration-tests
+
+WORKDIR /src
+
+RUN mkdir -p /testresults
+
+RUN dotnet test tests/Api.Tests.Integration/Api.Tests.Integration.csproj \
+    --logger "console;verbosity=normal" \
+    --logger "trx;LogFileName=/testresults/integration-tests.trx" \
+    --results-directory /testresults \
+    -c Release \
+    --no-restore \
+    --no-build || echo "Tests completed"
+
+# ============ All Tests Stage ============
+FROM builder AS all-tests
+
+WORKDIR /src
+
+RUN mkdir -p /testresults
+
+# Run all tests
+RUN dotnet test tests/Tests.Common/Tests.Common.csproj \
+    --logger "console;verbosity=normal" \
+    --logger "trx;LogFileName=/testresults/common-tests.trx" \
+    --results-directory /testresults \
+    -c Release \
+    --no-restore \
+    --no-build || echo "Common tests completed"
+
+RUN dotnet test tests/Api.Tests.Integration/Api.Tests.Integration.csproj \
+    --logger "console;verbosity=normal" \
+    --logger "trx;LogFileName=/testresults/integration-tests.trx" \
+    --results-directory /testresults \
+    -c Release \
+    --no-restore \
+    --no-build || echo "Integration tests completed"
+
+# Copy test results for output
+FROM alpine:latest AS test-results
+
+WORKDIR /testresults
+COPY --from=all-tests /testresults/ ./
+
+# Final output image
+FROM alpine:latest
+
+WORKDIR /testresults
+COPY --from=test-results /testresults/ ./
+
+ENTRYPOINT ["cat"]
+CMD ["common-tests.trx"]

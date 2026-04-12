@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices.JavaScript;
+using System.Security.Claims;
 using Api.Dtos;
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
@@ -23,6 +24,7 @@ public class MessageController : ControllerBase
     private readonly IUserQuery _userQuery;
     private readonly Api.Services.CloudinaryService _cloudinaryService;
     private readonly IMessageAttachmentRepository _attachmentRepository;
+    private readonly IConsultationAccessChecker _accessChecker;
 
     public MessageController(
         IMediator mediator,
@@ -30,7 +32,8 @@ public class MessageController : ControllerBase
         IMapper mapper,
         IUserQuery userQuery,
         Api.Services.CloudinaryService cloudinaryService,
-        IMessageAttachmentRepository attachmentRepository)
+        IMessageAttachmentRepository attachmentRepository,
+        IConsultationAccessChecker accessChecker)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -38,6 +41,7 @@ public class MessageController : ControllerBase
         _userQuery = userQuery;
         _cloudinaryService = cloudinaryService;
         _attachmentRepository = attachmentRepository;
+        _accessChecker = accessChecker;
     }
 
     //Upload file to Cloudinary
@@ -69,8 +73,21 @@ public class MessageController : ControllerBase
     [HttpPost("AddAttachment")]
     public async Task<IActionResult> AddAttachment([FromBody] AddAttachmentRequest request, CancellationToken ct)
     {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (currentUserId == null)
+            return Unauthorized("User identity not found");
+
         if (request.MessageId == Guid.Empty || string.IsNullOrWhiteSpace(request.FileUrl) || string.IsNullOrWhiteSpace(request.FileType))
             return BadRequest("Invalid attachment data");
+
+        // 🔒 SECURITY: Перевірити, що користувач є власником повідомлення
+        var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(currentUserId), request.MessageId, ct);
+        
+        if (!isOwner)
+        {
+            return Forbid("You can only add attachments to your own messages");
+        }
 
         var attachment = new MessageAttachment
         {
@@ -96,6 +113,20 @@ public class MessageController : ControllerBase
     public async Task<IActionResult> Recive([FromQuery] Guid idConsultation, CancellationToken ct)
     {
         var consultationId = new ConsultationsId(idConsultation);
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+        if (currentUserId == null)
+            return Unauthorized("User identity not found");
+        
+        var isMember = await _accessChecker.IsConsultationMember(
+            Guid.Parse(currentUserId), idConsultation, ct);
+        
+        if (!isMember)
+        {
+            return Forbid("You are not a member of this consultation");
+        }
+
         var messagesOption = await _messageQuery.GetAllMessagesByConsultationId(consultationId, ct);
 
         return await messagesOption.Match<Task<IActionResult>>(

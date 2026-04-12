@@ -31,6 +31,7 @@ public class ChatHub : Hub
     private readonly IUserQuery _userQuery;
     private readonly ILogger<ChatHub> _logger;
     private readonly IMessageAttachmentRepository _attachmentRepository;
+    private readonly IConsultationAccessChecker _accessChecker;
 
     public ChatHub(
         IMediator mediator,
@@ -38,7 +39,8 @@ public class ChatHub : Hub
         IMapper mapper,
         IUserQuery userQuery,
         ILogger<ChatHub> logger,
-        IMessageAttachmentRepository attachmentRepository)
+        IMessageAttachmentRepository attachmentRepository,
+        IConsultationAccessChecker accessChecker)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -46,6 +48,7 @@ public class ChatHub : Hub
         _userQuery = userQuery;
         _logger = logger;
         _attachmentRepository = attachmentRepository;
+        _accessChecker = accessChecker;
     }
 
     /// Користувач відкрив чат консультації
@@ -54,6 +57,19 @@ public class ChatHub : Hub
     public async Task JoinConsultation(string consultationId)
     {
         var userId = GetUserId();
+        
+        // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+        var consultationGuid = Guid.Parse(consultationId);
+        var isMember = await _accessChecker.IsConsultationMember(Guid.Parse(userId), consultationGuid, CancellationToken.None);
+        
+        if (!isMember)
+        {
+            await Clients.Caller.SendAsync("Error", "You are not a member of this consultation");
+            _logger.LogWarning(
+                "Unauthorized access attempt: User {UserId} tried to join consultation {ConsultationId}",
+                userId, consultationId);
+            return;
+        }
         
         await Groups.AddToGroupAsync(Context.ConnectionId, consultationId);
         
@@ -102,6 +118,21 @@ public class ChatHub : Hub
             if (string.IsNullOrEmpty(senderId))
             {
                 await Clients.Caller.SendAsync("Error", "User not authenticated");
+                return;
+            }
+
+            // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+            var consultationGuid = Guid.Parse(consultationId);
+            var isMember = await _accessChecker.IsConsultationMember(
+                Guid.Parse(senderId), consultationGuid, CancellationToken.None);
+            
+            if (!isMember)
+            {
+                await Clients.Caller.SendAsync("Error", 
+                    "You are not a member of this consultation and cannot send messages");
+                _logger.LogWarning(
+                    "Unauthorized message send attempt: User {UserId} tried to send message to consultation {ConsultationId}",
+                    senderId, consultationId);
                 return;
             }
 
@@ -181,6 +212,30 @@ public class ChatHub : Hub
     {
         try
         {
+            var userId = GetUserId();
+            var msgGuid = Guid.Parse(messageId);
+            
+            // 🔒 SECURITY: Перевірити, що користувач є отримувачем цього повідомлення
+            var msgOption = await _messageQuery.GetMessageById(new Domain.Messages.MessageId(msgGuid), CancellationToken.None);
+            
+            var isAuthorized = await msgOption.Match(
+                async msg =>
+                {
+                    // Тільки отримувач може позначити повідомлення як прочитане
+                    return msg.ReceiverId.Value == Guid.Parse(userId);
+                },
+                () => Task.FromResult(false)
+            );
+            
+            if (!isAuthorized)
+            {
+                await Clients.Caller.SendAsync("Error", "Unauthorized: You cannot mark this message as read");
+                _logger.LogWarning(
+                    "Unauthorized mark as read attempt: User {UserId} tried to mark message {MessageId} as read",
+                    userId, messageId);
+                return;
+            }
+
             var command = new MarkMessageAsReadCommand(MessageId: Guid.Parse(messageId));
             await _mediator.Send(command);
 
@@ -226,7 +281,22 @@ public class ChatHub : Hub
     {
         try
         {
-            var command = new DeleteMessageCommand(MessageId: Guid.Parse(messageId));
+            var userId = GetUserId();
+            var msgGuid = Guid.Parse(messageId);
+            
+            // 🔒 SECURITY: Перевірити, що користувач є власником цього повідомлення
+            var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(userId), msgGuid, CancellationToken.None);
+            
+            if (!isOwner)
+            {
+                await Clients.Caller.SendAsync("Error", "Unauthorized: You can only delete your own messages");
+                _logger.LogWarning(
+                    "Unauthorized message delete attempt: User {UserId} tried to delete message {MessageId}",
+                    userId, messageId);
+                return;
+            }
+
+            var command = new DeleteMessageCommand(MessageId: msgGuid);
             var result = await _mediator.Send(command);
 
             await result.Match(

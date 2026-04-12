@@ -62,6 +62,9 @@ public static class ConfigurePersistence
         
         services.AddScoped<IMessageAttachmentRepository, MessageAttachmentRepository>();
         
+        // 🔒 SECURITY: Консultation access checker для авторизації месседжів
+        services.AddScoped<IConsultationAccessChecker, ConsultationAccessChecker>();
+        
         services.AddSingleton<IAuthService, AuthService>();
     }
 }
