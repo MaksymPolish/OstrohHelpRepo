@@ -6,10 +6,12 @@ using AutoMapper;
 using Domain.Conferences;
 using Domain.Messages;
 using Domain.Users;
+using Infrastructure.Encryption;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
+using DotNetEnv;
 
 namespace Api.Hubs;
 
@@ -32,6 +34,8 @@ public class ChatHub : Hub
     private readonly ILogger<ChatHub> _logger;
     private readonly IMessageAttachmentRepository _attachmentRepository;
     private readonly IConsultationAccessChecker _accessChecker;
+    private readonly IEncryptionService _encryptionService;
+    private readonly IKeyDerivationService _keyDerivationService;
 
     public ChatHub(
         IMediator mediator,
@@ -40,7 +44,9 @@ public class ChatHub : Hub
         IUserQuery userQuery,
         ILogger<ChatHub> logger,
         IMessageAttachmentRepository attachmentRepository,
-        IConsultationAccessChecker accessChecker)
+        IConsultationAccessChecker accessChecker,
+        IEncryptionService encryptionService,
+        IKeyDerivationService keyDerivationService)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -49,16 +55,19 @@ public class ChatHub : Hub
         _logger = logger;
         _attachmentRepository = attachmentRepository;
         _accessChecker = accessChecker;
+        _encryptionService = encryptionService;
+        _keyDerivationService = keyDerivationService;
     }
 
     /// Користувач відкрив чат консультації
     /// Автоматично приєднується до групи консультації
     /// Повідомляє другого користувача що він онлайн
+    /// Передає інкрипційний ключ консультації клієнту
     public async Task JoinConsultation(string consultationId)
     {
         var userId = GetUserId();
         
-        // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+        // SECURITY: Перевірити, чи користувач є членом цієї консультації
         var consultationGuid = Guid.Parse(consultationId);
         var isMember = await _accessChecker.IsConsultationMember(Guid.Parse(userId), consultationGuid, CancellationToken.None);
         
@@ -76,6 +85,21 @@ public class ChatHub : Hub
         _logger.LogInformation(
             "User {UserId} opened consultation {ConsultationId}",
             userId, consultationId);
+
+        // Send encryption key to client
+        // The client will use this key to decrypt messages
+        var consultationKey = _keyDerivationService.DeriveKeyForConsultation(
+            GetMasterKeyFromEnvironment(), 
+            consultationGuid);
+        var keyBase64 = Convert.ToBase64String(consultationKey);
+        
+        await Clients.Caller.SendAsync("ReceiveConsultationKey", new
+        {
+            ConsultationId = consultationId,
+            Key = keyBase64,
+            Algorithm = "AES-256-GCM",
+            Timestamp = DateTime.UtcNow
+        });
 
         // Повідомити другого учасника
         await Clients.OthersInGroup(consultationId).SendAsync("UserOnline", new
@@ -106,10 +130,17 @@ public class ChatHub : Hub
         });
     }
 
-    /// Відправити повідомлення в консультацію
-    /// receiverId визначається автоматично на основі консультації
-    public async Task SendMessage(string consultationId, string text, 
-        List<AttachmentData>? attachments = null)
+    /// <summary>
+    /// Send an already-encrypted message to a consultation.
+    /// The message is encrypted on client side before being sent.
+    /// </summary>
+    /// <param name="consultationId">Consultation identifier</param>
+    /// <param name="encryptedContentBase64">Encrypted message content (base64 encoded)</param>
+    /// <param name="ivBase64">Initialization vector (base64 encoded)</param>
+    /// <param name="authTagBase64">Authentication tag (base64 encoded)</param>
+    /// <param name="attachments">Optional list of attachments</param>
+    public async Task SendMessage(string consultationId, string encryptedContentBase64, 
+        string ivBase64, string authTagBase64, List<AttachmentData>? attachments = null)
     {
         try
         {
@@ -121,7 +152,7 @@ public class ChatHub : Hub
                 return;
             }
 
-            // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+            //  SECURITY: Перевірити, чи користувач є членом цієї консультації
             var consultationGuid = Guid.Parse(consultationId);
             var isMember = await _accessChecker.IsConsultationMember(
                 Guid.Parse(senderId), consultationGuid, CancellationToken.None);
@@ -136,11 +167,18 @@ public class ChatHub : Hub
                 return;
             }
 
-            // Створити command для відправки повідомлення
+            // Decode base64 strings to byte arrays
+            var encryptedContent = Convert.FromBase64String(encryptedContentBase64);
+            var iv = Convert.FromBase64String(ivBase64);
+            var authTag = Convert.FromBase64String(authTagBase64);
+
+            // Створити command для збереження вже зашифрованого повідомлення
             var command = new SendMessageCommand(
                 ConsultationId: Guid.Parse(consultationId),
                 SenderId: Guid.Parse(senderId),
-                Text: text,
+                EncryptedContent: encryptedContent,
+                Iv: iv,
+                AuthTag: authTag,
                 MediaPaths: null
             );
 
@@ -215,7 +253,7 @@ public class ChatHub : Hub
             var userId = GetUserId();
             var msgGuid = Guid.Parse(messageId);
             
-            // 🔒 SECURITY: Перевірити, що користувач є отримувачем цього повідомлення
+            // SECURITY: Перевірити, що користувач є отримувачем цього повідомлення
             var msgOption = await _messageQuery.GetMessageById(new Domain.Messages.MessageId(msgGuid), CancellationToken.None);
             
             var isAuthorized = await msgOption.Match(
@@ -284,7 +322,7 @@ public class ChatHub : Hub
             var userId = GetUserId();
             var msgGuid = Guid.Parse(messageId);
             
-            // 🔒 SECURITY: Перевірити, що користувач є власником цього повідомлення
+            //  SECURITY: Перевірити, що користувач є власником цього повідомлення
             var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(userId), msgGuid, CancellationToken.None);
             
             if (!isOwner)
@@ -389,6 +427,22 @@ public class ChatHub : Hub
         return Context.User?.FindFirst("sub")?.Value 
             ?? Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
             ?? string.Empty;
+    }
+
+    /// Helper для отримання Master Key з окружения
+    private byte[] GetMasterKeyFromEnvironment()
+    {
+        var masterKeyBase64 = DotNetEnv.Env.GetString("ENCRYPTION_MASTER_KEY")
+            ?? throw new InvalidOperationException("ENCRYPTION_MASTER_KEY environment variable is not configured");
+        
+        try
+        {
+            return Convert.FromBase64String(masterKeyBase64);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException("ENCRYPTION_MASTER_KEY must be valid base64 encoded", ex);
+        }
     }
 }
 

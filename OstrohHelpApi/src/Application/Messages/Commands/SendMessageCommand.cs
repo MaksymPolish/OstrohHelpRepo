@@ -11,10 +11,16 @@ using ConsultationNotFoundException = Application.Messages.Exceptions.Consultati
 
 namespace Application.Messages.Commands;
 
+
+/// Command to store an already-encrypted message.
+/// The message is encrypted on the client side before being sent to the server.
+/// The server receives the encrypted content, IV, and auth tag and stores them as-is.
 public record SendMessageCommand(
     Guid ConsultationId,
     Guid SenderId,
-    string Text,
+    byte[] EncryptedContent,
+    byte[] Iv,
+    byte[] AuthTag,
     List<string>? MediaPaths = null) 
     : IRequest<Result<Message, MessageExceptions>>;
 
@@ -25,7 +31,6 @@ public class SendMessageCommandHandler(
 {
     public async Task<Result<Message, MessageExceptions>> Handle(SendMessageCommand command, CancellationToken ct)
     {
-        bool isRead = false;
         var consultationId = new ConsultationsId(command.ConsultationId);
         var senderId = new UserId(command.SenderId);
 
@@ -39,19 +44,18 @@ public class SendMessageCommandHandler(
                     ? consultation.PsychologistId 
                     : consultation.StudentId;
                 
-                // --- Створення повідомлення ---
-
-                var message = Message.Create(
+                // --- Створення зашифрованого повідомлення ---
+                // (Encryption already done on client side, server just stores the encrypted data)
+                var message = Message.CreateEncrypted(
                     id: new MessageId(Guid.NewGuid()),
                     consultationId: consultation.Id,
                     senderId: senderId,
                     receiverId: receiverId,
-                    text: command.Text,
-                    isRead: isRead,
-                    sentAt: DateTime.UtcNow,
-                    deletedAt: null
+                    encryptedContent: command.EncryptedContent,
+                    iv: command.Iv,
+                    authTag: command.AuthTag,
+                    sentAt: DateTime.UtcNow
                 );
-                // Додавання вкладень буде реалізовано окремо через MessageAttachment
 
                 // --- Збереження через репозиторій ---
                 var result = await _messageRepository.AddAsync(message, ct);

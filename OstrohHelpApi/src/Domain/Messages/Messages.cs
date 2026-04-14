@@ -10,17 +10,55 @@ public class Message
     public ConsultationsId ConsultationId { get; set; }
     public UserId SenderId { get; set; }
     public UserId ReceiverId { get; set; }
-    public string Text { get; set; }
+    
+    // Legacy: kept for backward compatibility, will be removed in Phase 3
+    public string? Text { get; set; }
+    
+    // Encryption fields (Phase 2)
+    public byte[]? EncryptedContent { get; set; }  // AES-256-GCM ciphertext
+    public byte[]? Iv { get; set; }                 // Initialization vector (12 bytes)
+    public byte[]? AuthTag { get; set; }            // Authentication tag (16 bytes)
+    
     public bool IsRead { get; set; }
     public DateTime SentAt { get; set; }
     public DateTime? DeletedAt { get; set; }
 
     public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
 
+    /// Creates a message with encrypted content (preferred for new messages)
+    public static Message CreateEncrypted(
+        MessageId id,
+        ConsultationsId consultationId,
+        UserId senderId,
+        UserId receiverId,
+        byte[] encryptedContent,
+        byte[] iv,
+        byte[] authTag,
+        DateTime sentAt) =>
+        new Message
+        {
+            Id = id,
+            ConsultationId = consultationId,
+            SenderId = senderId,
+            ReceiverId = receiverId,
+            EncryptedContent = encryptedContent,
+            Iv = iv,
+            AuthTag = authTag,
+            IsRead = false,
+            SentAt = sentAt,
+            DeletedAt = null
+        };
+
+    /// Legacy: Creates a message with plaintext (for backward compatibility)
     public static Message Create(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
         new(id, consultationId, senderId, receiverId, text, isRead, sentAt, deletedAt);
 
-    Message(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
+    // Parameterless constructor for EF Core
+    protected Message()
+    {
+    }
+
+    private Message(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
     {
         Id = id;
         ConsultationId = consultationId;
