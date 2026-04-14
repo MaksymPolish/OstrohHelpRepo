@@ -17,7 +17,34 @@ public class MessageAttachmentRepository(ApplicationDbContext context) : IMessag
     {
         return await context.MessageAttachments
             .AsNoTracking()
-            .Where(a => a.MessageId == messageId)
+            .Where(a => a.MessageId == messageId.Value)
             .ToListAsync(ct);
+    }
+
+    public async Task<MessageAttachment?> GetByIdAsync(Guid id, CancellationToken ct)
+    {
+        return await context.MessageAttachments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+    }
+
+    public async Task<List<MessageAttachment>> GetStandaloneAttachmentsAsync(CancellationToken ct)
+    {
+        return await context.MessageAttachments
+            .AsNoTracking()
+            .Where(a => a.MessageId == null)
+            .ToListAsync(ct);
+    }
+
+    public async Task UpdateAsync(MessageAttachment attachment, CancellationToken ct)
+    {
+        context.MessageAttachments.Update(attachment);
+        await context.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAsync(MessageAttachment attachment, CancellationToken ct)
+    {
+        context.MessageAttachments.Remove(attachment);
+        await context.SaveChangesAsync(ct);
     }
 }

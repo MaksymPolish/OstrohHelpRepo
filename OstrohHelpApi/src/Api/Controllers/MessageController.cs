@@ -92,10 +92,11 @@ public class MessageController : ControllerBase
         var attachment = new MessageAttachment
         {
             Id = Guid.NewGuid(),
-            MessageId = new MessageId(request.MessageId),
+            MessageId = request.MessageId,
             FileUrl = request.FileUrl,
             FileType = request.FileType,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            FileSizeBytes = 0  // Will be set by Cloudinary service
         };
 
         var result = await _attachmentRepository.AddAsync(attachment, ct);

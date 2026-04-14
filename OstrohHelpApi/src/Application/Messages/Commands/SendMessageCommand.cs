@@ -21,12 +21,13 @@ public record SendMessageCommand(
     byte[] EncryptedContent,
     byte[] Iv,
     byte[] AuthTag,
-    List<string>? MediaPaths = null) 
+    List<Guid>? AttachmentIds = null) 
     : IRequest<Result<Message, MessageExceptions>>;
 
 public class SendMessageCommandHandler(
     IConsultationQuery _consultationQuery,
-    IMessageRepository _messageRepository) 
+    IMessageRepository _messageRepository,
+    IMessageAttachmentRepository _attachmentRepository) 
     : IRequestHandler<SendMessageCommand, Result<Message, MessageExceptions>>
 {
     public async Task<Result<Message, MessageExceptions>> Handle(SendMessageCommand command, CancellationToken ct)
@@ -59,6 +60,29 @@ public class SendMessageCommandHandler(
 
                 // --- Збереження через репозиторій ---
                 var result = await _messageRepository.AddAsync(message, ct);
+
+                if (!result.IsSuccess)
+                {
+                    return result;
+                }
+
+                // --- Приєднулення файлів до повідомлення (якщо надані) ---
+                if (command.AttachmentIds?.Count > 0)
+                {
+                    foreach (var attachmentId in command.AttachmentIds)
+                    {
+                        var attachment = await _attachmentRepository.GetByIdAsync(attachmentId, ct);
+                        if (attachment != null)
+                        {
+                            // Встановити MessageId для того, щоб прив'язати атачмент до повідомлення
+                            attachment.MessageId = message.Id.Value;
+                            await _attachmentRepository.UpdateAsync(attachment, ct);
+                            
+                            // Додати атачмент до колекції повідомлення
+                            message.Attachments.Add(attachment);
+                        }
+                    }
+                }
 
                 return result;
             },

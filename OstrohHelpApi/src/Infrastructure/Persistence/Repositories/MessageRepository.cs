@@ -41,21 +41,43 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
 
     public async Task<Option<List<Message>>> GetAllMessagesByConsultationId(ConsultationsId id, CancellationToken cancellationToken)
     {
-        var entity = await context.Messages
+        var messages = await context.Messages
             .AsNoTracking()
-            .Include(m => m.Attachments)
             .Where(x => x.ConsultationId == id).ToListAsync(cancellationToken);
         
-        return entity == null ? Option.None<List<Message>>() : Option.Some(entity);
+        if (messages.Count == 0) return Option.None<List<Message>>();
+
+        // Manually load attachments (Attachments navigation is NotMapped)
+        var messageIds = messages.Select(m => m.Id.Value).ToList();
+        var attachments = await context.Set<MessageAttachment>()
+            .AsNoTracking()
+            .Where(a => messageIds.Contains(a.MessageId.Value))
+            .ToListAsync(cancellationToken);
+
+        foreach (var message in messages)
+        {
+            message.Attachments = attachments
+                .Where(a => a.MessageId == message.Id.Value)
+                .ToList();
+        }
+
+        return Option.Some(messages);
     }
 
     public async Task<Option<Message>> GetMessageById(MessageId id, CancellationToken cancellationToken)
     {
-        var entity = await context.Messages
+        var message = await context.Messages
             .AsNoTracking()
-            .Include(m => m.Attachments)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         
-        return entity == null ? Option.None<Message>() : Option.Some(entity);
+        if (message == null) return Option.None<Message>();
+
+        // Manually load attachments (Attachments navigation is NotMapped)
+        message.Attachments = await context.Set<MessageAttachment>()
+            .AsNoTracking()
+            .Where(a => a.MessageId == message.Id.Value)
+            .ToListAsync(cancellationToken);
+
+        return Option.Some(message);
     }
 }

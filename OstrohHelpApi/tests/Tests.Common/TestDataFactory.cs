@@ -96,16 +96,17 @@ public static class TestDataFactory
 
     public static MessageAttachment CreateMessageAttachment(
         Guid? id = null,
-        MessageId? messageId = null,
+        Guid? messageId = null,
         string fileUrl = "https://example.com/file.jpg",
         string fileType = "image/jpeg")
     {
         return new MessageAttachment
         {
             Id = id ?? Guid.NewGuid(),
-            MessageId = messageId ?? new MessageId(Guid.NewGuid()),
+            MessageId = messageId,
             FileUrl = fileUrl,
             FileType = fileType,
+            FileSizeBytes = 1024,
             CreatedAt = DateTime.UtcNow
         };
     }

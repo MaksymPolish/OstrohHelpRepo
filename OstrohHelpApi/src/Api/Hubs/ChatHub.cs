@@ -179,7 +179,7 @@ public class ChatHub : Hub
                 EncryptedContent: encryptedContent,
                 Iv: iv,
                 AuthTag: authTag,
-                MediaPaths: null
+                AttachmentIds: null
             );
 
             var result = await _mediator.Send(command);
@@ -195,7 +195,7 @@ public class ChatHub : Hub
                             var messageAttachment = new MessageAttachment
                             {
                                 Id = Guid.NewGuid(),
-                                MessageId = message.Id,
+                                MessageId = message.Id.Value,
                                 FileUrl = attachment.FileUrl,
                                 FileType = attachment.FileType,
                                 CreatedAt = DateTime.UtcNow

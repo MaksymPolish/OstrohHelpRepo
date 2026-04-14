@@ -23,7 +23,8 @@ public class Message
     public DateTime SentAt { get; set; }
     public DateTime? DeletedAt { get; set; }
 
-    public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<MessageAttachment> Attachments { get; set; } = new();
 
     /// Creates a message with encrypted content (preferred for new messages)
     public static Message CreateEncrypted(

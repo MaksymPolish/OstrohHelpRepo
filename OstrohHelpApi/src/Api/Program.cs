@@ -48,6 +48,8 @@ else
 
 // Cloudinary service registration
 builder.Services.AddSingleton<Api.Services.CloudinaryService>();
+builder.Services.AddSingleton<Application.Common.Interfaces.Services.IFileUploadService>(
+    sp => sp.GetRequiredService<Api.Services.CloudinaryService>());
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -190,30 +192,11 @@ builder.Services.AddAuthentication(options =>
         var googleClientId = DotNetEnv.Env.GetString("GOOGLE_CLIENT_ID");
         var googleClientSecret = DotNetEnv.Env.GetString("GOOGLE_CLIENT_SECRET");
 
-        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
-        {
-            // Використовуємо значення з .env
-            options.ClientId = googleClientId;
-            options.ClientSecret = googleClientSecret;
-            Console.WriteLine("✓ Google OAuth credentials loaded from .env");
-        }
-        else
-        {
-            // Fallback - читаємо з google-auth.json файлу
-            var googleAuthPath = Path.Combine(builder.Environment.ContentRootPath, "google-auth.json");
-            if (File.Exists(googleAuthPath))
-            {
-                var googleAuthJson = File.ReadAllText(googleAuthPath);
-                dynamic googleAuth = Newtonsoft.Json.JsonConvert.DeserializeObject(googleAuthJson);
-                options.ClientId = googleAuth.ClientId;
-                options.ClientSecret = googleAuth.ClientSecret;
-                Console.WriteLine("✓ Google OAuth credentials loaded from google-auth.json");
-            }
-            else
-            {
-                throw new Exception($"Google OAuth credentials not found in .env or google-auth.json file at {googleAuthPath}");
-            }
-        }
+        // Використовуємо значення з .env
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        Console.WriteLine("✓ Google OAuth credentials loaded from .env");
+
         options.SignInScheme = "Cookies";
         options.CallbackPath = "/auth/callback"; // шлях, куди повертається Google
     });
