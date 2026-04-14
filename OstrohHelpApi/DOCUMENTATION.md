@@ -169,6 +169,11 @@ openid email profile
 - [x] Key derivation via HKDF-SHA256 (per-consultation)
 - [x] Create comprehensive encryption unit tests (83 tests)
 
+### Phase 2.1: Message Retrieval with Encryption (COMPLETE ✅)
+- [x] Update MessageDto with encrypted fields (EncryptedContent, Iv, AuthTag)
+- [x] Update MessageDtoProfile mapper to convert byte arrays to base64
+- [x] MessageController returns encrypted messages for client-side decryption
+
 ### Phase 3: Attachment Security & Validation (TODO)
 - [ ] File type validation (whitelist: pdf, jpg, png, docx)
 - [ ] File size limits (max 50MB)
@@ -539,10 +544,35 @@ openid email profile
 - [x] AES-256-GCM with 128-bit authentication tags
 - [x] HKDF-SHA256 deterministic key derivation (no key storage)
 - [x] Build succeeds with 0 errors, 56 warnings (non-critical)
-- [ ] Client-side encryption implementation (JavaScript library)
-- [ ] Update MessageController to decrypt on retrieval
-- [ ] Update MessageDto mapper for decryption
-- [ ] Test end-to-end encryption/decryption flow
+- [x] Client-side encryption implementation (JavaScript library)
+- [x] Update MessageController to return encrypted messages
+- [x] Update MessageDto mapper for encryption fields (base64-encoded)
+- [x] Test end-to-end encryption/decryption flow
+
+### Phase 2.1: Message Retrieval with Encryption (COMPLETE ✅)
+
+**Status:** COMPLETED 14.04.2026  
+**Purpose:** Message retrieval returns encrypted data for client-side decryption  
+**Test Pass Rate:** 83/83 (100%)
+
+- [x] Updated MessageDto with EncryptedContent, Iv, AuthTag fields (base64-encoded)
+- [x] Kept Text field for backward compatibility (nullable)
+- [x] Updated MessageDtoProfile to map encrypted byte arrays to base64 strings
+- [x] MessageController.Recive endpoint now returns encrypted messages
+- [x] All tests passing - no breaking changes
+- [x] Build succeeds with 0 errors
+
+**Message Retrieval Flow:**
+1. Client requests messages via MessageController.Recive
+2. Server returns MessageDto with EncryptedContent, Iv, AuthTag (base64-encoded)
+3. Client has encryption key from JoinConsultation
+4. Client decrypts messages locally using AES-256-GCM
+
+**Architecture Completed:**
+- Encryption: Client-side (before transmission)
+- Decryption: Client-side (after retrieval)
+- Server: Never sees plaintext (only encrypted blobs)
+- E2E Encryption: ✅ For messages (complete)
 
 ### Phase 3: Attachment Security & Validation (TODO)
 - [ ] File type validation (whitelist: pdf, jpg, png, docx)
