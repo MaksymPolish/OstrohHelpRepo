@@ -174,12 +174,25 @@ openid email profile
 - [x] Update MessageDtoProfile mapper to convert byte arrays to base64
 - [x] MessageController returns encrypted messages for client-side decryption
 
-### Phase 3: Attachment Security & Validation (TODO)
-- [ ] File type validation (whitelist: pdf, jpg, png, docx)
-- [ ] File size limits (max 50MB)
-- [ ] Malware scanning integration (ClamAV or VirusTotal)
-- [ ] Secure file storage (encrypted in Cloudinary)
-- [ ] Create attachment security tests
+### Phase 3: Attachment Management (COMPLETE ✅)
+
+**Status:** COMPLETED 17.04.2026  
+**Components:** Hangfire Jobs, Preview URLs, Batch Upload, Soft Delete  
+**Build:** 0 Errors
+
+- [x] Hangfire integration for background job processing (v1.8.14)
+- [x] Daily orphaned attachment cleanup job (2AM UTC)
+- [x] Cloudinary integration with preview URL generation
+- [x] Batch file upload support (AddMultipleAttachmentsCommand)
+- [x] Automatic preview generation (thumbnails, medium preview, video poster, PDF pages)
+- [x] MessageAttachment entity extended (preview URL fields)
+- [x] Soft delete system for messages and attachments (IsDeleted flag)
+- [x] File type normalization utility (FileTypeNormalizer)
+- [x] CloudinaryService refactoring (eliminated URL building duplicates)
+- [x] Database migration for IsDeleted flags
+- [x] DELETE /api/Message/Delete endpoint (soft delete messages)
+- [x] DELETE /api/Message/Attachment/{id} endpoint (soft delete single attachment)
+- [x] Frontend visibility for deleted content (IsDeleted flag in DTOs)
 
 ### Phase 4: Rate Limiting & Audit Logging (TODO)
 - [ ] Implement rate limiting (X messages per user per minute)
@@ -201,12 +214,12 @@ openid email profile
 
 | Controller | Endpoints | Статус | Тести |
 |---|---|---|---|
-| AuthController | 6 | Active | Pending |
-| ConsultationController | 8+ | Active | Pending |
-| MessageController | 5 | Active + Secure | 10 tests |
-| ChatHub (SignalR) | 4 | Active + Secure | 13 tests |
-| ConsultationStatusController | 3+ | Active | Pending |
-| RoleController | 3+ | Active | Pending |
+| AuthController | 6 | ✅ Active | ⏳ Pending |
+| ConsultationController | 8+ | ✅ Active | ⏳ Pending |
+| MessageController | 6 | ✅ Active + Secure | ✅ 10 tests |
+| ChatHub (SignalR) | 4 | ✅ Active + Secure | ✅ 13 tests |
+| ConsultationStatusController | 3+ | ✅ Active | ⏳ Pending |
+| RoleController | 3+ | ✅ Active | ⏳ Pending |
 
 **Деталі ендпоїнтів:** див. [ENDPOINTS.md](ENDPOINTS.md)
 
@@ -574,12 +587,25 @@ openid email profile
 - Server: Never sees plaintext (only encrypted blobs)
 - E2E Encryption: ✅ For messages (complete)
 
-### Phase 3: Attachment Security & Validation (TODO)
-- [ ] File type validation (whitelist: pdf, jpg, png, docx)
-- [ ] File size limits (max 50MB)
-- [ ] Malware scanning integration (ClamAV or VirusTotal)
-- [ ] Secure file storage (encrypted in Cloudinary)
-- [ ] Create attachment security tests
+### Phase 3: Attachment Management (COMPLETE ✅)
+
+**Status:** COMPLETED 17.04.2026  
+**Components:** Hangfire Jobs, Preview URLs, Batch Upload, Soft Delete  
+**Build:** 0 Errors
+
+- [x] Hangfire integration for background job processing (v1.8.14)
+- [x] Daily orphaned attachment cleanup job (2AM UTC)
+- [x] Cloudinary integration with preview URL generation
+- [x] Batch file upload support (AddMultipleAttachmentsCommand)
+- [x] Automatic preview generation (thumbnails, medium preview, video poster, PDF pages)
+- [x] MessageAttachment entity extended (preview URL fields)
+- [x] Soft delete system for messages and attachments (IsDeleted flag)
+- [x] File type normalization utility (FileTypeNormalizer)
+- [x] CloudinaryService refactoring (eliminated URL building duplicates)
+- [x] Database migration for IsDeleted flags
+- [x] DELETE /api/Message/Delete endpoint (soft delete messages)
+- [x] DELETE /api/Message/Attachment/{id} endpoint (soft delete single attachment)
+- [x] Frontend visibility for deleted content (IsDeleted flag in DTOs)
 
 ### Phase 4: Rate Limiting & Audit Logging (TODO)
 - [ ] Implement rate limiting (X messages per user per minute)
@@ -603,7 +629,7 @@ openid email profile
 |---|---|---|---|
 | AuthController | 6 | ✅ Active | ⏳ Pending |
 | ConsultationController | 8+ | ✅ Active | ⏳ Pending |
-| MessageController | 5 | ✅ Active + Secure | ✅ 10 tests |
+| MessageController | 6 | ✅ Active + Secure | ✅ 10 tests |
 | ChatHub (SignalR) | 4 | ✅ Active + Secure | ✅ 13 tests |
 | ConsultationStatusController | 3+ | ✅ Active | ⏳ Pending |
 | RoleController | 3+ | ✅ Active | ⏳ Pending |
