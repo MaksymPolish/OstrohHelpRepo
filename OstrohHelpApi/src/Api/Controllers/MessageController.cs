@@ -22,92 +22,110 @@ public class MessageController : ControllerBase
     private readonly IMessageQuery _messageQuery;
     private readonly IMapper _mapper;
     private readonly IUserQuery _userQuery;
-    private readonly Api.Services.CloudinaryService _cloudinaryService;
-    private readonly IMessageAttachmentRepository _attachmentRepository;
     private readonly IConsultationAccessChecker _accessChecker;
+    private readonly Application.Common.Interfaces.Services.IPreviewGenerationService _previewGenerationService;
 
     public MessageController(
         IMediator mediator,
         IMessageQuery messageQuery,
         IMapper mapper,
         IUserQuery userQuery,
-        Api.Services.CloudinaryService cloudinaryService,
-        IMessageAttachmentRepository attachmentRepository,
-        IConsultationAccessChecker accessChecker)
+        IConsultationAccessChecker accessChecker,
+        Application.Common.Interfaces.Services.IPreviewGenerationService previewGenerationService)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
         _mapper = mapper;
         _userQuery = userQuery;
-        _cloudinaryService = cloudinaryService;
-        _attachmentRepository = attachmentRepository;
         _accessChecker = accessChecker;
+        _previewGenerationService = previewGenerationService;
     }
 
-    //Upload file to Cloudinary
-    /// Uploads a file (image/video/any) to Cloudinary for a specific user.
-    [HttpPost("UploadToCloud/{userId}")]
+    /// <summary>
+    /// Batch upload multiple files and create attachments in one request.
+    /// Files are uploaded to Cloudinary in the "attachments" folder.
+    /// Preview URLs are generated for each file based on its type.
+    /// Supports single or multiple file uploads.
+    /// </summary>
+    /// <remarks>
+    /// Usage:
+    /// - Without message attachment: POST /api/Message/BatchUpload
+    /// - With message attachment: POST /api/Message/BatchUpload?messageId={guid}
+    /// </remarks>
+    [HttpPost("BatchUpload")]
     [Consumes("multipart/form-data")]
-    [ApiExplorerSettings(IgnoreApi = false)]
-    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(AddMultipleAttachmentsResponse), 200)]
     [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 401)]
     [ProducesResponseType(typeof(object), 500)]
-    public async Task<IActionResult> UploadToCloud([FromRoute] string userId, IFormFile file, CancellationToken ct)
-    {
-        if (file == null || file.Length == 0 || string.IsNullOrWhiteSpace(userId))
-            return BadRequest("No file or userId provided");
-
-        var folder = $"users/{userId}";
-        string url;
-        using (var stream = file.OpenReadStream())
-        {
-            url = await _cloudinaryService.UploadFileAsync(stream, file.FileName, folder, file.ContentType);
-        }
-        if (string.IsNullOrEmpty(url))
-            return StatusCode(500, "Upload to cloud failed");
-
-        return Ok(new { url, fileType = file.ContentType });
-    }
-
-    /// Add attachment to existing message. Use after uploading file to Cloudinary.
-    [HttpPost("AddAttachment")]
-    public async Task<IActionResult> AddAttachment([FromBody] AddAttachmentRequest request, CancellationToken ct)
+    public async Task<IActionResult> BatchUpload(IFormFileCollection files, [FromQuery] Guid? messageId, CancellationToken ct)
     {
         var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         if (currentUserId == null)
             return Unauthorized("User identity not found");
 
-        if (request.MessageId == Guid.Empty || string.IsNullOrWhiteSpace(request.FileUrl) || string.IsNullOrWhiteSpace(request.FileType))
-            return BadRequest("Invalid attachment data");
+        if (files == null || files.Count == 0)
+            return BadRequest("No files provided");
 
-        // 🔒 SECURITY: Перевірити, що користувач є власником повідомлення
-        var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(currentUserId), request.MessageId, ct);
-        
-        if (!isOwner)
+        // Validate messageId if provided
+        if (messageId.HasValue && messageId.Value == Guid.Empty)
+            return BadRequest("Invalid messageId");
+
+        // Security check: if messageId is provided, verify ownership
+        if (messageId.HasValue)
         {
-            return Forbid("You can only add attachments to your own messages");
+            var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(currentUserId), messageId.Value, ct);
+            if (!isOwner)
+            {
+                return Forbid("You can only add attachments to your own messages");
+            }
         }
 
-        var attachment = new MessageAttachment
+        // Convert IFormFileCollection to List<BatchFileUpload>
+        var batchFiles = new List<Application.Messages.Commands.BatchFileUpload>();
+        
+        try
         {
-            Id = Guid.NewGuid(),
-            MessageId = request.MessageId,
-            FileUrl = request.FileUrl,
-            FileType = request.FileType,
-            CreatedAt = DateTime.UtcNow,
-            FileSizeBytes = 0  // Will be set by Cloudinary service
-        };
+            foreach (var file in files)
+            {
+                if (file.Length > 0)
+                {
+                    var fileStream = new MemoryStream();
+                    await file.CopyToAsync(fileStream, ct);
+                    fileStream.Position = 0;
 
-        var result = await _attachmentRepository.AddAsync(attachment, ct);
+                    batchFiles.Add(new Application.Messages.Commands.BatchFileUpload
+                    {
+                        FileStream = fileStream,
+                        FileName = file.FileName,
+                        FileType = Path.GetExtension(file.FileName).TrimStart('.'),
+                        FileSizeBytes = file.Length
+                    });
+                }
+            }
 
-        return Ok(new MessageAttachmentDto
+            if (batchFiles.Count == 0)
+                return BadRequest("No valid files provided");
+
+            // Execute batch upload command
+            var command = new AddMultipleAttachmentsCommand
+            {
+                Files = batchFiles,
+                MessageId = messageId
+            };
+
+            var result = await _mediator.Send(command, ct);
+            return Ok(result);
+        }
+        finally
         {
-            Id = result.Id,
-            FileUrl = result.FileUrl,
-            FileType = result.FileType,
-            CreatedAt = result.CreatedAt
-        });
+            // Clean up streams - always execute even if exception occurs
+            foreach (var file in batchFiles)
+            {
+                file.FileStream?.Dispose();
+            }
+        }
     }
     
     [HttpGet("Recive")]
@@ -116,7 +134,7 @@ public class MessageController : ControllerBase
         var consultationId = new ConsultationsId(idConsultation);
         var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
-        // 🔒 SECURITY: Перевірити, чи користувач є членом цієї консультації
+        // SECURITY: Перевірити, чи користувач є членом цієї консультації
         if (currentUserId == null)
             return Unauthorized("User identity not found");
         
@@ -135,12 +153,23 @@ public class MessageController : ControllerBase
             {
                 var dtos = new List<MessageDto>();
 
+                // TODO: OPTIMIZATION - N+1 Query Issue
+                // Currently: For N messages, performs 2*N database queries (one per sender/receiver)
+                // IMPROVEMENT: Batch load all unique users in a single query
+                // Collect all unique user IDs first, then load them in one batch query
+                // var allUserIds = messages
+                //     .SelectMany(m => new[] { m.SenderId, m.ReceiverId })
+                //     .Distinct()
+                //     .ToList();
+                // var users = await _userQuery.GetByIdsAsync(allUserIds, ct);
+                // Then use dictionary lookup instead of individual queries
+
                 foreach (var message in messages)
                 {
                     string senderName = "Невідомий";
                     string receiverName = "Невідомий";
 
-                    // --- Отримай імена ---
+                    // --- Отримай імена (N+1 Query - see TODO above) ---
                     var senderOption = await _userQuery.GetByIdAsync(message.SenderId, ct);
                     var receiverOption = await _userQuery.GetByIdAsync(message.ReceiverId, ct);
 
@@ -196,6 +225,29 @@ public class MessageController : ControllerBase
         return result.Match<IActionResult>(
             message => CreatedAtAction(nameof(Read), new { id = message.Id }, message),
             errors => BadRequest(new {Error = errors.Message})
+        );
+    }
+
+    /// <summary>
+    /// Soft delete an attachment - clears its data and marks as deleted.
+    /// File remains on Cloudinary but is hidden from users.
+    /// </summary>
+    [HttpDelete("Attachment/{attachmentId}")]
+    [ProducesResponseType(typeof(MessageAttachmentDto), 200)]
+    [ProducesResponseType(typeof(object), 404)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> DeleteAttachment(Guid attachmentId, CancellationToken ct)
+    {
+        var command = new DeleteAttachmentCommand(attachmentId);
+        var result = await _mediator.Send(command, ct);
+
+        return result.Match<IActionResult>(
+            attachment =>
+            {
+                var dto = _mapper.Map<MessageAttachmentDto>(attachment);
+                return Ok(new { message = "Attachment deleted", data = dto });
+            },
+            error => NotFound(new { error })
         );
     }
     

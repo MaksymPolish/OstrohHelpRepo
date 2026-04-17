@@ -21,6 +21,7 @@ public class MessageDto
     
     public bool IsRead { get; set; }
     public DateTime SentAt { get; set; }
+    public bool IsDeleted { get; set; }  // Soft delete flag - frontend decides how to display
     public string FullNameSender { get; set; }
     public string FullNameReceiver { get; set; }
     public List<MessageAttachmentDto> Attachments { get; set; }

@@ -36,6 +36,14 @@ public class MessageAttachmentRepository(ApplicationDbContext context) : IMessag
             .ToListAsync(ct);
     }
 
+    public async Task<List<MessageAttachment>> GetOrphanedAttachmentsAsync(DateTimeOffset cutoffDate, CancellationToken ct)
+    {
+        return await context.MessageAttachments
+            .AsNoTracking()
+            .Where(a => a.MessageId == null && a.CreatedAt < cutoffDate)
+            .ToListAsync(ct);
+    }
+
     public async Task UpdateAsync(MessageAttachment attachment, CancellationToken ct)
     {
         context.MessageAttachments.Update(attachment);

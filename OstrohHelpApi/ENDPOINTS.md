@@ -151,64 +151,88 @@
 **Base Route:** `/api/Message`  
 **Доступ:** Авторизований користувач, спеціальні перевірки для кожного ендпоїнту  
 **Security:** ВСІ ЕНДПОЇНТИ ЗАХИЩЕНІ через IConsultationAccessChecker  
-**Tests:** 10 Unit Tests (MessageControllerSecurityTests)
+**Tests:** 10+ Unit Tests (MessageControllerSecurityTests)
 
-### POST /UploadToCloud/{userId}
-**Описание:** Завантаження файлу в Cloudinary  
+### Soft Delete (Logical Deletion)
+**Важливо!** Система використовує **soft delete** замість hard delete:
+- Повідомлення та вкладення НЕ видаляються з БД фізично
+- Встановлюється прапор `IsDeleted = true`
+- Дані очищуються: Text → "Message was deleted by user", FileUrl → "Attachment was deleted by user"
+- Файли залишаються на Cloudinary (можуть бути переміщені до архіву пізніше)
+- **API повертає видалені дані з флагом `IsDeleted = true`** - фронт вирішує як це показати
+- **Переваги:** Аудит, можливість відновлення, сумісність з шифруванням, видимість в історії
+
+---
+
+### POST /BatchUpload - SECURED
+**Описание:** Завантаження одного або кількох файлів і створення вкладень  
 **Доступ:** Авторизований користувач  
+**Security:** Якщо передано messageId, перевіряє власника повідомлення  
+**Content-Type:** multipart/form-data
 
 **Parameters:**
 | Назва | Тип | Розташування | Обов'язковий |
 |---|---|---|---|
-| userId | string | URL | Так |
-| file | IFormFile | Body (multipart/form-data) | Так |
+| files | IFormFileCollection | Body | Так |
+| messageId | Guid? | Query | Ні |
+
+**Features:**
+- Завантажує файли до Cloudinary в папку "attachments"
+- Автоматично генерує превʼю URLи для кожного файлу
+- Один запит для одного або множини файлів
+- При наявності messageId - автоматично прив'язує файли до повідомлення
+- Per-file error handling (один помилковий файл не блокує інші)
 
 **Response:** 200 OK
 ```json
 {
-  "fileUrl": "string",
-  "fileName": "string",
-  "contentType": "string"
+  "results": [
+    {
+      "attachmentId": "guid",
+      "fileName": "photo.jpg",
+      "isSuccess": true,
+      "errorMessage": null,
+      "fileUrl": "https://res.cloudinary.com/.../attachments/photo",
+      "fileType": "jpg",
+      "fileSizeBytes": 1048576,
+      "createdAt": "2026-04-17T12:00:00Z",
+      "thumbnailUrl": "https://res.cloudinary.com/.../w_150,h_150,q_40/...",
+      "mediumPreviewUrl": "https://res.cloudinary.com/.../w_300,h_300,q_50/...",
+      "videoPosterUrl": null,
+      "pdfPagePreviewUrl": null
+    }
+  ],
+  "successCount": 1,
+  "failureCount": 0,
+  "completedAt": "2026-04-17T12:00:00Z"
 }
 ```
 
----
+**Usage Examples:**
+```bash
+# Standalone upload (no message attachment)
+POST /api/Message/BatchUpload
+Content-Type: multipart/form-data
+files: [file1, file2, ...]
 
-### POST /AddAttachment - SECURED
-**Описание:** Додавання вкладення до повідомлення  
-**Доступ:** Авторизований користувач (ТІЛЬКИ власник повідомлення)  
-**Security:** ПЕРЕВІРЯЄ ВЛАСНИКА
-
-**Request:**
-```json
-{
-  "messageId": "guid",
-  "fileUrl": "string",
-  "fileType": "string (mime-type)"
-}
-```
-
-**Response:** 200 OK
-```json
-{
-  "id": "guid",
-  "fileUrl": "string",
-  "fileType": "string",
-  "createdAt": "datetime"
-}
+# With message attachment
+POST /api/Message/BatchUpload?messageId=550e8400-e29b-41d4-a716-446655440000
+Content-Type: multipart/form-data
+files: [file1, file2, ...]
 ```
 
 **Error Responses:**
-- 400 Bad Request — Невалідні дані
-- 401 Unauthorized — Користувач не знайдений
-- 403 Forbid — Користувач НЕ власник повідомлення
+- 400 Bad Request — No files provided, invalid messageId
+- 401 Unauthorized — User not authenticated
+- 403 Forbidden — User doesn't own the message
 
 ---
 
 ### GET /Recive
-**Описание:** Отримання всіх повідомлень консультації  
+**Описание:** Отримання всіх повідомлень консультації (включно видалені)  
 **Доступ:** Авторизований користувач (учасник консультації)  
-**Security:** ПЕРЕВІРЯЄ ЧЛЕНСТВО
+**Security:** ПЕРЕВІРЯЄ ЧЛЕНСТВО  
+**Важливо:** Повертає ВСІ повідомлення з флагом `IsDeleted` - фронт вирішує як відображати видалені
 
 **Parameters:**
 | Назва | Тип | Розташування | Обов'язковий |
@@ -222,15 +246,26 @@
     "id": "guid",
     "consultationId": "guid",
     "senderId": "guid",
-    "senderName": "string",
-    "senderPhotoUrl": "string",
+    "fullNameSender": "string",
     "receiverId": "guid",
-    "receiverName": "string",
-    "receiverPhotoUrl": "string",
+    "fullNameReceiver": "string",
     "text": "string",
     "isRead": "boolean",
     "sentAt": "datetime",
-    "attachments": []
+    "isDeleted": false,
+    "attachments": [
+      {
+        "id": "guid",
+        "fileUrl": "string",
+        "fileType": "string",
+        "createdAt": "datetime",
+        "thumbnailUrl": "string",
+        "mediumPreviewUrl": "string",
+        "videoPosterUrl": null,
+        "pdfPagePreviewUrl": null,
+        "isDeleted": false
+      }
+    ]
   }
 ]
 ```
@@ -264,10 +299,11 @@
 
 ---
 
-### DELETE /Delete
-**Описание:** Видалення повідомлення  
+### DELETE /Delete - SECURED (Soft Delete)
+**Описание:** Видалення повідомлення (soft delete)  
 **Доступ:** Авторизований користувач (ТІЛЬКИ власник)  
-**Security:** ПЕРЕВІРЯЄ ВЛАСНИКА
+**Security:** ПЕРЕВІРЯЄ ВЛАСНИКА  
+**Поведінка:** Встановлює IsDeleted=true, очищує дані
 
 **Request:**
 ```json
@@ -276,7 +312,50 @@
 }
 ```
 
-**Response:** 204 No Content
+**Response:** 200 OK
+```json
+{
+  "id": "guid",
+  "text": "Message was deleted by user",
+  "encryptedContent": null,
+  "isDeleted": true,
+  "attachments": [
+    {
+      "id": "guid",
+      "fileUrl": "Attachment was deleted by user",
+      "fileType": "deleted",
+      "isDeleted": true
+    }
+  ]
+}
+```
+
+---
+
+### DELETE /Attachment/{attachmentId} - SECURED (Soft Delete)
+**Описание:** Видалення одного вкладення (soft delete)  
+**Доступ:** Авторизований користувач  
+**Поведінка:** Встановлює IsDeleted=true, очищує FileUrl та превʼю
+
+**Parameters:**
+| Назва | Тип | Розташування | Обов'язковий |
+|---|---|---|---|
+| attachmentId | Guid | URL | Так |
+
+**Response:** 200 OK
+```json
+{
+  "message": "Attachment deleted",
+  "data": {
+    "id": "guid",
+    "fileUrl": "Attachment was deleted by user",
+    "fileType": "deleted",
+    "fileSizeBytes": 0,
+    "createdAt": "datetime",
+    "isDeleted": true
+  }
+}
+```
 
 ---
 
@@ -297,7 +376,7 @@
 ---
 
 ## ChatHub - SECURED (SignalR)
-**Base Route:** `/chat` (WebSocket)  
+**Base Route:** `/chat` (WebSocket)
 **Доступ:** Авторизований користувач через JWT токен  
 **Security:** УСІХ МЕТОДИ ЗАХИЩЕНІ — Використовує IConsultationAccessChecker  
 **Tests:** 13 Unit Tests (ChatHubSecurityTests)

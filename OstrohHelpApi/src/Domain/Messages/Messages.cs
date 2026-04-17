@@ -22,6 +22,10 @@ public class Message
     public bool IsRead { get; set; }
     public DateTime SentAt { get; set; }
     public DateTime? DeletedAt { get; set; }
+    
+    // Soft delete flag - when true, message content is hidden from users
+    // Text/EncryptedContent is cleared, displayed as "Message was deleted by user"
+    public bool IsDeleted { get; set; } = false;
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public List<MessageAttachment> Attachments { get; set; } = new();

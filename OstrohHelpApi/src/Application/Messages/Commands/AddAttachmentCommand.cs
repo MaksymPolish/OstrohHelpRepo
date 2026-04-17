@@ -21,20 +21,27 @@ public class AddAttachmentResponse
     public required string FileType { get; set; }
     public required long FileSizeBytes { get; set; }
     public required DateTime CreatedAt { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public string? MediumPreviewUrl { get; set; }
+    public string? VideoPosterUrl { get; set; }
+    public string? PdfPagePreviewUrl { get; set; }
 }
 
 public class AddAttachmentCommandHandler : IRequestHandler<AddAttachmentCommand, AddAttachmentResponse>
 {
     private readonly IFileUploadService _fileUploadService;
     private readonly IMessageAttachmentRepository _attachmentRepository;
+    private readonly IPreviewGenerationService _previewGenerationService;
     private readonly FileUploadValidator _fileValidator;
 
     public AddAttachmentCommandHandler(
         IFileUploadService fileUploadService,
-        IMessageAttachmentRepository attachmentRepository)
+        IMessageAttachmentRepository attachmentRepository,
+        IPreviewGenerationService previewGenerationService)
     {
         _fileUploadService = fileUploadService;
         _attachmentRepository = attachmentRepository;
+        _previewGenerationService = previewGenerationService;
         _fileValidator = new FileUploadValidator();
     }
 
@@ -72,6 +79,23 @@ public class AddAttachmentCommandHandler : IRequestHandler<AddAttachmentCommand,
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(request.FileName);
         var cloudinaryPublicId = $"attachments/{fileNameWithoutExtension}";
         
+        // Step 4: Generate preview URLs
+        var thumbnailUrl = _previewGenerationService.GenerateThumbnailUrl(cloudinaryPublicId);
+        var mediumPreviewUrl = _previewGenerationService.GenerateMediumPreviewUrl(cloudinaryPublicId);
+        
+        string? videoPosterUrl = null;
+        string? pdfPagePreviewUrl = null;
+        
+        var normalizedFileType = request.FileType.ToLowerInvariant().TrimStart('.');
+        if (normalizedFileType is "mp4" or "webm" or "mov" or "avi" or "mkv")
+        {
+            videoPosterUrl = _previewGenerationService.GenerateVideoPosterUrl(cloudinaryPublicId);
+        }
+        if (normalizedFileType is "pdf")
+        {
+            pdfPagePreviewUrl = _previewGenerationService.GeneratePdfPagePreviewUrl(cloudinaryPublicId);
+        }
+        
         var attachment = new MessageAttachment
         {
             Id = Guid.NewGuid(),
@@ -80,20 +104,28 @@ public class AddAttachmentCommandHandler : IRequestHandler<AddAttachmentCommand,
             FileType = request.FileType,
             FileSizeBytes = request.FileSizeBytes,
             CloudinaryPublicId = cloudinaryPublicId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ThumbnailUrl = thumbnailUrl,
+            MediumPreviewUrl = mediumPreviewUrl,
+            VideoPosterUrl = videoPosterUrl,
+            PdfPagePreviewUrl = pdfPagePreviewUrl
         };
 
-        // Step 4: Save to database
+        // Step 5: Save to database
         await _attachmentRepository.AddAsync(attachment, cancellationToken);
 
-        // Step 5: Return response
+        // Step 6: Return response
         return new AddAttachmentResponse
         {
             AttachmentId = attachment.Id,
             FileUrl = attachment.FileUrl,
             FileType = attachment.FileType,
             FileSizeBytes = attachment.FileSizeBytes,
-            CreatedAt = attachment.CreatedAt
+            CreatedAt = attachment.CreatedAt,
+            ThumbnailUrl = attachment.ThumbnailUrl,
+            MediumPreviewUrl = attachment.MediumPreviewUrl,
+            VideoPosterUrl = attachment.VideoPosterUrl,
+            PdfPagePreviewUrl = attachment.PdfPagePreviewUrl
         };
     }
 

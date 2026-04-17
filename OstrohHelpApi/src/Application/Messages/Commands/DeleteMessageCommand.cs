@@ -24,32 +24,49 @@ public class DeleteMessageCommandHandler(
         var messageOption = await _messageQuery.GetMessageById(messageid, cancellationToken);
 
         return await messageOption.Match(
-            async message => await DeleteEntity(message, cancellationToken),
+            async message => await SoftDeleteMessage(message, cancellationToken),
             () => Task.FromResult<Result<Message, MessageExceptions>>(
                 new MessageNotFoundException(messageid)
             )
         );
     }
     
-    public async Task<Result<Message, MessageExceptions>> DeleteEntity(Message message, CancellationToken cancellationToken)
+    /// <summary>
+    /// Soft delete a message - clears content and marks as deleted instead of hard delete.
+    /// This preserves message history while hiding content from users.
+    /// </summary>
+    public async Task<Result<Message, MessageExceptions>> SoftDeleteMessage(Message message, CancellationToken cancellationToken)
     {
         try
         {
             // Step 1: Get all attachments for this message
             var attachments = await _attachmentRepository.GetByMessageIdAsync(message.Id, cancellationToken);
             
-            // Step 2: Delete files from Cloudinary and remove attachments from database
+            // Step 2: Soft delete all attachments - clear URLs and mark as deleted
             foreach (var attachment in attachments)
             {
-                // Delete file from Cloudinary
-                await _fileUploadService.DeleteFileAsync(attachment.CloudinaryPublicId);
+                // Clear attachment data - mark as "deleted by user"
+                attachment.FileUrl = "Attachment was deleted by user";
+                attachment.FileType = "deleted";
+                attachment.ThumbnailUrl = null;
+                attachment.MediumPreviewUrl = null;
+                attachment.VideoPosterUrl = null;
+                attachment.PdfPagePreviewUrl = null;
+                attachment.IsDeleted = true;
                 
-                // Delete attachment record from database
-                await _attachmentRepository.DeleteAsync(attachment, cancellationToken);
+                // Update attachment record in database
+                await _attachmentRepository.UpdateAsync(attachment, cancellationToken);
             }
             
-            // Step 3: Delete the message
-            var result = await _messageRepository.DeleteAsync(message, cancellationToken);
+            // Step 3: Soft delete the message - clear content and mark as deleted
+            message.Text = "Message was deleted by user";
+            message.EncryptedContent = null;
+            message.Iv = null;
+            message.AuthTag = null;
+            message.IsDeleted = true;
+            
+            // Update message record in database
+            var result = await _messageRepository.UpdateAsync(message, cancellationToken);
             return result;
         }
         catch (Exception e)

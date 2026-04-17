@@ -3,6 +3,7 @@ using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using Application;
 using Infrastructure;
+using Infrastructure.Jobs;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +13,9 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
 using DotNetEnv;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Api.Services;
 
 using Api.Middleware;
 using FluentValidation;
@@ -49,6 +53,8 @@ else
 // Cloudinary service registration
 builder.Services.AddSingleton<Api.Services.CloudinaryService>();
 builder.Services.AddSingleton<Application.Common.Interfaces.Services.IFileUploadService>(
+    sp => sp.GetRequiredService<Api.Services.CloudinaryService>());
+builder.Services.AddSingleton<Application.Common.Interfaces.Services.IPreviewGenerationService>(
     sp => sp.GetRequiredService<Api.Services.CloudinaryService>());
 
 // Add services to the container.
@@ -280,6 +286,19 @@ else
     }
 }
 
+// Configure Hangfire for background job processing
+var connectionString = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddHangfire((config) =>
+{
+    config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(options => 
+            options.UseNpgsqlConnection(connectionString));
+});
+builder.Services.AddHangfireServer();
+
 var app = builder.Build();
 
 // Глобальна обробка помилок
@@ -312,10 +331,24 @@ app.Use(async (context, next) =>
 app.UseAuthentication(); 
 app.UseAuthorization();
 
+// Configure Hangfire Dashboard (optional - for monitoring)
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    // Restrict dashboard access to development only
+    Authorization = new[] { new HangfireAuthorizationFilter(app.Environment) }
+});
+
 app.MapControllers();
 
 // Map SignalR Hub
 app.MapHub<Api.Hubs.ChatHub>("/hubs/chat");
+
+// Schedule recurring Hangfire jobs
+RecurringJob.AddOrUpdate<OrphanedAttachmentCleanupJob>(
+    "orphaned-attachment-cleanup",
+    job => job.ExecuteAsync(CancellationToken.None),
+    Cron.Daily(2) // Execute daily at 2:00 AM UTC
+);
 
 // Universal static files setup for media
 var mediaPath = Path.Combine(builder.Environment.ContentRootPath, "data/media");

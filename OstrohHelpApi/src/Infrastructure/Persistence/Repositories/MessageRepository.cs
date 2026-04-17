@@ -43,7 +43,8 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
     {
         var messages = await context.Messages
             .AsNoTracking()
-            .Where(x => x.ConsultationId == id).ToListAsync(cancellationToken);
+            .Where(x => x.ConsultationId == id)  // Return all messages, including deleted (IsDeleted flag in DTO)
+            .ToListAsync(cancellationToken);
         
         if (messages.Count == 0) return Option.None<List<Message>>();
 
@@ -51,7 +52,7 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
         var messageIds = messages.Select(m => m.Id.Value).ToList();
         var attachments = await context.Set<MessageAttachment>()
             .AsNoTracking()
-            .Where(a => messageIds.Contains(a.MessageId.Value))
+            .Where(a => messageIds.Contains(a.MessageId.Value))  // Return all attachments, including deleted
             .ToListAsync(cancellationToken);
 
         foreach (var message in messages)
@@ -68,14 +69,14 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
     {
         var message = await context.Messages
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);  // Return message, including deleted
         
         if (message == null) return Option.None<Message>();
 
         // Manually load attachments (Attachments navigation is NotMapped)
         message.Attachments = await context.Set<MessageAttachment>()
             .AsNoTracking()
-            .Where(a => a.MessageId == message.Id.Value)
+            .Where(a => a.MessageId == message.Id.Value)  // Return all attachments, including deleted
             .ToListAsync(cancellationToken);
 
         return Option.Some(message);

@@ -652,7 +652,6 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\b
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Buffers.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Collections.Concurrent.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Collections.dll
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Collections.Immutable.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Collections.NonGeneric.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.Collections.Specialized.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\refs\System.ComponentModel.Annotations.dll
@@ -811,6 +810,8 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\b
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Castle.Core.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\CloudinaryDotNet.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Dapper.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Dapper.AOT.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Docker.DotNet.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Docker.DotNet.X509.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\DotNetEnv.dll
@@ -825,6 +826,10 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\b
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Google.Apis.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Google.Apis.Auth.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Google.Apis.Core.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Hangfire.AspNetCore.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Hangfire.Core.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Hangfire.NetCore.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Hangfire.PostgreSql.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\MediatR.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\MediatR.Contracts.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Google.dll
@@ -871,6 +876,7 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\b
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\System.CodeDom.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\System.Collections.Immutable.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\System.Configuration.ConfigurationManager.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Api.Tests.Integration\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll

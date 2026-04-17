@@ -485,13 +485,6 @@ C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.genruntimeconfig.cache
 C:\Users\Maks\Documents\Git\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\ref\Tests.Common.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\CoverletSourceRootsMapping_Tests.Common
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.csproj.AssemblyReference.cache
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\MvcTestingAppManifest.json
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.GeneratedMSBuildEditorConfig.editorconfig
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.AssemblyInfoInputs.cache
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.AssemblyInfo.cs
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.csproj.CoreCompileInputs.cache
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.sourcelink.json
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\testhost.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Api.deps.json
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Api.runtimeconfig.json
@@ -652,7 +645,6 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Buffers.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Collections.Concurrent.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Collections.dll
-D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Collections.Immutable.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Collections.NonGeneric.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.Collections.Specialized.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\refs\System.ComponentModel.Annotations.dll
@@ -811,6 +803,8 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Castle.Core.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\CloudinaryDotNet.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Dapper.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Dapper.AOT.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Docker.DotNet.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Docker.DotNet.X509.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\DotNetEnv.dll
@@ -824,6 +818,10 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Google.Apis.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Google.Apis.Auth.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Google.Apis.Core.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Hangfire.AspNetCore.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Hangfire.Core.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Hangfire.NetCore.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Hangfire.PostgreSql.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\MediatR.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\MediatR.Contracts.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Google.dll
@@ -870,6 +868,7 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\System.CodeDom.dll
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\System.Collections.Immutable.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\System.Management.dll
@@ -955,6 +954,13 @@ D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Infrastructure.pdb
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Tests.Data.pdb
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\bin\Debug\net8.0\Domain.pdb
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.csproj.AssemblyReference.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\MvcTestingAppManifest.json
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.GeneratedMSBuildEditorConfig.editorconfig
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.AssemblyInfoInputs.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.AssemblyInfo.cs
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.csproj.CoreCompileInputs.cache
+D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.sourcelink.json
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Co.7FEE3D77.Up2Date
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\Tests.Common.dll
 D:\AcademStaff\GitHub\OstrohHelpRepo\OstrohHelpApi\tests\Tests.Common\obj\Debug\net8.0\refint\Tests.Common.dll
