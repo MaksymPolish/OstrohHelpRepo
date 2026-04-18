@@ -21,16 +21,16 @@ public class ConsultationStatuses
     {
         return GuidToStatusEnum.TryGetValue(guid, out var statusEnum) ? statusEnum : ConsultationStatusEnum.Pending;
     }
-    public ConsultationStatusesId Id { get; set; }
+    public Guid Id { get; set; }
     public string Name { get; set; }
     public ConsultationStatusEnum Status { get; set; }
 
-    public static ConsultationStatuses Create(ConsultationStatusesId id, string name)
+    public static ConsultationStatuses Create(Guid id, string name)
     {
         return new ConsultationStatuses(id, name, MapNameToEnum(name));
     }
 
-    public ConsultationStatuses(ConsultationStatusesId id, string name, ConsultationStatusEnum status)
+    public ConsultationStatuses(Guid id, string name, ConsultationStatusEnum status)
     {
         Id = id;
         Name = name;

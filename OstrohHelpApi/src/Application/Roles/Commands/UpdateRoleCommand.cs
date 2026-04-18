@@ -18,7 +18,7 @@ public class UpdateRoleCommandHandler(IRoleRepository _roleRepository, IRoleQuer
 {
     public async Task<Result<Role, RoleException>> Handle(UpdateRoleCommand request, CancellationToken ct)
     {
-        var roleId = new RoleId(request.Id);
+        var roleId = request.Id;
         
         var role = await _roleQuery.GetByIdAsync(roleId, ct);
 

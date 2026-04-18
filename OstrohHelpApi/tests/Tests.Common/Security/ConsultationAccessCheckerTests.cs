@@ -51,13 +51,13 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
         // Створити ролі
         var studentRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000001")),
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
             Name = "Student"
         };
 
         var psychologistRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000002")),
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
             Name = "Psychologist"
         };
 
@@ -66,7 +66,7 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
         // Додати користувачів
         var student = new User
         {
-            Id = new UserId(_studentId),
+            Id = _studentId,
             RoleId = studentRole.Id,
             FullName = "Test Student",
             Email = "student@test.com",
@@ -76,7 +76,7 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
 
         var psychologist = new User
         {
-            Id = new UserId(_psychologistId),
+            Id = _psychologistId,
             RoleId = psychologistRole.Id,
             FullName = "Test Psychologist",
             Email = "psychologist@test.com",
@@ -86,7 +86,7 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
 
         var otherUser = new User
         {
-            Id = new UserId(_otherId),
+            Id = _otherId,
             RoleId = studentRole.Id,
             FullName = "Other User",
             Email = "other@test.com",
@@ -98,11 +98,11 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
 
         // Додати консультацію
         var consultation = Consultations.Create(
-            id: new ConsultationsId(_consultationId),
+            id: _consultationId,
             questionnaireId: null,
-            studentId: new UserId(_studentId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _studentId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -111,10 +111,10 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
 
         // Додати повідомлення (від студента)
         var message = Message.Create(
-            id: new MessageId(_messageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(_studentId),
-            receiverId: new UserId(_psychologistId),
+            id: _messageId,
+            consultationId: _consultationId,
+            senderId: _studentId,
+            receiverId: _psychologistId,
             text: "Test message",
             isRead: false,
             sentAt: DateTime.UtcNow,
@@ -332,11 +332,11 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
         var otherConsultationId = Guid.NewGuid();
 
         var otherConsultation = Consultations.Create(
-            id: new ConsultationsId(otherConsultationId),
+            id: otherConsultationId,
             questionnaireId: null,
-            studentId: new UserId(_otherId),
-            psychologistId: new UserId(otherPsychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _otherId,
+            psychologistId: otherPsychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -358,12 +358,12 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
         // Arrange: Створити повідомлення від іншого користувача
         var otherSenderId = Guid.NewGuid();
         var otherMessageId = Guid.NewGuid();
-        var studentRoleId = new RoleId(new Guid("00000000-0000-0000-0000-000000000001"));
+        var studentRoleId = new Guid("00000000-0000-0000-0000-000000000001");
 
         // Додати іншого користувача
         var otherSender = new User
         {
-            Id = new UserId(otherSenderId),
+            Id = otherSenderId,
             RoleId = studentRoleId,
             FullName = "Other Sender",
             Email = "othersender@test.com",
@@ -373,10 +373,10 @@ public class ConsultationAccessCheckerTests : IAsyncLifetime
         _context.Users.Add(otherSender);
 
         var otherMessage = Message.Create(
-            id: new MessageId(otherMessageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(otherSenderId),
-            receiverId: new UserId(_psychologistId),
+            id: otherMessageId,
+            consultationId: _consultationId,
+            senderId: otherSenderId,
+            receiverId: _psychologistId,
             text: "Other user's message",
             isRead: false,
             sentAt: DateTime.UtcNow,

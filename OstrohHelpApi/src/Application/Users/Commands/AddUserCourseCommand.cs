@@ -17,9 +17,7 @@ public class AddUserCourseCommandHandler(IUserRepository _userRepository, IUserQ
 {
     public async Task Handle(AddUserCourseCommand request, CancellationToken ct)
     {
-        var userId = new UserId(request.UserId); 
-        
-        var userOption = await _userQuery.GetByIdAsync(userId, ct);
+        var userOption = await _userQuery.GetByIdAsync(request.UserId, ct);
 
         await userOption.Match(
             async user =>
@@ -27,7 +25,7 @@ public class AddUserCourseCommandHandler(IUserRepository _userRepository, IUserQ
                 user.Course = request.Course;
                 await _userRepository.UpdateAsync(user, ct);
             },
-            () => throw new UserNotFoundException(userId)
+            () => throw new UserNotFoundException(request.UserId)
         );
     }
 }

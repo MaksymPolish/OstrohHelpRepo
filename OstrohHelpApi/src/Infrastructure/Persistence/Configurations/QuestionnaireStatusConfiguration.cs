@@ -12,7 +12,7 @@ public class QuestionnaireStatusConfiguration : IEntityTypeConfiguration<Questio
         builder.HasKey(qs => qs.Id);
 
         builder.Property(qs => qs.Id)
-            .HasConversion(id => id.Value, value => new questionaryStatusId(value));
+            .IsRequired();
 
         builder.Property(qs => qs.Name)
             .IsRequired()

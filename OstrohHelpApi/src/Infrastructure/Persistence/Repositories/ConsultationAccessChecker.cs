@@ -21,8 +21,8 @@ public class ConsultationAccessChecker(ApplicationDbContext context) : IConsulta
         var consultation = await context.Consultations
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                c => c.Id == new ConsultationsId(consultationId) &&
-                     (c.StudentId == new UserId(userId) || c.PsychologistId == new UserId(userId)),
+                c => c.Id == consultationId &&
+                     (c.StudentId == userId || c.PsychologistId == userId),
                 ct);
 
         return consultation != null;
@@ -36,8 +36,8 @@ public class ConsultationAccessChecker(ApplicationDbContext context) : IConsulta
         var message = await context.Messages
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                m => m.Id == new MessageId(messageId) &&
-                     m.SenderId == new UserId(userId),
+                m => m.Id == messageId &&
+                     m.SenderId == userId,
                 ct);
 
         return message != null;
@@ -51,18 +51,16 @@ public class ConsultationAccessChecker(ApplicationDbContext context) : IConsulta
         var consultation = await context.Consultations
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                c => c.Id == new ConsultationsId(consultationId),
+                c => c.Id == consultationId,
                 ct);
 
         if (consultation == null)
             return null;
 
-        var userIdValue = new UserId(userId);
-
-        if (consultation.StudentId == userIdValue)
+        if (consultation.StudentId == userId)
             return ConsultationRole.Student;
 
-        if (consultation.PsychologistId == userIdValue)
+        if (consultation.PsychologistId == userId)
             return ConsultationRole.Psychologist;
 
         return null;
@@ -84,8 +82,8 @@ public class ConsultationAccessChecker(ApplicationDbContext context) : IConsulta
     {
         var message = await context.Messages
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == new MessageId(messageId), ct);
+            .FirstOrDefaultAsync(m => m.Id == messageId, ct);
 
-        return message?.ConsultationId.Value;
+        return message?.ConsultationId;
     }
 }

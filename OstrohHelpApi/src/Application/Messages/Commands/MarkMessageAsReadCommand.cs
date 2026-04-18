@@ -16,9 +16,7 @@ public class MarkMessageAsReadHandler(IMessageRepository _messageRepository, IMe
 {
     public async Task<Result<Message, MessageExceptions>> Handle(MarkMessageAsReadCommand command, CancellationToken ct)
     {
-        var messageId = new MessageId(command.MessageId);
-        
-        var messageOption = await _messageQuery.GetMessageById(messageId, ct);
+        var messageOption = await _messageQuery.GetMessageById(command.MessageId, ct);
 
         return await messageOption.Match(
             async message =>
@@ -28,7 +26,7 @@ public class MarkMessageAsReadHandler(IMessageRepository _messageRepository, IMe
                 return await _messageRepository.UpdateRead(message, ct);
             },
             () => Task.FromResult<Result<Message, MessageExceptions>>(
-                new MessageNotFoundException(messageId)
+                new MessageNotFoundException(command.MessageId)
             )
         );
     }

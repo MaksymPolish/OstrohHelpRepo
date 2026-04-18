@@ -28,13 +28,11 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand, Resul
 
     public async Task<Result<User, UserDeleteExceptions>> Handle(DeleteUserCommand request, CancellationToken ct)
     {
-        var userId = new UserId(request.UserId);
-
-        var existingUser = await _userQuery.GetByIdAsync(userId, ct);
+        var existingUser = await _userQuery.GetByIdAsync(request.UserId, ct);
 
         return await existingUser.Match(
             u => DeleteEntity(u, ct),
-            () => Task.FromResult<Result<User, UserDeleteExceptions>>(new UserNotFoundExceptions(userId))
+            () => Task.FromResult<Result<User, UserDeleteExceptions>>(new UserNotFoundExceptions(request.UserId))
         );
     }
 

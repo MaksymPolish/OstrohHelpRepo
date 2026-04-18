@@ -11,15 +11,15 @@ public interface IQuestionnaireQuery
     /// Отримати всі анкети з деталями (User, Status) - вирішує N+1
     Task<IEnumerable<Questionary>> GetAllWithDetailsAsync(CancellationToken ct);
     
-    Task<Option<Questionary>> GetByIdAsync(QuestionaryId id, CancellationToken ct);
+    Task<Option<Questionary>> GetByIdAsync(Guid id, CancellationToken ct);
     
     /// Отримати анкету за ID з деталями - вирішує N+1
-    Task<Option<Questionary>> GetByIdWithDetailsAsync(QuestionaryId id, CancellationToken ct);
+    Task<Option<Questionary>> GetByIdWithDetailsAsync(Guid id, CancellationToken ct);
     
-    Task<Option<Questionary>> GetByUserIdAsync(UserId id, CancellationToken ct);
+    Task<Option<Questionary>> GetByUserIdAsync(Guid id, CancellationToken ct);
     
-    Task<IEnumerable<Questionary>> GetAllByUserIdAsync(UserId id, CancellationToken ct);
+    Task<IEnumerable<Questionary>> GetAllByUserIdAsync(Guid id, CancellationToken ct);
     
     /// Отримати всі анкети користувача з деталями - вирішує N+1
-    Task<IEnumerable<Questionary>> GetAllByUserIdWithDetailsAsync(UserId id, CancellationToken ct);
+    Task<IEnumerable<Questionary>> GetAllByUserIdWithDetailsAsync(Guid id, CancellationToken ct);
 }

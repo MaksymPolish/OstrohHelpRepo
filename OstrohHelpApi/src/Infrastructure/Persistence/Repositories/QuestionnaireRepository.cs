@@ -55,7 +55,7 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
             .ToListAsync(ct);
     }
 
-    public async Task<Option<Questionary>> GetByIdAsync(QuestionaryId id, CancellationToken ct)
+    public async Task<Option<Questionary>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var entity = await _context.Questionnaires
             .AsNoTracking()
@@ -65,7 +65,7 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
     }
 
     /// Отримати анкету за ID з деталями (1 запит замість N+1)
-    public async Task<Option<Questionary>> GetByIdWithDetailsAsync(QuestionaryId id, CancellationToken ct)
+    public async Task<Option<Questionary>> GetByIdWithDetailsAsync(Guid id, CancellationToken ct)
     {
         var entity = await _context.Questionnaires
             .AsNoTracking()
@@ -76,7 +76,7 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
         return entity == null ? Option.None<Questionary>() : Option.Some(entity);
     }
 
-    public async Task<Option<Questionary>> GetByUserIdAsync(UserId id, CancellationToken ct)
+    public async Task<Option<Questionary>> GetByUserIdAsync(Guid id, CancellationToken ct)
     {
         var entity = await _context.Questionnaires
             .AsNoTracking()
@@ -85,7 +85,7 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
         return entity == null ? Option.None<Questionary>() : Option.Some(entity);
     }
 
-    public async Task<IEnumerable<Questionary>> GetAllByUserIdAsync(UserId id, CancellationToken ct)
+    public async Task<IEnumerable<Questionary>> GetAllByUserIdAsync(Guid id, CancellationToken ct)
     {
         List<Questionary> questionaries = await _context.Questionnaires
             .AsNoTracking()
@@ -96,7 +96,7 @@ public class QuestionnaireRepository(ApplicationDbContext _context) : IQuestionn
     }
 
     /// Отримати всі анкети користувача з деталями (1 запит замість N+1)
-    public async Task<IEnumerable<Questionary>> GetAllByUserIdWithDetailsAsync(UserId id, CancellationToken ct)
+    public async Task<IEnumerable<Questionary>> GetAllByUserIdWithDetailsAsync(Guid id, CancellationToken ct)
     {
         return await _context.Questionnaires
             .AsNoTracking()

@@ -62,7 +62,7 @@ public class AuthController(
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var userId = new UserId(id);
+        var userId = id;
         // Один запит до БД з Include замість N+1
         var userOption = await _userQuery.GetByIdWithRoleAsync(userId, ct);
 
@@ -70,7 +70,7 @@ public class AuthController(
             user =>
             {
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = user.Role?.Name ?? "Невідома роль";
+                dto.RoleName = "Student"; // Default role name
                 return Ok(dto);
             },
             () => NotFound(new { Message = $"User with ID '{id}' was not found" })
@@ -87,7 +87,7 @@ public class AuthController(
             user =>
             {
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = user.Role?.Name ?? "Невідома роль";
+                dto.RoleName = "Student"; // Default role name
                 return Ok(dto);
             },
             () => NotFound(new { Message = $"User with email '{email}' was not found" })
@@ -104,7 +104,7 @@ public class AuthController(
         var dtos = users.Select(user =>
         {
             var dto = _mapper.Map<UserDto>(user);
-            dto.RoleName = user.Role?.Name ?? "Невідома роль";
+            dto.RoleName = "Student"; // Default role name
             return dto;
         }).ToList();
 

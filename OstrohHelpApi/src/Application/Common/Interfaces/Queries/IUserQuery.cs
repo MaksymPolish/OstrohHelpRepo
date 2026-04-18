@@ -5,10 +5,10 @@ namespace Application.Common.Interfaces.Queries;
 
 public interface IUserQuery
 {
-    Task<Option<User>> GetByIdAsync(UserId userId, CancellationToken ct);
+    Task<Option<User>> GetByIdAsync(Guid userId, CancellationToken ct);
     
     /// Отримати користувача з роллю за ID - вирішує N+1
-    Task<Option<User>> GetByIdWithRoleAsync(UserId userId, CancellationToken ct);
+    Task<Option<User>> GetByIdWithRoleAsync(Guid userId, CancellationToken ct);
     
     Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct);
     

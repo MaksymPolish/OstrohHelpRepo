@@ -15,7 +15,7 @@ public abstract class QuestionnairesException : Exception
 
 public class QuestionnaireUnknownException : QuestionnairesException
 {
-    public QuestionnaireUnknownException(QuestionaryId id, Exception inner) 
+    public QuestionnaireUnknownException(Guid id, Exception inner) 
         : base($"An unknown error occurred while processing questionnaires with ID '{id}'.", inner)
     {
     }
@@ -23,12 +23,12 @@ public class QuestionnaireUnknownException : QuestionnairesException
 
 public class QuestionnaireNotFoundException : QuestionnairesException
 {
-    public QuestionnaireNotFoundException(QuestionaryId id) : base($"Questionnaire with ID '{id}' was not found.") { }
+    public QuestionnaireNotFoundException(Guid id) : base($"Questionnaire with ID '{id}' was not found.") { }
 }
 
 public class QuestionnaireAlreadyAcceptedException : QuestionnairesException
 {
-    public QuestionnaireAlreadyAcceptedException(QuestionaryId id)
+    public QuestionnaireAlreadyAcceptedException(Guid id)
         : base($"This questionary is already accepted. ID: {id}")
     {
     }

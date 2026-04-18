@@ -50,13 +50,13 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Створити ролі
         var studentRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000001")),
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
             Name = "Student"
         };
 
         var psychologistRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000002")),
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
             Name = "Psychologist"
         };
 
@@ -65,7 +65,7 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Додати користувачів
         var student = new User
         {
-            Id = new UserId(_studentId),
+            Id = _studentId,
             RoleId = studentRole.Id,
             FullName = "Test Student",
             Email = "student@test.com",
@@ -75,7 +75,7 @@ public class ChatHubSecurityTests : IAsyncLifetime
 
         var psychologist = new User
         {
-            Id = new UserId(_psychologistId),
+            Id = _psychologistId,
             RoleId = psychologistRole.Id,
             FullName = "Test Psychologist",
             Email = "psychologist@test.com",
@@ -85,7 +85,7 @@ public class ChatHubSecurityTests : IAsyncLifetime
 
         var otherUser = new User
         {
-            Id = new UserId(_otherId),
+            Id = _otherId,
             RoleId = studentRole.Id,
             FullName = "Other User",
             Email = "other@test.com",
@@ -97,11 +97,11 @@ public class ChatHubSecurityTests : IAsyncLifetime
 
         // Додати консультацію
         var consultation = Consultations.Create(
-            id: new ConsultationsId(_consultationId),
+            id: _consultationId,
             questionnaireId: null,
-            studentId: new UserId(_studentId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _studentId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -110,10 +110,10 @@ public class ChatHubSecurityTests : IAsyncLifetime
 
         // Додати повідомлення
         var message = Message.Create(
-            id: new MessageId(_messageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(_studentId),
-            receiverId: new UserId(_psychologistId),
+            id: _messageId,
+            consultationId: _consultationId,
+            senderId: _studentId,
+            receiverId: _psychologistId,
             text: "Test message",
             isRead: false,
             sentAt: DateTime.UtcNow,
@@ -156,11 +156,11 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Arrange: Студент є членом _consultationId, спробує приєднатися до іншої
         var otherConsultationId = Guid.NewGuid();
         var otherConsultation = Consultations.Create(
-            id: new ConsultationsId(otherConsultationId),
+            id: otherConsultationId,
             questionnaireId: null,
-            studentId: new UserId(_otherId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _otherId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -275,11 +275,11 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Arrange: Створити консультацію з іншим студентом
         var otherStudentId = Guid.NewGuid();
         var otherConsultationId = Guid.NewGuid();
-        var studentRoleId = new RoleId(new Guid("00000000-0000-0000-0000-000000000001"));
+        var studentRoleId = new Guid("00000000-0000-0000-0000-000000000001");
 
         var otherStudent = new User
         {
-            Id = new UserId(otherStudentId),
+            Id = otherStudentId,
             RoleId = studentRoleId,
             FullName = "Other Student",
             Email = "other-student@test.com",
@@ -289,11 +289,11 @@ public class ChatHubSecurityTests : IAsyncLifetime
         _context.Users.Add(otherStudent);
 
         var otherConsultation = Consultations.Create(
-            id: new ConsultationsId(otherConsultationId),
+            id: otherConsultationId,
             questionnaireId: null,
-            studentId: new UserId(otherStudentId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: otherStudentId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(2),
             createdAt: DateTime.UtcNow
         );
@@ -314,11 +314,11 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Arrange: Створити повідомлення від іншого користувача
         var otherSenderId = Guid.NewGuid();
         var otherMessageId = Guid.NewGuid();
-        var studentRoleId = new RoleId(new Guid("00000000-0000-0000-0000-000000000001"));
+        var studentRoleId = new Guid("00000000-0000-0000-0000-000000000001");
 
         var otherSender = new User
         {
-            Id = new UserId(otherSenderId),
+            Id = otherSenderId,
             RoleId = studentRoleId,
             FullName = "Other Sender",
             Email = "other-sender@test.com",
@@ -328,10 +328,10 @@ public class ChatHubSecurityTests : IAsyncLifetime
         _context.Users.Add(otherSender);
 
         var otherMessage = Message.Create(
-            id: new MessageId(otherMessageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(otherSenderId),
-            receiverId: new UserId(_psychologistId),
+            id: otherMessageId,
+            consultationId: _consultationId,
+            senderId: otherSenderId,
+            receiverId: _psychologistId,
             text: "Other's message",
             isRead: false,
             sentAt: DateTime.UtcNow,
@@ -355,15 +355,15 @@ public class ChatHubSecurityTests : IAsyncLifetime
         // Студент - SenderId, психолог - ReceiverId
 
         // Act: Перевіримо що психолог є отримувачем
-        var message = await _context.Messages.FindAsync(new MessageId(_messageId));
+        var message = await _context.Messages.FindAsync(_messageId);
         Assert.NotNull(message);
-        Assert.Equal(_studentId, message.SenderId.Value);
-        Assert.Equal(_psychologistId, message.ReceiverId.Value);
+        Assert.Equal(_studentId, message.SenderId);
+        Assert.Equal(_psychologistId, message.ReceiverId);
 
         // Студент не повинен мати доступу помітити своє повідомлення як прочитане
         // (тільки отримувач повинен це робити)
-        var isStudent = _studentId == message.SenderId.Value;
-        var isPsychologist = _psychologistId == message.ReceiverId.Value;
+        var isStudent = _studentId == message.SenderId;
+        var isPsychologist = _psychologistId == message.ReceiverId;
 
         // Assert
         Assert.True(isStudent);

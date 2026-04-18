@@ -16,8 +16,7 @@ public class UpdateMessageCommandHandler(
 {
     public async Task<Result<Message, MessageExceptions>> Handle(UpdateMessageCommand command, CancellationToken ct)
     {
-        var messageId = new MessageId(command.id);
-        var messageOption = await _messageQuery.GetMessageById(messageId, ct);
+        var messageOption = await _messageQuery.GetMessageById(command.id, ct);
 
         return await messageOption.Match(
             async message =>
@@ -29,7 +28,7 @@ public class UpdateMessageCommandHandler(
                 return await _messageRepository.UpdateAsync(message, ct);
             },
             () => Task.FromResult<Result<Message, MessageExceptions>>(
-                new MessageNotFoundException(messageId)
+                new MessageNotFoundException(command.id)
             )
         );
     }

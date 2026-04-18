@@ -12,11 +12,11 @@ public class MessageDtoProfile : Profile
         // Converts encrypted byte arrays to base64-encoded strings for transmission
         CreateMap<Message, MessageDto>()
             .ForMember(dest => dest.ConsultationId, 
-                opt => opt.MapFrom(src => src.ConsultationId.Value.ToString()))
+                opt => opt.MapFrom(src => src.ConsultationId.ToString()))
             .ForMember(dest => dest.SenderId, 
-                opt => opt.MapFrom(src => src.SenderId.Value.ToString()))
+                opt => opt.MapFrom(src => src.SenderId.ToString()))
             .ForMember(dest => dest.ReceiverId, 
-                opt => opt.MapFrom(src => src.ReceiverId.Value.ToString()))
+                opt => opt.MapFrom(src => src.ReceiverId.ToString()))
             .ForMember(dest => dest.EncryptedContent,
                 opt => opt.MapFrom(src => src.EncryptedContent != null && src.EncryptedContent.Length > 0
                     ? Convert.ToBase64String(src.EncryptedContent)

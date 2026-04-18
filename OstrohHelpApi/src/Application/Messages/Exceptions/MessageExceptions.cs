@@ -30,9 +30,9 @@ public class MessageNotFoundException : MessageExceptions
 
 public class InvalidSenderIdException : MessageExceptions
 {
-    public UserId SenderId { get; }
+    public Guid SenderId { get; }
 
-    public InvalidSenderIdException(UserId id)
+    public InvalidSenderIdException(Guid id)
         : base($"User with ID '{id}' cannot send a message.")
     {
         SenderId = id;
@@ -41,9 +41,9 @@ public class InvalidSenderIdException : MessageExceptions
 
 public class ConsultationNotFoundException : MessageExceptions
 {
-    public ConsultationsId ConsultationId { get; }
+    public Guid ConsultationId { get; }
 
-    public ConsultationNotFoundException(ConsultationsId id)
+    public ConsultationNotFoundException(Guid id)
         : base($"The consultation with ID '{id}' was not found.")
     {
         ConsultationId = id;

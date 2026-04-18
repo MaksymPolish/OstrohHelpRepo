@@ -12,7 +12,7 @@ public class CreateRoleCommandHandler(IRoleRepository _roleRepository) : IReques
     {
         try
         {
-            var roleId = RoleId.New(); 
+            var roleId = Guid.NewGuid();
 
             var role = Role.Create(roleId, request.Name);
 

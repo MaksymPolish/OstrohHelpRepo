@@ -14,13 +14,12 @@ public class DeleteQuestionnaireCommandHandler(IQuestionnaireRepository _reposit
 {
     public async Task<Result<Questionary, QuestionnairesException>> Handle(DeleteQuestionnaireCommand command, CancellationToken ct)
     {
-        var id = new QuestionaryId(command.Id);
-        var entityOption = await _query.GetByIdAsync(id, ct);
+        var entityOption = await _query.GetByIdAsync(command.Id, ct);
 
         return await entityOption.Match(
             async q => await DeleteEntity(q, ct),
             () => Task.FromResult<Result<Questionary, QuestionnairesException>>(
-                new QuestionnaireNotFoundException(id)
+                new QuestionnaireNotFoundException(command.Id)
             )
         );
     }

@@ -18,7 +18,7 @@ public class DeleteRoleCommandHandler(IRoleRepository _roleRepository, IRoleQuer
 {
     public async Task<Result<Role, RoleException>> Handle(DeleteRoleCommand command, CancellationToken ct)
     {
-        var roleId = new RoleId(command.Id);
+        var roleId = command.Id;
 
         var role = await _roleQuery.GetByIdAsync(roleId, ct);
         

@@ -199,7 +199,7 @@ public class ChatHub : Hub
                             var messageAttachment = new MessageAttachment
                             {
                                 Id = Guid.NewGuid(),
-                                MessageId = message.Id.Value,
+                                MessageId = message.Id,
                                 FileUrl = attachment.FileUrl,
                                 FileType = attachment.FileType,
                                 CreatedAt = DateTime.UtcNow
@@ -235,7 +235,7 @@ public class ChatHub : Hub
                                 var details = System.Text.Json.JsonSerializer.Serialize(new
                                 {
                                     ConsultationId = consultationId,
-                                    ReceiverId = fullMessage.ReceiverId.Value,
+                                    ReceiverId = fullMessage.ReceiverId,
                                     HasAttachments = fullMessage.Attachments?.Any() ?? false
                                 });
 
@@ -243,7 +243,7 @@ public class ChatHub : Hub
                                     Guid.Parse(senderId),
                                     "SendMessage",
                                     "Message",
-                                    message.Id.Value,
+                                    message.Id,
                                     ipAddress,
                                     details
                                 );
@@ -283,13 +283,13 @@ public class ChatHub : Hub
             var msgGuid = Guid.Parse(messageId);
             
             // SECURITY: Перевірити, що користувач є отримувачем цього повідомлення
-            var msgOption = await _messageQuery.GetMessageById(new Domain.Messages.MessageId(msgGuid), CancellationToken.None);
+            var msgOption = await _messageQuery.GetMessageById(msgGuid, CancellationToken.None);
             
             var isAuthorized = await msgOption.Match(
                 async msg =>
                 {
                     // Тільки отримувач може позначити повідомлення як прочитане
-                    return msg.ReceiverId.Value == Guid.Parse(userId);
+                    return msg.ReceiverId == Guid.Parse(userId);
                 },
                 () => Task.FromResult(false)
             );
@@ -418,9 +418,8 @@ public class ChatHub : Hub
         try
         {
             var consultationGuid = Guid.Parse(consultationId);
-            var consulId = new ConsultationsId(consultationGuid);
             
-            var messagesOption = await _messageQuery.GetAllMessagesByConsultationId(consulId, CancellationToken.None);
+            var messagesOption = await _messageQuery.GetAllMessagesByConsultationId(consultationGuid, CancellationToken.None);
             
             await messagesOption.Match(
                 async messages =>

@@ -12,7 +12,6 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.ToTable("roles");
         
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasConversion(x => x.Value, x => new RoleId(x));
 
         builder.Property(x => x.Name).IsRequired().HasMaxLength(50);
     }

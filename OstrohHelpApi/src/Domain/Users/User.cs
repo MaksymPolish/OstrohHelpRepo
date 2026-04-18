@@ -6,10 +6,7 @@ namespace Domain.Users;
 public class User
 {
     public Guid Id { get; set; }
-    public RoleId RoleId { get; set; }
-    
-    // Навігаційна властивість для Role
-    public Role? Role { get; set; }
+        public Guid RoleId { get; set; }
     
     public string GoogleId { get; set; }
     public string FullName { get; set; }
@@ -25,7 +22,7 @@ public class User
    
     public User() => CreatedAt = DateTime.UtcNow;
 
-    User(Guid userId, RoleId roleId, string googleId, string fullName, string course, string email, 
+    User(Guid userId, Guid roleId, string googleId, string fullName, string course, string email, 
         bool isLoggedIn)
     {
         Id = userId;
@@ -39,7 +36,7 @@ public class User
         CreatedAt = DateTime.UtcNow;
     }
     
-    new User Create(Guid userId, RoleId roleId, string googleId, string firstName, string course, string email, 
+    new User Create(Guid userId, Guid roleId, string googleId, string firstName, string course, string email, 
         bool isLoggedIn) =>
         new(userId, roleId, googleId, firstName, course, email, isLoggedIn);
 }

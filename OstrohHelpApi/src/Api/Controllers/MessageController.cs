@@ -158,7 +158,6 @@ public class MessageController : ControllerBase
     [HttpGet("Recive")]
     public async Task<IActionResult> Recive([FromQuery] Guid idConsultation, CancellationToken ct)
     {
-        var consultationId = new ConsultationsId(idConsultation);
         var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         // SECURITY: Перевірити, чи користувач є членом цієї консультації
@@ -173,7 +172,7 @@ public class MessageController : ControllerBase
             return Forbid("You are not a member of this consultation");
         }
 
-        var messagesOption = await _messageQuery.GetAllMessagesByConsultationId(consultationId, ct);
+        var messagesOption = await _messageQuery.GetAllMessagesByConsultationId(idConsultation, ct);
 
         return await messagesOption.Match<Task<IActionResult>>(
             async messages =>
@@ -213,7 +212,7 @@ public class MessageController : ControllerBase
                 return Ok(dtos);
             },
             () => Task.FromResult<IActionResult>(
-                NotFound(new { Message = $"No messages found for consultation ID '{consultationId}'." })
+                NotFound(new { Message = $"No messages found for consultation ID '{idConsultation}'." })
             )
         );
     }

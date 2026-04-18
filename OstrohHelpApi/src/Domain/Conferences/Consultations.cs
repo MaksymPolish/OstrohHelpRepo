@@ -19,7 +19,7 @@ public class Consultations
     public Guid PsychologistId { get; set; }
     
     public ConsultationStatuses? Status { get; set; }
-    public ConsultationStatusesId StatusId { get; set; }
+    public Guid StatusId { get; set; }
     public DateTime ScheduledTime { get; set; }
     public DateTime CreatedAt { get; set; }
 
@@ -30,7 +30,7 @@ public class Consultations
         Guid? questionnaireId,
         Guid studentId,
         Guid psychologistId,
-        ConsultationStatusesId statusId,
+        Guid statusId,
         DateTime scheduledTime,
         DateTime createdAt)
     {
@@ -46,7 +46,7 @@ public class Consultations
     }
 
     Consultations(Guid id, Guid? questionnaireId, Guid studentId, Guid psychologistId,
-        ConsultationStatusesId statusId, DateTime scheduledTime, DateTime createdAt)
+        Guid statusId, DateTime scheduledTime, DateTime createdAt)
     {
         Id = id;
         QuestionnaireId = questionnaireId;

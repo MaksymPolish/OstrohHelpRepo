@@ -62,11 +62,11 @@ public class UserGoogleAuthenticationHandler(
         {
             // Використовуємо enum для ролі Студент
             var studentRoleGuid = Domain.Users.Roles.Role.GetGuidByEnum(Domain.Users.Roles.RoleEnum.Student);
-            var studentRoleId = new Domain.Users.Roles.RoleId(studentRoleGuid);
+            var studentRoleId = studentRoleGuid;
 
             user = new User
             {
-                Id = UserId.New(),
+                Id = Guid.NewGuid(),
                 GoogleId = userInfo.googleId,
                 Email = userInfo.email!,
                 FullName = userInfo.fullName ?? "User", // Мінімальне значення якщо немає імені

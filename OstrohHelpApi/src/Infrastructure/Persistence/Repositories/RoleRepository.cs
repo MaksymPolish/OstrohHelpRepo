@@ -14,7 +14,7 @@ public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRep
         return await context.Roles.ToListAsync(ct);
     }
 
-    public async Task<Option<Role>> GetByIdAsync(RoleId roleId, CancellationToken ct)
+    public async Task<Option<Role>> GetByIdAsync(Guid roleId, CancellationToken ct)
     {
         var entity = await context.Roles
             .AsNoTracking()
@@ -23,7 +23,7 @@ public class RoleRepository(ApplicationDbContext context) : IRoleQuery, IRoleRep
         return entity == null ? Option.None<Role>() : Option.Some(entity);
     }
     
-    public async Task<RoleId?> GetRoleIdByNameAsync(string roleName, CancellationToken ct)
+    public async Task<Guid?> GetRoleIdByNameAsync(string roleName, CancellationToken ct)
     {
         var role = await context.Roles
             .Where(r => r.Name == roleName)

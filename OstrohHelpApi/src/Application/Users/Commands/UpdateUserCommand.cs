@@ -14,10 +14,9 @@ public class UpdateUserCommandHandler(IUserRepository _userRepository, IUserQuer
 {
     public async Task<User> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
-        var userId = new UserId(request.userId);
-        var roleId = new RoleId(request.roleId);
+        var roleId = request.roleId;
 
-        var userOption = await _userQuery.GetByIdAsync(userId, cancellationToken);
+        var userOption = await _userQuery.GetByIdAsync(request.userId, cancellationToken);
 
         return await userOption.Match(
             async user =>
@@ -26,7 +25,7 @@ public class UpdateUserCommandHandler(IUserRepository _userRepository, IUserQuer
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 return user;
             },
-            () => throw new UserNotFoundException(userId)
+            () => throw new UserNotFoundException(request.userId)
         );
     }
 }

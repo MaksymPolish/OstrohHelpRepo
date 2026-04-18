@@ -23,7 +23,7 @@ public class RoleController(IMediator _mediator, IRoleQuery _roleQuery) : Contro
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var roleId = new RoleId(id);
+        var roleId = id;
         var roleOption = await _roleQuery.GetByIdAsync(roleId, ct);
 
         return roleOption.Match<IActionResult>(

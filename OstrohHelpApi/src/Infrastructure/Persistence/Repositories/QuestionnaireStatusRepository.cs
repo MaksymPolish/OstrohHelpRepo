@@ -27,7 +27,7 @@ public class QuestionnaireStatusRepository : IQuestionnaireStatusRepository, IQu
         };
         return await GetByEnumAsync(statusEnum, ct);
     }
-    public async Task<Option<QuestionaryStatuses>> GetByIdAsync(questionaryStatusId id, CancellationToken ct)
+    public async Task<Option<QuestionaryStatuses>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var entity = await _context.QuestionnaireStatuses
             .AsNoTracking()

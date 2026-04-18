@@ -17,13 +17,12 @@ public class DeleteConsultationCommandHandler(
 {
     public async Task<Result<Domain.Conferences.Consultations, ConsultationsExceptions>> Handle(DeleteConsultationCommand request, CancellationToken ct)
     {
-        var id = new ConsultationsId(request.id);
-        var consultationOption = await _consultationQuery.GetByIdAsync(id, ct);
+        var consultationOption = await _consultationQuery.GetByIdAsync(request.id, ct);
 
         return await consultationOption.Match(
             async consultation => await DeleteEntity(consultation, ct),
             () => Task.FromResult<Result<Domain.Conferences.Consultations, ConsultationsExceptions>>(
-                new ConsultationNotFoundException(id)
+                new ConsultationNotFoundException(request.id)
             )
         );
     }

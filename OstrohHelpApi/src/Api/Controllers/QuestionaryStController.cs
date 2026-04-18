@@ -17,7 +17,7 @@ public class QuestionaryStController(IMediator _mediator,
     [HttpGet("{id}Get-By-Id")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var statusId = new questionaryStatusId(id);
+        var statusId = id;
         var role = await _questionnaireStatusQuery.GetByIdAsync(statusId, ct);
         
         return role.Match<IActionResult>(

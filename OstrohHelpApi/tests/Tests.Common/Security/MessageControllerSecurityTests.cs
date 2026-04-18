@@ -89,13 +89,13 @@ public class MessageControllerSecurityTests : IAsyncLifetime
         // Створити ролі
         var studentRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000001")),
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
             Name = "Student"
         };
 
         var psychologistRole = new Role
         {
-            Id = new RoleId(new Guid("00000000-0000-0000-0000-000000000002")),
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
             Name = "Psychologist"
         };
 
@@ -104,7 +104,7 @@ public class MessageControllerSecurityTests : IAsyncLifetime
         // Додати користувачів
         var student = new User
         {
-            Id = new UserId(_studentId),
+            Id = _studentId,
             RoleId = studentRole.Id,
             FullName = "Test Student",
             Email = "student@test.com",
@@ -114,7 +114,7 @@ public class MessageControllerSecurityTests : IAsyncLifetime
 
         var psychologist = new User
         {
-            Id = new UserId(_psychologistId),
+            Id = _psychologistId,
             RoleId = psychologistRole.Id,
             FullName = "Test Psychologist",
             Email = "psychologist@test.com",
@@ -124,7 +124,7 @@ public class MessageControllerSecurityTests : IAsyncLifetime
 
         var otherUser = new User
         {
-            Id = new UserId(_otherId),
+            Id = _otherId,
             RoleId = studentRole.Id,
             FullName = "Other User",
             Email = "other@test.com",
@@ -136,11 +136,11 @@ public class MessageControllerSecurityTests : IAsyncLifetime
 
         // Додати консультацію
         var consultation = Consultations.Create(
-            id: new ConsultationsId(_consultationId),
+            id: _consultationId,
             questionnaireId: null,
-            studentId: new UserId(_studentId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _studentId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -149,10 +149,10 @@ public class MessageControllerSecurityTests : IAsyncLifetime
 
         // Додати повідомлення
         var message = Message.Create(
-            id: new MessageId(_messageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(_studentId),
-            receiverId: new UserId(_psychologistId),
+            id: _messageId,
+            consultationId: _consultationId,
+            senderId: _studentId,
+            receiverId: _psychologistId,
             text: "Test message",
             isRead: false,
             sentAt: DateTime.UtcNow,

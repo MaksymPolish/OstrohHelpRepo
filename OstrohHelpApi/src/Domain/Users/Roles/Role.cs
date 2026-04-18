@@ -25,14 +25,14 @@ public class Role
         return GuidToRoleEnum.TryGetValue(guid, out var roleEnum) ? roleEnum : RoleEnum.Student;
     }
 
-    public RoleId? Id { get; set; }
+    public Guid Id { get; set; }
     public string? Name { get; set; }
 
-    private Role(RoleId id, string name)
+    private Role(Guid id, string name)
     {
         Id = id;
         Name = name;
     }
 
-    public static Role Create(RoleId id, string name) => new Role(id, name);
+    public static Role Create(Guid id, string name) => new Role(id, name);
 }

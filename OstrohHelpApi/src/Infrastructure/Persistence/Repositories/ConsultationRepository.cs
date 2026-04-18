@@ -49,14 +49,14 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<Option<Consultations>> GetByIdAsync(ConsultationsId id, CancellationToken ct)
+    public async Task<Option<Consultations>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var result = await context.Consultations.FirstOrDefaultAsync(x => x.Id == id, ct);
         return result != null ? Option.Some(result) : Option.None<Consultations>();
     }
 
     /// Отримати консультацію за ID з деталями (1 запит замість N+1)
-    public async Task<Option<Consultations>> GetByIdWithDetailsAsync(ConsultationsId id, CancellationToken ct)
+    public async Task<Option<Consultations>> GetByIdWithDetailsAsync(Guid id, CancellationToken ct)
     {
         var result = await context.Consultations
             .AsNoTracking()
@@ -67,7 +67,7 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
         return result != null ? Option.Some(result) : Option.None<Consultations>();
     }
 
-    public async Task<IEnumerable<Consultations>> GetAllByUserIdAsync(UserId id, CancellationToken ct)
+    public async Task<IEnumerable<Consultations>> GetAllByUserIdAsync(Guid id, CancellationToken ct)
     {
         List<Consultations> resultList = await context.Consultations
             .AsNoTracking()
@@ -79,7 +79,7 @@ public class ConsultationRepository(ApplicationDbContext context) : IConsultatio
     }
 
     /// Отримати всі консультації користувача з деталями (1 запит замість N+1)
-    public async Task<IEnumerable<Consultations>> GetAllByUserIdWithDetailsAsync(UserId id, CancellationToken ct)
+    public async Task<IEnumerable<Consultations>> GetAllByUserIdWithDetailsAsync(Guid id, CancellationToken ct)
     {
         return await context.Consultations
             .AsNoTracking()

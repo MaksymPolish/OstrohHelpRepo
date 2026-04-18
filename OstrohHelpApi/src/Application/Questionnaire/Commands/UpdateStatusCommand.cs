@@ -17,21 +17,17 @@ public class UpdateStatusCommandHandler(
 {
     public async Task<Result<Questionary, QuestionnairesException>> Handle(UpdateStatusCommand command, CancellationToken ct)
     {
-        var questionnaireId = new QuestionaryId(command.Id);
-        var statusId = new questionaryStatusId(command.StatusId);
-
-        var questionnaireOption = await _query.GetByIdAsync(questionnaireId, ct);
+        var questionnaireOption = await _query.GetByIdAsync(command.Id, ct);
 
         return await questionnaireOption.Match(
             async q =>
             {
-                q.StatusId = statusId;
+                q.StatusId = command.StatusId;
                 return await _repository.UpdateAsync(q, ct);
             },
             () => Task.FromResult<Result<Questionary, QuestionnairesException>>(
-                new QuestionnaireNotFoundException(questionnaireId)
+                new QuestionnaireNotFoundException(command.Id)
             )
         );
     }
-    
 }

@@ -48,9 +48,9 @@ public class ConsultationController(
                     dto.PsychologistPhotoUrl = psychologist.ValueOr((Domain.Users.User)null)?.PhotoUrl;
                 }
 
-                await NotifyConsultationStarted(consultation.Id.Value, dto, ct);
+                await NotifyConsultationStarted(consultation.Id, dto, ct);
 
-                return CreatedAtAction(nameof(GetById), new { id = consultation.Id.Value }, dto);
+                return CreatedAtAction(nameof(GetById), new { id = consultation.Id }, dto);
             },
             ex => Task.FromResult<IActionResult>(BadRequest(new { Error = ex.Message }))
         );
@@ -105,7 +105,7 @@ public class ConsultationController(
     [HttpGet("Get-Consultation-ById/{id}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var consultationId = new ConsultationsId(id);
+        var consultationId = id;
         // Один запит до БД з Include замість N+1
         var option = await _consultationQuery.GetByIdWithDetailsAsync(consultationId, ct);
 
@@ -128,7 +128,7 @@ public class ConsultationController(
     [HttpGet("Get-All-Consultations-By-UserId/{Id}")]
     public async Task<IActionResult> GetAllByUserId(Guid Id, CancellationToken ct)
     {
-        var userId = new UserId(Id);
+        var userId = Id;
     
         //  Один запит до БД з Include замість N+1
         var consultations = await _consultationQuery.GetAllByUserIdWithDetailsAsync(userId, ct);

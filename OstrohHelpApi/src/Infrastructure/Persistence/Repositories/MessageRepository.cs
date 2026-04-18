@@ -39,7 +39,7 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
         return message;
     }
 
-    public async Task<Option<List<Message>>> GetAllMessagesByConsultationId(ConsultationsId id, CancellationToken cancellationToken)
+    public async Task<Option<List<Message>>> GetAllMessagesByConsultationId(Guid id, CancellationToken cancellationToken)
     {
         var messages = await context.Messages
             .AsNoTracking()
@@ -49,23 +49,23 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
         if (messages.Count == 0) return Option.None<List<Message>>();
 
         // Manually load attachments (Attachments navigation is NotMapped)
-        var messageIds = messages.Select(m => m.Id.Value).ToList();
+        var messageIds = messages.Select(m => m.Id).ToList();
         var attachments = await context.Set<MessageAttachment>()
             .AsNoTracking()
-            .Where(a => messageIds.Contains(a.MessageId.Value))  // Return all attachments, including deleted
+            .Where(a => a.MessageId.HasValue && messageIds.Contains(a.MessageId.Value))  // Return all attachments, including deleted
             .ToListAsync(cancellationToken);
 
         foreach (var message in messages)
         {
             message.Attachments = attachments
-                .Where(a => a.MessageId == message.Id.Value)
+                .Where(a => a.MessageId == message.Id)
                 .ToList();
         }
 
         return Option.Some(messages);
     }
 
-    public async Task<Option<Message>> GetMessageById(MessageId id, CancellationToken cancellationToken)
+    public async Task<Option<Message>> GetMessageById(Guid id, CancellationToken cancellationToken)
     {
         var message = await context.Messages
             .AsNoTracking()
@@ -76,7 +76,7 @@ public class MessageRepository(ApplicationDbContext context) : IMessageQuery, IM
         // Manually load attachments (Attachments navigation is NotMapped)
         message.Attachments = await context.Set<MessageAttachment>()
             .AsNoTracking()
-            .Where(a => a.MessageId == message.Id.Value)  // Return all attachments, including deleted
+            .Where(a => a.MessageId == message.Id)  // Return all attachments, including deleted
             .ToListAsync(cancellationToken);
 
         return Option.Some(message);

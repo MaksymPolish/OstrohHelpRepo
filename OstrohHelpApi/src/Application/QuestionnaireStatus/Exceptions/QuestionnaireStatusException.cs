@@ -10,10 +10,10 @@ public abstract class QuestionnaireStatusException(Guid id, string message, Exce
 
 public class QuestionnaireStatusNotFoundException : QuestionnaireStatusException
 {
-    public questionaryStatusId StatusId { get; }
+    public Guid StatusId { get; }
 
-    public QuestionnaireStatusNotFoundException(questionaryStatusId id)
-        : base(id.Value, $"Questionnaire status with ID '{id}' not found.")
+    public QuestionnaireStatusNotFoundException(Guid id)
+        : base(id, $"Questionnaire status with ID '{id}' not found.")
     {
         StatusId = id;
     }
@@ -21,10 +21,10 @@ public class QuestionnaireStatusNotFoundException : QuestionnaireStatusException
 
 public class InvalidQuestionnaireStatusException : QuestionnaireStatusException
 {
-    public questionaryStatusId StatusId { get; }
+    public Guid StatusId { get; }
 
-    public InvalidQuestionnaireStatusException(questionaryStatusId id)
-        : base(id.Value, $"Questionnaire status with ID '{id}' is invalid.")
+    public InvalidQuestionnaireStatusException(Guid id)
+        : base(id, $"Questionnaire status with ID '{id}' is invalid.")
     {
         StatusId = id;
     }
@@ -32,8 +32,8 @@ public class InvalidQuestionnaireStatusException : QuestionnaireStatusException
 
 public class SomethingWrongWithQuestionnaireStatus : QuestionnaireStatusException
 {
-    public SomethingWrongWithQuestionnaireStatus(questionaryStatusId id)
-        : base(id.Value, $"Something wrong with questionnaire status with ID '{id}'.")
+    public SomethingWrongWithQuestionnaireStatus(Guid id)
+        : base(id, $"Something wrong with questionnaire status with ID '{id}'.")
     {
     }
 }

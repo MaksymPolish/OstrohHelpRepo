@@ -13,9 +13,6 @@ public class ConsultationStatusConfiguration : IEntityTypeConfiguration<Consulta
 
         builder.HasKey(cs => cs.Id);
         builder.Property(cs => cs.Id)
-            .HasConversion(
-                id => id.Value,
-                value => new ConsultationStatusesId(value))
             .IsRequired();
 
         builder.Property(cs => cs.Name)

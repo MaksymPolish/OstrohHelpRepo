@@ -15,17 +15,11 @@ public class UserTokenConfiguration : IEntityTypeConfiguration<UserToken>
         // Primary Key
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id)
-            .HasConversion(
-                id => id.Value,
-                value => new UserTockenId(value))
             .IsRequired();
 
         // Foreign Key to User
         builder.Property(t => t.UserId)
             .HasColumnName("UserId")
-            .HasConversion(
-                id => id.Value,
-                value => new UserId(value))
             .IsRequired();
 
         // Зв’язок з User

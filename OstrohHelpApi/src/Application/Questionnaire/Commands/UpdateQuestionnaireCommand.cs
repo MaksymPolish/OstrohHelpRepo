@@ -20,9 +20,7 @@ public class UpdateQuestionnaireCommandHandler(IQuestionnaireQuery _questionnair
 {
     public async Task<Result<Questionary, QuestionnairesException>> Handle(UpdateQuestionnaireCommand command, CancellationToken ct)
     {
-        var questionaryId = new QuestionaryId(command.Id);
-        
-        var existingQuestionary = await _questionnaireQuery.GetByIdAsync(questionaryId, ct);
+        var existingQuestionary = await _questionnaireQuery.GetByIdAsync(command.Id, ct);
         
         return await existingQuestionary.Match(
             async q =>
@@ -35,7 +33,7 @@ public class UpdateQuestionnaireCommandHandler(IQuestionnaireQuery _questionnair
             () =>
             {
                 return Task.FromResult<Result<Questionary, QuestionnairesException>>(
-                    new QuestionnaireNotFoundException(questionaryId)
+                    new QuestionnaireNotFoundException(command.Id)
                 );
             }
         );

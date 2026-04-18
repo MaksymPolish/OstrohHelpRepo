@@ -29,17 +29,15 @@ public class AcceptQuestionnaireCommandHandler(
 {
     public async Task<Result<Domain.Conferences.Consultations, Exception>> Handle(AcceptQuestionnaireCommand command, CancellationToken ct)
     {
-        var questionnaireId = new QuestionaryId(command.QuestionaryId);
-        var psychologistId = new UserId(command.PsychologistId);
         var scheduledTime = command.ScheduledTime;
 
         // 1. Отримай анкету
-        var questionnaireOption = await _questionnaireQuery.GetByIdAsync(questionnaireId, ct);
+        var questionnaireOption = await _questionnaireQuery.GetByIdAsync(command.QuestionaryId, ct);
         if (!questionnaireOption.HasValue)
-            return new Exception($"Questionary with ID '{questionnaireId}' not found.");
+            return new Exception($"Questionary with ID '{command.QuestionaryId}' not found.");
         var q = questionnaireOption.ValueOr((Questionary)null);
         if (q == null)
-            return new Exception($"Questionary with ID '{questionnaireId}' not found.");
+            return new Exception($"Questionary with ID '{command.QuestionaryId}' not found.");
 
         // 2. Перевірка статуса анкети
         var statusOption = await _questionnaireStatusQuery.GetByIdAsync(q.StatusId, ct);
@@ -60,7 +58,7 @@ public class AcceptQuestionnaireCommandHandler(
             return new Exception("Consultation status 'Assigned' not found.");
 
         // 4. Отримай психолога
-        var psychologistOption = await _userQuery.GetByIdAsync(psychologistId, ct);
+        var psychologistOption = await _userQuery.GetByIdAsync(command.PsychologistId, ct);
         if (!psychologistOption.HasValue)
             return new Exception("Psychologist not found.");
         var p = psychologistOption.ValueOr((Domain.Users.User)null);
@@ -68,12 +66,14 @@ public class AcceptQuestionnaireCommandHandler(
             return new Exception("Psychologist not found.");
 
         // 5. Створення консультації
-        var studentId = q.UserId ?? throw new Exception("Student ID is null");
+        if (q.UserId == Guid.Empty)
+            return new Exception("Student ID is null");
+        
         var consultation = Domain.Conferences.Consultations.Create(
-            id: ConsultationsId.New(),
+            id: Guid.NewGuid(),
             questionnaireId: q.Id,
-            studentId: studentId,
-            psychologistId: psychologistId,
+            studentId: q.UserId,
+            psychologistId: command.PsychologistId,
             statusId: consultationStatus.Id,
             scheduledTime: scheduledTime,
             createdAt: DateTime.UtcNow

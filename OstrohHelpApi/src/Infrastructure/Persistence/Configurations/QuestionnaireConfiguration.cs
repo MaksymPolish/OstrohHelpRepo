@@ -15,10 +15,7 @@ public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionary>
         builder.ToTable("Questionnaires");
 
         builder.HasKey(q => q.Id);
-        builder.Property(q => q.Id)
-            .HasConversion(
-                id => id.Value, 
-                value => new QuestionaryId(value));
+        builder.Property(q => q.Id);
 
         builder.Property(q => q.Description)
             .HasColumnType("text");

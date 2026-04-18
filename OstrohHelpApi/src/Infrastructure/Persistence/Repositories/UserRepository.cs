@@ -12,7 +12,6 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
     {
         return await context.Users
             .AsNoTracking()
-            .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.GoogleId == googleId || u.Email == email, ct);
     }
 
@@ -37,7 +36,7 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
         return user;
     }
 
-    public async Task<Option<User>> GetByIdAsync(UserId userId, CancellationToken ct)
+    public async Task<Option<User>> GetByIdAsync(Guid userId, CancellationToken ct)
     {
         var entity = await context.Users
             .AsNoTracking()
@@ -47,11 +46,10 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
     }
 
     /// Отримати користувача з роллю (1 запит замість N+1)
-    public async Task<Option<User>> GetByIdWithRoleAsync(UserId userId, CancellationToken ct)
+    public async Task<Option<User>> GetByIdWithRoleAsync(Guid userId, CancellationToken ct)
     {
         var entity = await context.Users
             .AsNoTracking()
-            .Include(u => u.Role)
             .FirstOrDefaultAsync(x => x.Id == userId, ct);
 
         return entity == null ? Option.None<User>() : Option.Some(entity);
@@ -71,7 +69,6 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
         return await context
             .Users
             .AsNoTracking()
-            .Include(u => u.Role)
             .ToListAsync(ct);
     }
 
@@ -90,7 +87,6 @@ public class UserRepository(ApplicationDbContext context) : IUserQuery, IUserRep
     {
         var entity = await context.Users
             .AsNoTracking()
-            .Include(u => u.Role)
             .FirstOrDefaultAsync(x => x.Email == email, ct);
 
         return entity == null ? Option.None<User>() : Option.Some(entity);

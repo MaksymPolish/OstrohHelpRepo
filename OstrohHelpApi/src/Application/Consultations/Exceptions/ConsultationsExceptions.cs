@@ -16,10 +16,10 @@ public abstract class ConsultationsExceptions(Guid id, string message, Exception
 
 public class InvalidPsychologistRoleException : ConsultationsExceptions
 {
-    public UserId UserId { get; }
+    public Guid UserId { get; }
 
-    public InvalidPsychologistRoleException(UserId id)
-        : base(id.Value, $"User with ID '{id}' is not a psychologist.")
+    public InvalidPsychologistRoleException(Guid id)
+        : base(id, $"User with ID '{id}' is not a psychologist.")
     {
         UserId = id;
     }
@@ -27,10 +27,10 @@ public class InvalidPsychologistRoleException : ConsultationsExceptions
 
 public class ConsultationNotFoundException : ConsultationsExceptions
 {
-    public ConsultationsId ConsultationId { get; }
+    public Guid ConsultationId { get; }
 
-    public ConsultationNotFoundException(ConsultationsId id)
-        : base(id.Value, $"Consultation with ID '{id}' not found.")
+    public ConsultationNotFoundException(Guid id)
+        : base(id, $"Consultation with ID '{id}' not found.")
     {
         ConsultationId = id;
     }
@@ -38,8 +38,8 @@ public class ConsultationNotFoundException : ConsultationsExceptions
 
 public class SometingWrongWithConsultation : ConsultationsExceptions
 {
-    public SometingWrongWithConsultation(ConsultationsId id)
-        : base(id.Value, $"Something wrong with consultation with ID '{id}'.")
+    public SometingWrongWithConsultation(Guid id)
+        : base(id, $"Something wrong with consultation with ID '{id}'.")
     {
     }
 }

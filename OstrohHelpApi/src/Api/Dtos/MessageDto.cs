@@ -5,7 +5,7 @@ namespace Api.Dtos;
 
 public class MessageDto
 {
-    public MessageId Id { get; set; }
+    public Guid Id { get; set; }
     public string ConsultationId { get; set; }
     public string SenderId { get; set; }
     public string ReceiverId { get; set; }

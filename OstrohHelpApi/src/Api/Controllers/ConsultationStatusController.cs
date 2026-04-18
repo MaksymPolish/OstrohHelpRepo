@@ -25,7 +25,7 @@ public class ConsultationStatusController(IConsultationStatusQuery _consultation
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        var roleId = new ConsultationStatusesId(id);
+        var roleId = id;
         var roleOption = await _consultationStatusQuery.GetByIdAsync(roleId, ct);
         
         return roleOption.Match<IActionResult>(

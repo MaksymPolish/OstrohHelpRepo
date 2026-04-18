@@ -32,12 +32,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt)
             .HasDefaultValueSql("timezone('utc', now())")
             .HasConversion<DateTimeUtcConverter>();
-
-        // Foreign Key for roles (з навігаційною властивістю для Include)
-        builder.HasOne(u => u.Role)
-            .WithMany()
-            .HasForeignKey(u => u.RoleId)
-            .OnDelete(DeleteBehavior.Restrict);
         
         //Key for user tokens
         builder.HasMany<UserToken>()

@@ -64,13 +64,13 @@ public class AttachmentSecurityTests : IAsyncLifetime
         // Create roles
         var studentRole = new Role
         {
-            Id = new RoleId(Guid.NewGuid()),
+            Id = Guid.NewGuid(),
             Name = "Student"
         };
 
         var psychologistRole = new Role
         {
-            Id = new RoleId(Guid.NewGuid()),
+            Id = Guid.NewGuid(),
             Name = "Psychologist"
         };
 
@@ -79,7 +79,7 @@ public class AttachmentSecurityTests : IAsyncLifetime
         // Create users
         var student = new User
         {
-            Id = new UserId(_studentId),
+            Id = _studentId,
             GoogleId = "student@google.com",
             Email = "student@example.com",
             FullName = "Student User",
@@ -89,7 +89,7 @@ public class AttachmentSecurityTests : IAsyncLifetime
 
         var psychologist = new User
         {
-            Id = new UserId(_psychologistId),
+            Id = _psychologistId,
             GoogleId = "psychologist@google.com",
             Email = "psychologist@example.com",
             FullName = "Psychologist User",
@@ -99,7 +99,7 @@ public class AttachmentSecurityTests : IAsyncLifetime
 
         var otherUser = new User
         {
-            Id = new UserId(_otherUserId),
+            Id = _otherUserId,
             GoogleId = "other@google.com",
             Email = "other@example.com",
             FullName = "Other User",
@@ -111,11 +111,11 @@ public class AttachmentSecurityTests : IAsyncLifetime
 
         // Create consultation
         var consultation = Consultations.Create(
-            id: new ConsultationsId(_consultationId),
+            id: _consultationId,
             questionnaireId: null,
-            studentId: new UserId(_studentId),
-            psychologistId: new UserId(_psychologistId),
-            statusId: new ConsultationStatusesId(Guid.NewGuid()),
+            studentId: _studentId,
+            psychologistId: _psychologistId,
+            statusId: Guid.NewGuid(),
             scheduledTime: DateTime.UtcNow.AddHours(1),
             createdAt: DateTime.UtcNow
         );
@@ -124,10 +124,10 @@ public class AttachmentSecurityTests : IAsyncLifetime
 
         // Create message
         var message = Message.CreateEncrypted(
-            id: new MessageId(_messageId),
-            consultationId: new ConsultationsId(_consultationId),
-            senderId: new UserId(_studentId),
-            receiverId: new UserId(_psychologistId),
+            id: _messageId,
+            consultationId: _consultationId,
+            senderId: _studentId,
+            receiverId: _psychologistId,
             encryptedContent: new byte[16],
             iv: new byte[12],
             authTag: new byte[16],
@@ -172,7 +172,7 @@ public class AttachmentSecurityTests : IAsyncLifetime
     {
         // Arrange & Act
         var attachments = await _attachmentRepository.GetByMessageIdAsync(
-            new MessageId(_messageId),
+            _messageId,
             CancellationToken.None);
 
         // Assert
@@ -215,10 +215,10 @@ public class AttachmentSecurityTests : IAsyncLifetime
         // Arrange: Create another message
         var anotherMessageId = Guid.NewGuid();
         var anotherMessage = Message.CreateEncrypted(
-            new MessageId(anotherMessageId),
-            new ConsultationsId(_consultationId),
-            new UserId(_psychologistId),
-            new UserId(_studentId),
+            anotherMessageId,
+            _consultationId,
+            _psychologistId,
+            _studentId,
             new byte[16], new byte[12], new byte[16],
             DateTime.UtcNow
         );
@@ -241,11 +241,11 @@ public class AttachmentSecurityTests : IAsyncLifetime
 
         // Act
         var originalAttachments = await _attachmentRepository.GetByMessageIdAsync(
-            new MessageId(_messageId),
+            _messageId,
             CancellationToken.None);
 
         var anotherAttachments = await _attachmentRepository.GetByMessageIdAsync(
-            new MessageId(anotherMessageId),
+            anotherMessageId,
             CancellationToken.None);
 
         // Assert

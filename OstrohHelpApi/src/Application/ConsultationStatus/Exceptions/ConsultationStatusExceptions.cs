@@ -10,10 +10,10 @@ public abstract class ConsultationStatusExceptions(Guid id, string message, Exce
 
 public class ConsultationStatusNotFoundException : ConsultationStatusExceptions
 {
-    public ConsultationStatusesId StatusId { get; }
+    public Guid StatusId { get; }
 
-    public ConsultationStatusNotFoundException(ConsultationStatusesId id)
-        : base(id.Value, $"Consultation status with ID '{id}' not found.")
+    public ConsultationStatusNotFoundException(Guid id)
+        : base(id, $"Consultation status with ID '{id}' not found.")
     {
         StatusId = id;
     }
@@ -21,10 +21,10 @@ public class ConsultationStatusNotFoundException : ConsultationStatusExceptions
 
 public class InvalidConsultationStatusException : ConsultationStatusExceptions
 {
-    public ConsultationStatusesId StatusId { get; }
+    public Guid StatusId { get; }
 
-    public InvalidConsultationStatusException(ConsultationStatusesId id)
-        : base(id.Value, $"Consultation status with ID '{id}' is invalid.")
+    public InvalidConsultationStatusException(Guid id)
+        : base(id, $"Consultation status with ID '{id}' is invalid.")
     {
         StatusId = id;
     }
@@ -32,8 +32,8 @@ public class InvalidConsultationStatusException : ConsultationStatusExceptions
 
 public class SomethingWrongWithConsultationStatus : ConsultationStatusExceptions
 {
-    public SomethingWrongWithConsultationStatus(ConsultationStatusesId id)
-        : base(id.Value, $"Something wrong with consultation status with ID '{id}'.")
+    public SomethingWrongWithConsultationStatus(Guid id)
+        : base(id, $"Something wrong with consultation status with ID '{id}'.")
     {
     }
 }

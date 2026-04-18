@@ -15,25 +15,19 @@ public class UpdateConsultaionCommandHelper(IConsultationQuery _consultationQuer
 {
     public async Task<Result<Domain.Conferences.Consultations, ConsultationsExceptions>> Handle(UpdateConsultationCommand request, CancellationToken cancellationToken)
     {
-        var consultationId = new ConsultationsId(request.consultationId);
-        
-        var consultation = await _consultationQuery.GetByIdAsync(consultationId, cancellationToken);
-
-        var statusId = new ConsultationStatusesId(request.statusId);
-        var studentId = new UserId(request.studentId);
-        var psyhologistId = new UserId(request.psyhologistId);
+        var consultation = await _consultationQuery.GetByIdAsync(request.consultationId, cancellationToken);
         
         return await consultation.Match(
             async cn =>
             {
-                cn.StatusId = statusId;
-                cn.StudentId = studentId;
-                cn.PsychologistId = psyhologistId;
+                cn.StatusId = request.statusId;
+                cn.StudentId = request.studentId;
+                cn.PsychologistId = request.psyhologistId;
                 cn.ScheduledTime = request.scheduledTime;
 
                 return await _consultationRepository.UpdateAsync(cn, cancellationToken);
             },
-            () => Task.FromResult<Result<Domain.Conferences.Consultations, ConsultationsExceptions>>(new ConsultationNotFoundException(consultationId))
+            () => Task.FromResult<Result<Domain.Conferences.Consultations, ConsultationsExceptions>>(new ConsultationNotFoundException(request.consultationId))
         );
     }
 }

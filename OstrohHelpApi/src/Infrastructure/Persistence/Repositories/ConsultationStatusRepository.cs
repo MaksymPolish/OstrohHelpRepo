@@ -55,7 +55,7 @@ public class ConsultationStatusRepository : IConsultationStatusQuery, IConsultat
         return list.Count > 0 ? Option.Some(list) : Option.None<List<ConsultationStatuses>>();
     }
 
-    public async Task<Option<ConsultationStatuses>> GetByIdAsync(ConsultationStatusesId id, CancellationToken cancellationToken)
+    public async Task<Option<ConsultationStatuses>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var entity = await context.ConsultationStatuses
             .AsNoTracking()
@@ -67,10 +67,9 @@ public class ConsultationStatusRepository : IConsultationStatusQuery, IConsultat
     public async Task<Option<ConsultationStatuses>> GetByEnumAsync(ConsultationStatusEnum status, CancellationToken cancellationToken)
     {
         var guid = GetGuidByEnum(status);
-        var id = new ConsultationStatusesId(guid);
         var entity = await context.ConsultationStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == guid, cancellationToken);
         return entity == null ? Option.None<ConsultationStatuses>() : Option.Some(entity);
     }
     

@@ -13,11 +13,11 @@ public class MessageAttachmentRepository(ApplicationDbContext context) : IMessag
         return attachment;
     }
 
-    public async Task<List<MessageAttachment>> GetByMessageIdAsync(MessageId messageId, CancellationToken ct)
+    public async Task<List<MessageAttachment>> GetByMessageIdAsync(Guid messageId, CancellationToken ct)
     {
         return await context.MessageAttachments
             .AsNoTracking()
-            .Where(a => a.MessageId == messageId.Value)
+            .Where(a => a.MessageId == messageId)
             .ToListAsync(ct);
     }
 

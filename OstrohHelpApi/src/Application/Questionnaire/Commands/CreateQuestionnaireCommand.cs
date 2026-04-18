@@ -37,8 +37,8 @@ public class CreateQuestionnaireCommandHandler(IQuestionnaireRepository _reposit
         try
         {
             var questionnaire = Questionary.Create(
-                id: QuestionaryId.New(),
-                userId: new UserId(command.UserId),
+                id: Guid.NewGuid(),
+                userId: command.UserId,
                 statusId: status!.Id,
                 description: command.Description,
                 isAnonymous: command.IsAnonymous,
@@ -51,7 +51,7 @@ public class CreateQuestionnaireCommandHandler(IQuestionnaireRepository _reposit
         }
         catch (Exception ex)
         {
-            return new QuestionnaireUnknownException(QuestionaryId.New(), ex);
+            return new QuestionnaireUnknownException(Guid.NewGuid(), ex);
         }
     }
 }
