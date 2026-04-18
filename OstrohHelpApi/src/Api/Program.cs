@@ -299,6 +299,12 @@ builder.Services.AddHangfire((config) =>
 });
 builder.Services.AddHangfireServer();
 
+// Add Memory Cache for rate limiting
+builder.Services.AddMemoryCache();
+
+// Register Rate Limiting Service
+builder.Services.AddScoped<Application.Common.Services.IRateLimitingService, Application.Common.Services.RateLimitingService>();
+
 var app = builder.Build();
 
 // Глобальна обробка помилок
@@ -330,6 +336,9 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication(); 
 app.UseAuthorization();
+
+// Apply rate limiting middleware
+app.UseRateLimiting();
 
 // Configure Hangfire Dashboard (optional - for monitoring)
 app.UseHangfireDashboard("/hangfire", new DashboardOptions

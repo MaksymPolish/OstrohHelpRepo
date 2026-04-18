@@ -19,22 +19,19 @@ public class DeleteMessageCommandHandler(
 {
     public async Task<Result<Message, MessageExceptions>> Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
     {
-        var messageid = new MessageId(request.MessageId);
-        
-        var messageOption = await _messageQuery.GetMessageById(messageid, cancellationToken);
+        var messageOption = await _messageQuery.GetMessageById(request.MessageId, cancellationToken);
 
         return await messageOption.Match(
             async message => await SoftDeleteMessage(message, cancellationToken),
             () => Task.FromResult<Result<Message, MessageExceptions>>(
-                new MessageNotFoundException(messageid)
+                new MessageNotFoundException(request.MessageId)
             )
         );
     }
     
-    /// <summary>
+
     /// Soft delete a message - clears content and marks as deleted instead of hard delete.
     /// This preserves message history while hiding content from users.
-    /// </summary>
     public async Task<Result<Message, MessageExceptions>> SoftDeleteMessage(Message message, CancellationToken cancellationToken)
     {
         try

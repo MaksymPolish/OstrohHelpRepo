@@ -5,11 +5,11 @@ namespace Domain.Messages;
 
 public class Message
 {
-    public MessageId Id { get; set; }
+    public Guid Id { get; set; }
     public Consultations Consultations { get; set; }
-    public ConsultationsId ConsultationId { get; set; }
-    public UserId SenderId { get; set; }
-    public UserId ReceiverId { get; set; }
+    public Guid ConsultationId { get; set; }
+    public Guid SenderId { get; set; }
+    public Guid ReceiverId { get; set; }
     
     // Legacy: kept for backward compatibility, will be removed in Phase 3
     public string? Text { get; set; }
@@ -32,10 +32,10 @@ public class Message
 
     /// Creates a message with encrypted content (preferred for new messages)
     public static Message CreateEncrypted(
-        MessageId id,
-        ConsultationsId consultationId,
-        UserId senderId,
-        UserId receiverId,
+        Guid id,
+        Guid consultationId,
+        Guid senderId,
+        Guid receiverId,
         byte[] encryptedContent,
         byte[] iv,
         byte[] authTag,
@@ -55,7 +55,7 @@ public class Message
         };
 
     /// Legacy: Creates a message with plaintext (for backward compatibility)
-    public static Message Create(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
+    public static Message Create(Guid id, Guid consultationId, Guid senderId, Guid receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt) =>
         new(id, consultationId, senderId, receiverId, text, isRead, sentAt, deletedAt);
 
     // Parameterless constructor for EF Core
@@ -63,7 +63,7 @@ public class Message
     {
     }
 
-    private Message(MessageId id, ConsultationsId consultationId, UserId senderId, UserId receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
+    private Message(Guid id, Guid consultationId, Guid senderId, Guid receiverId, string text, bool isRead, DateTime sentAt, DateTime? deletedAt)
     {
         Id = id;
         ConsultationId = consultationId;

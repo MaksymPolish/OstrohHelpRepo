@@ -16,31 +16,19 @@ public class MessageConfiguration :IEntityTypeConfiguration<Message>
         // ID
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id)
-            .HasConversion(
-                id => id.Value,
-                value => new MessageId(value))
             .IsRequired();
 
         // FK - ConsultationId
         builder.Property(m => m.ConsultationId)
-            .HasConversion(
-                id => id.Value,
-                value => new ConsultationsId(value))
             .IsRequired();
 
         // SenderId
         builder.Property(m => m.SenderId)
-            .HasConversion(
-                id => id.Value,
-                value => new UserId(value))
             .IsRequired()
             .HasColumnType("uuid");
 
         // ReceiverId
         builder.Property(m => m.ReceiverId)
-            .HasConversion(
-                id => id.Value,
-                value => new UserId(value))
             .IsRequired()
             .HasColumnType("uuid");
 

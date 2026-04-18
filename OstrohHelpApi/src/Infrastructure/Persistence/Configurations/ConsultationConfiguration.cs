@@ -15,8 +15,7 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
         builder.ToTable("Consultations");
 
         builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id)
-            .HasConversion(id => id.Value, value => new ConsultationsId(value));
+        builder.Property(c => c.Id);
 
         builder.Property(c => c.ScheduledTime)
             .HasDefaultValueSql("timezone('utc', now())")
@@ -33,7 +32,6 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
             .OnDelete(DeleteBehavior.SetNull);
         
         builder.Property(c => c.QuestionnaireId)
-            .HasConversion(c => c.Value, c => new QuestionaryId(c))
             .HasColumnType("uuid");
 
         //User 1 - Student
@@ -44,7 +42,6 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
         
         builder.Property(c => c.StudentId)
             .IsRequired()
-            .HasConversion(c => c.Value, c => new UserId(c))
             .HasColumnType("uuid");
 
         //User 2 - Psychologist
@@ -55,7 +52,6 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
         
         builder.Property(c => c.PsychologistId)
             .IsRequired()
-            .HasConversion(x => x.Value, x => new UserId(x))
             .HasColumnType("uuid");
 
         //Status of Consultation
@@ -66,7 +62,6 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultations>
         
         builder.Property(c => c.StatusId)
             .IsRequired()
-            .HasConversion(c => c.Value, c => new ConsultationStatusesId(c))
             .HasColumnType("uuid");
     }
 }

@@ -12,10 +12,12 @@ using System.Security.Claims;
 using AutoMapper;
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
+using Application.Common.Services;
 using Infrastructure.Persistence.Repositories;
 using NSubstitute;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace Tests.Common.Security;
 
@@ -47,6 +49,8 @@ public class MessageControllerSecurityTests : IAsyncLifetime
         var mockMapper = Substitute.For<IMapper>();
         var mockUserQuery = Substitute.For<IUserQuery>();
         var mockPreviewService = Substitute.For<Application.Common.Interfaces.Services.IPreviewGenerationService>();
+        var mockAuditLogService = Substitute.For<IAuditLogService>();
+        var mockLogger = Substitute.For<ILogger<MessageController>>();
 
         _controller = new MessageController(
             mockMediator,
@@ -54,7 +58,9 @@ public class MessageControllerSecurityTests : IAsyncLifetime
             mockMapper,
             mockUserQuery,
             _accessChecker,
-            mockPreviewService
+            mockPreviewService,
+            mockAuditLogService,
+            mockLogger
         );
 
         // Настроїти HttpContext з User Claims

@@ -1,4 +1,5 @@
 using System.Reflection;
+using Domain.AuditLogs;
 using Domain.Conferences;
 using Domain.Conferences.Statuses;
 using Domain.Inventory;
@@ -21,6 +22,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageAttachment> MessageAttachments { get; set; }
+
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -14,7 +14,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
 
         builder.HasKey(u => u.Id);
-        builder.Property(u => u.Id).HasConversion(u => u.Value, u => new UserId(u));
+        builder.Property(u => u.Id);
 
         builder.Property(u => u.GoogleId)
             .HasMaxLength(255);

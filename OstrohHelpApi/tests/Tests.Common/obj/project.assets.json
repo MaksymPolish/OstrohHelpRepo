@@ -3492,6 +3492,8 @@
           "FluentValidation.DependencyInjectionExtensions": "11.9.2",
           "Google.Apis.Auth": "1.69.0",
           "MediatR": "12.4.1",
+          "Microsoft.Extensions.Caching.Abstractions": "8.0.0",
+          "Microsoft.Extensions.Configuration": "8.0.0",
           "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0",

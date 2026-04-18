@@ -19,8 +19,8 @@ public class MessageUnknownException : MessageExceptions
 
 public class MessageNotFoundException : MessageExceptions
 {
-    public MessageId MessageId { get; }
-    public MessageNotFoundException(MessageId id)
+    public Guid MessageId { get; }
+    public MessageNotFoundException(Guid id)
         : base($"The message with '{id}' not found.")
     {
         MessageId = id;

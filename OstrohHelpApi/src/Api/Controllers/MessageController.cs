@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Api.Dtos;
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
+using Application.Common.Services;
 using Application.Messages.Commands;
 using AutoMapper;
 using Domain.Conferences;
@@ -24,6 +25,8 @@ public class MessageController : ControllerBase
     private readonly IUserQuery _userQuery;
     private readonly IConsultationAccessChecker _accessChecker;
     private readonly Application.Common.Interfaces.Services.IPreviewGenerationService _previewGenerationService;
+    private readonly IAuditLogService _auditLogService;
+    private readonly ILogger<MessageController> _logger;
 
     public MessageController(
         IMediator mediator,
@@ -31,7 +34,9 @@ public class MessageController : ControllerBase
         IMapper mapper,
         IUserQuery userQuery,
         IConsultationAccessChecker accessChecker,
-        Application.Common.Interfaces.Services.IPreviewGenerationService previewGenerationService)
+        Application.Common.Interfaces.Services.IPreviewGenerationService previewGenerationService,
+        IAuditLogService auditLogService,
+        ILogger<MessageController> logger)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -39,6 +44,8 @@ public class MessageController : ControllerBase
         _userQuery = userQuery;
         _accessChecker = accessChecker;
         _previewGenerationService = previewGenerationService;
+        _auditLogService = auditLogService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -116,6 +123,26 @@ public class MessageController : ControllerBase
             };
 
             var result = await _mediator.Send(command, ct);
+            
+            // Log audit for successful attachment upload
+            var ipAddress = HttpContext?.Connection.RemoteIpAddress?.ToString();
+            var attachmentIds = (result as IEnumerable<object>)?.Select(x => x.GetType().GetProperty("Id")?.GetValue(x)) ?? Enumerable.Empty<object>();
+            var details = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                MessageId = messageId,
+                AttachmentCount = batchFiles.Count,
+                TotalSizeBytes = batchFiles.Sum(f => f.FileSizeBytes)
+            });
+            
+            await _auditLogService.LogAsync(
+                Guid.Parse(currentUserId),
+                "UploadAttachment",
+                "Attachment",
+                messageId ?? Guid.Empty,
+                ipAddress,
+                details
+            );
+            
             return Ok(result);
         }
         finally
@@ -208,7 +235,27 @@ public class MessageController : ControllerBase
     [HttpDelete("Delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteMessageCommand command, CancellationToken ct)
     {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var result = await _mediator.Send(command, ct);
+
+        if (result.IsSuccess)
+        {
+            // Log audit for successful message deletion
+            var ipAddress = HttpContext?.Connection.RemoteIpAddress?.ToString();
+            var details = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                MessageId = command.MessageId
+            });
+            
+            await _auditLogService.LogAsync(
+                Guid.Parse(currentUserId),
+                "DeleteMessage",
+                "Message",
+                command.MessageId,
+                ipAddress,
+                details
+            );
+        }
 
         return result.Match<IActionResult>(
             message => CreatedAtAction(nameof(Delete), new { id = message.Id }, message),
@@ -238,8 +285,28 @@ public class MessageController : ControllerBase
     [ProducesResponseType(typeof(object), 500)]
     public async Task<IActionResult> DeleteAttachment(Guid attachmentId, CancellationToken ct)
     {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var command = new DeleteAttachmentCommand(attachmentId);
         var result = await _mediator.Send(command, ct);
+
+        if (result.IsSuccess)
+        {
+            // Log audit for successful attachment deletion
+            var ipAddress = HttpContext?.Connection.RemoteIpAddress?.ToString();
+            var details = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                AttachmentId = attachmentId
+            });
+            
+            await _auditLogService.LogAsync(
+                Guid.Parse(currentUserId),
+                "DeleteAttachment",
+                "Attachment",
+                attachmentId,
+                ipAddress,
+                details
+            );
+        }
 
         return result.Match<IActionResult>(
             attachment =>

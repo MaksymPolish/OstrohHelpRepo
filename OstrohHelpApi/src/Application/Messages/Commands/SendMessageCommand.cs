@@ -32,25 +32,22 @@ public class SendMessageCommandHandler(
 {
     public async Task<Result<Message, MessageExceptions>> Handle(SendMessageCommand command, CancellationToken ct)
     {
-        var consultationId = new ConsultationsId(command.ConsultationId);
-        var senderId = new UserId(command.SenderId);
-
-        var consultationOption = await _consultationQuery.GetByIdAsync(consultationId, ct);
+        var consultationOption = await _consultationQuery.GetByIdAsync(command.ConsultationId, ct);
 
         return await consultationOption.Match(
             async consultation =>
             {
                 // --- Визначення отримувача ---
-                var receiverId = consultation.StudentId == senderId 
+                var receiverId = consultation.StudentId == command.SenderId 
                     ? consultation.PsychologistId 
                     : consultation.StudentId;
                 
                 // --- Створення зашифрованого повідомлення ---
                 // (Encryption already done on client side, server just stores the encrypted data)
                 var message = Message.CreateEncrypted(
-                    id: new MessageId(Guid.NewGuid()),
-                    consultationId: consultation.Id,
-                    senderId: senderId,
+                    id: Guid.NewGuid(),
+                    consultationId: command.ConsultationId,
+                    senderId: command.SenderId,
                     receiverId: receiverId,
                     encryptedContent: command.EncryptedContent,
                     iv: command.Iv,
@@ -75,7 +72,7 @@ public class SendMessageCommandHandler(
                         if (attachment != null)
                         {
                             // Встановити MessageId для того, щоб прив'язати атачмент до повідомлення
-                            attachment.MessageId = message.Id.Value;
+                            attachment.MessageId = message.Id;
                             await _attachmentRepository.UpdateAsync(attachment, ct);
                             
                             // Додати атачмент до колекції повідомлення
@@ -87,7 +84,7 @@ public class SendMessageCommandHandler(
                 return result;
             },
             () => Task.FromResult<Result<Message, MessageExceptions>>(
-                new ConsultationNotFoundException(consultationId)
+                new ConsultationNotFoundException(command.ConsultationId)
             )
         );
     }

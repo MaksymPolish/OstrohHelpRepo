@@ -6,17 +6,17 @@ namespace Domain.Conferences;
 
 public class Consultations
 {
-    public ConsultationsId Id { get; set; }
+    public Guid Id { get; set; }
 
     public Questionary? Questionary { get; set; }
-    public QuestionaryId? QuestionnaireId { get; set; }
+    public Guid? QuestionnaireId { get; set; }
 
     // Навігаційні властивості для вирішення N+1 проблеми
     public User? Student { get; set; }
-    public UserId StudentId { get; set; }
+    public Guid StudentId { get; set; }
     
     public User? Psychologist { get; set; }
-    public UserId PsychologistId { get; set; }
+    public Guid PsychologistId { get; set; }
     
     public ConsultationStatuses? Status { get; set; }
     public ConsultationStatusesId StatusId { get; set; }
@@ -26,10 +26,10 @@ public class Consultations
     public Consultations() => CreatedAt = DateTime.UtcNow;
     
     public static Consultations Create(
-        ConsultationsId id,
-        QuestionaryId? questionnaireId,
-        UserId studentId,
-        UserId psychologistId,
+        Guid id,
+        Guid? questionnaireId,
+        Guid studentId,
+        Guid psychologistId,
         ConsultationStatusesId statusId,
         DateTime scheduledTime,
         DateTime createdAt)
@@ -45,7 +45,7 @@ public class Consultations
         );
     }
 
-    Consultations(ConsultationsId id, QuestionaryId? questionnaireId, UserId studentId, UserId psychologistId,
+    Consultations(Guid id, Guid? questionnaireId, Guid studentId, Guid psychologistId,
         ConsultationStatusesId statusId, DateTime scheduledTime, DateTime createdAt)
     {
         Id = id;

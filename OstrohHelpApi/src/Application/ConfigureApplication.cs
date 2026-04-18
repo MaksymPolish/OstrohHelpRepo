@@ -1,5 +1,6 @@
 using System.Reflection;
 //using Application.Common.Behaviours;
+using Application.Common.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,5 +14,8 @@ public static class ConfigureApplication
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         //services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+        
+        // Register audit logging service
+        services.AddScoped<IAuditLogService, AuditLogService>();
     }
 }

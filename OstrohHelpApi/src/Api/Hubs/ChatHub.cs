@@ -1,6 +1,7 @@
 using Api.Dtos;
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
+using Application.Common.Services;
 using Application.Messages.Commands;
 using AutoMapper;
 using Domain.Conferences;
@@ -36,6 +37,7 @@ public class ChatHub : Hub
     private readonly IConsultationAccessChecker _accessChecker;
     private readonly IEncryptionService _encryptionService;
     private readonly IKeyDerivationService _keyDerivationService;
+    private readonly IAuditLogService _auditLogService;
 
     public ChatHub(
         IMediator mediator,
@@ -46,7 +48,8 @@ public class ChatHub : Hub
         IMessageAttachmentRepository attachmentRepository,
         IConsultationAccessChecker accessChecker,
         IEncryptionService encryptionService,
-        IKeyDerivationService keyDerivationService)
+        IKeyDerivationService keyDerivationService,
+        IAuditLogService auditLogService)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -57,6 +60,7 @@ public class ChatHub : Hub
         _accessChecker = accessChecker;
         _encryptionService = encryptionService;
         _keyDerivationService = keyDerivationService;
+        _auditLogService = auditLogService;
     }
 
     /// Користувач відкрив чат консультації
@@ -223,6 +227,31 @@ public class ChatHub : Hub
                             _logger.LogInformation(
                                 "Message {MessageId} sent to consultation {ConsultationId}",
                                 message.Id, consultationId);
+
+                            // 📋 Audit log: User sent a message
+                            try
+                            {
+                                var ipAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+                                var details = System.Text.Json.JsonSerializer.Serialize(new
+                                {
+                                    ConsultationId = consultationId,
+                                    ReceiverId = fullMessage.ReceiverId.Value,
+                                    HasAttachments = fullMessage.Attachments?.Any() ?? false
+                                });
+
+                                await _auditLogService.LogAsync(
+                                    Guid.Parse(senderId),
+                                    "SendMessage",
+                                    "Message",
+                                    message.Id.Value,
+                                    ipAddress,
+                                    details
+                                );
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to create audit log for message {MessageId}", message.Id);
+                            }
                         },
                         async () =>
                         {
@@ -346,6 +375,29 @@ public class ChatHub : Hub
                         MessageId = messageId,
                         Timestamp = DateTime.UtcNow
                     });
+
+                    // 📋 Audit log: User deleted a message
+                    try
+                    {
+                        var ipAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+                        var details = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            ConsultationId = consultationId
+                        });
+
+                        await _auditLogService.LogAsync(
+                            Guid.Parse(userId),
+                            "DeleteMessage",
+                            "Message",
+                            msgGuid,
+                            ipAddress,
+                            details
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create audit log for message deletion {MessageId}", messageId);
+                    }
                 },
                 async error =>
                 {

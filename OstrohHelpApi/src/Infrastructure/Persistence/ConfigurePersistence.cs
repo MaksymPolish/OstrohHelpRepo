@@ -3,6 +3,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.Common.Services;
 using Application.Services.Interface;
 using Infrastructure.Persistence.Repositories;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -61,6 +62,8 @@ public static class ConfigurePersistence
         services.AddScoped<IMessageRepository, MessageRepository>();
         
         services.AddScoped<IMessageAttachmentRepository, MessageAttachmentRepository>();
+        
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         
         // 🔒 SECURITY: Консultation access checker для авторизації месседжів
         services.AddScoped<IConsultationAccessChecker, ConsultationAccessChecker>();
