@@ -57,32 +57,30 @@ export const sendConsultationMessage = async ({
   senderId,
   receiverId,
   consultationId,
-  content,
+  encryptedContent,
+  iv,
+  authTag,
   mediaPaths = [],
 }) => {
-  const messageText = typeof content === "string" ? content : "";
-
   const payload = {
-    // Required business fields
+    // Required encrypted message fields
     senderId,
     consultationId,
-    content: messageText,
+    receiverId,
+    encryptedContent,
+    iv,
+    authTag,
 
     // Compatibility aliases for backend DTO naming differences
     SenderId: senderId,
     ConsultationId: consultationId,
-    text: messageText,
-    Text: messageText,
-    message: messageText,
-    Message: messageText,
+    ReceiverId: receiverId,
+    EncryptedContent: encryptedContent,
+    Iv: iv,
+    AuthTag: authTag,
 
     mediaPaths,
   };
-
-  if (receiverId) {
-    payload.receiverId = receiverId;
-    payload.ReceiverId = receiverId;
-  }
 
   const response = await api.post("/Message/Send", payload);
 

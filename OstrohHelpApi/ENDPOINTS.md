@@ -139,14 +139,22 @@ Authorization: Bearer <JWT_TOKEN>
 6. Повертає UserDto з токенами та інформацією
 ```
 
-**Request:**
+### Input
+
+**Body (JSON):**
 ```json
 {
   "googleToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6Ik..."
 }
 ```
 
-**Response (200 OK):**
+| Поле | Тип | Обов'язковий | Опис |
+|------|-----|------------|------|
+| googleToken | string | Так | Google ID token від Google OAuth 2.0 |
+
+### Output
+
+**Success (200 OK):**
 ```json
 {
   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -161,10 +169,12 @@ Authorization: Bearer <JWT_TOKEN>
 }
 ```
 
-**Помилки:**
-- `400 Bad Request` - Немає googleToken в запиті
-- `401 Unauthorized` - Google токен невалідний/експайрився
-- `500 Internal Server Error` - Помилка при створенні користувача
+**Errors:**
+| Код | Статус | Опис |
+|-----|--------|------|
+| InvalidToken | 400 | Немає googleToken в запиті |
+| InvalidGoogle Token | 401 | Google токен невалідний або експайрився |
+| CreationError | 500 | Помилка при створенні користувача в БД |
 
 ---
 
@@ -222,14 +232,18 @@ Authorization: Bearer <JWT_TOKEN>
 5. Якщо не знайден - 404
 ```
 
-**Parameters:**
-| Назва | Тип | Розташування | Обов'язковий |
-|-------|-----|--------------|-------------|
-| email | string | Query | Так |
+### Input
+
+**Query Parameters:**
+| Назва | Тип | Обов'язковий | Приклад |
+|-------|-----|------------|----------|
+| email | string | Так | `student@example.com` |
 
 **Example:** `GET /api/auth/get-by-email?email=student@example.com`
 
-**Response (200 OK):**
+### Output
+
+**Success (200 OK):**
 ```json
 {
   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -240,6 +254,12 @@ Authorization: Bearer <JWT_TOKEN>
   "roleName": "Student"
 }
 ```
+
+**Errors:**
+| Код | Статус | Опис |
+|-----|--------|------|
+| MissingAuth | 401 | Невалідний JWT токен |
+| NotFound | 404 | Користувач не знайдений |
 
 ---
 

@@ -1,6 +1,5 @@
 import React from "react";
-import { Shield, Brain } from "lucide-react";
-import { useLanguage } from "../../App";
+import { Brain } from "lucide-react";
 
 export default function Sidebar({
   isOpen,
@@ -10,7 +9,6 @@ export default function Sidebar({
   onNavigate,
   onLogout,
 }) {
-  const { t } = useLanguage();
   return (
     <>
       {/* Mobile Overlay */}
@@ -74,21 +72,6 @@ export default function Sidebar({
               );
             })}
           </nav>
-
-          {/* Bottom Section */}
-          <div className="p-4 mt-auto border-t border-slate-200 dark:border-slate-700">
-            <div className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-2xl">
-              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-2">
-                <Shield size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  {t("secure")}
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                {t("dataEncrypted")}
-              </p>
-            </div>
-          </div>
         </div>
       </aside>
     </>

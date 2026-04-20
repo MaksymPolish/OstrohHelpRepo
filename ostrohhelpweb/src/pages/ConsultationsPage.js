@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Paperclip, Send, Activity } from "lucide-react";
 import Button from "../components/Common/Button";
 import { useLanguage, useSecurity } from "../App";
@@ -11,8 +11,10 @@ import {
 import {
   joinConsultationRoom,
   leaveConsultationRoom,
+  subscribeToConsultationKeys,
   subscribeToIncomingMessages,
 } from "../services/signalrChat";
+import { decryptMessage, encryptMessage } from "../services/encryptionService";
 
 const readFirstDefined = (...values) => {
   for (const value of values) {
@@ -169,7 +171,10 @@ const normalizeMessage = (item) => {
     senderId: normalizeId(readFirstDefined(item?.senderId, item?.SenderId)),
     consultationId: normalizeId(readFirstDefined(item?.consultationId, item?.ConsultationId)),
     content: readFirstDefined(item?.content, item?.Content, item?.text, item?.Text, item?.message, item?.Message) || "",
-    createdAt: readFirstDefined(item?.createdAt, item?.CreatedAt) || null,
+    encryptedContent: readFirstDefined(item?.encryptedContent, item?.EncryptedContent) || null,
+    iv: readFirstDefined(item?.iv, item?.Iv) || null,
+    authTag: readFirstDefined(item?.authTag, item?.AuthTag) || null,
+    createdAt: readFirstDefined(item?.sentAt, item?.SentAt, item?.createdAt, item?.CreatedAt) || null,
     attachments: [...new Set(attachments.filter((entry) => typeof entry === "string" && entry.trim()))],
   };
 };
@@ -197,12 +202,16 @@ export default function ConsultationsPage() {
   const [consultations, setConsultations] = useState([]);
   const [selectedConsultationId, setSelectedConsultationId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [decryptedMessages, setDecryptedMessages] = useState([]);
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [keyVersion, setKeyVersion] = useState(0);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
+  const consultationKeysRef = useRef({});
 
   const normalizedCurrentUserId = useMemo(() => normalizeId(currentUser?.id), [currentUser?.id]);
 
@@ -266,6 +275,57 @@ export default function ConsultationsPage() {
     });
   };
 
+  const getConsultationKey = useCallback((consultationId) => {
+    const normalizedId = normalizeId(consultationId);
+    if (!normalizedId) {
+      return null;
+    }
+
+    return consultationKeysRef.current[normalizedId] || null;
+  }, []);
+
+  const decryptMessages = useCallback(async (sourceMessages) => {
+    const nextMessages = await Promise.all(
+      sourceMessages.map(async (messageItem) => {
+        const hasPlainContent = typeof messageItem.content === "string" && messageItem.content.trim().length > 0;
+        const hasEncryptedPayload =
+          Boolean(messageItem.encryptedContent) &&
+          Boolean(messageItem.iv) &&
+          Boolean(messageItem.authTag);
+
+        if (hasPlainContent || !hasEncryptedPayload) {
+          return messageItem;
+        }
+
+        const secretKey = getConsultationKey(messageItem.consultationId);
+        if (!secretKey) {
+          return messageItem;
+        }
+
+        try {
+          const plaintext = await decryptMessage({
+            encryptedContent: messageItem.encryptedContent,
+            iv: messageItem.iv,
+            authTag: messageItem.authTag,
+            secretKey,
+          });
+
+          return {
+            ...messageItem,
+            content: plaintext,
+          };
+        } catch {
+          return {
+            ...messageItem,
+            content: "[Encrypted message could not be decrypted]",
+          };
+        }
+      })
+    );
+
+    return sortMessagesOldToNew(nextMessages);
+  }, [getConsultationKey]);
+
 
   const appendUniqueMessage = (nextMessage) => {
     setMessages((prevMessages) => {
@@ -314,6 +374,7 @@ export default function ConsultationsPage() {
     const loadMessages = async () => {
       if (!selectedConsultationId) {
         setMessages([]);
+        setDecryptedMessages([]);
         return;
       }
 
@@ -331,6 +392,58 @@ export default function ConsultationsPage() {
 
     loadMessages();
   }, [selectedConsultationId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToConsultationKeys((payload) => {
+      const consultationId = normalizeId(
+        readFirstDefined(payload?.consultationId, payload?.ConsultationId)
+      );
+      const key = readFirstDefined(payload?.key, payload?.Key);
+
+      if (!consultationId || !key) {
+        return;
+      }
+
+      consultationKeysRef.current = {
+        ...consultationKeysRef.current,
+        [consultationId]: key,
+      };
+      setKeyVersion((prev) => prev + 1);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncDecryptedMessages = async () => {
+      if (messages.length === 0) {
+        setDecryptedMessages([]);
+        return;
+      }
+
+      setIsDecrypting(true);
+      try {
+        const resolvedMessages = await decryptMessages(messages);
+        if (isMounted) {
+          setDecryptedMessages(resolvedMessages);
+        }
+      } finally {
+        if (isMounted) {
+          setIsDecrypting(false);
+        }
+      }
+    };
+
+    syncDecryptedMessages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [messages, keyVersion, decryptMessages]);
 
   useEffect(() => {
     if (!selectedConsultationId) {
@@ -398,6 +511,12 @@ export default function ConsultationsPage() {
       return;
     }
 
+    const consultationKey = getConsultationKey(selectedConsultation.id);
+    if (!consultationKey) {
+      setError("Ключ шифрування ще не отримано. Спробуйте через кілька секунд.");
+      return;
+    }
+
     const peer = resolvePeer(selectedConsultation);
     const participantIds = [selectedConsultation.studentId, selectedConsultation.psychologistId]
       .map((entry) => normalizeId(entry))
@@ -425,6 +544,7 @@ export default function ConsultationsPage() {
       );
 
       const mediaPaths = uploadedPaths.filter(Boolean);
+      const encryptedPayload = await encryptMessage(text || "Файл", consultationKey);
 
       let sent = false;
       let lastSendError = null;
@@ -435,7 +555,9 @@ export default function ConsultationsPage() {
             senderId: normalizedCurrentUserId,
             receiverId,
             consultationId: normalizeId(selectedConsultation.id),
-            content: text || "Файл",
+            encryptedContent: encryptedPayload.encryptedContent,
+            iv: encryptedPayload.iv,
+            authTag: encryptedPayload.authTag,
             mediaPaths,
           });
           sent = true;
@@ -565,16 +687,18 @@ export default function ConsultationsPage() {
 
           {isLoadingMessages && <p className="text-sm text-slate-500">Завантаження повідомлень...</p>}
 
-          {!isLoadingMessages && selectedConsultation && messages.length === 0 && (
+          {!isLoadingMessages && selectedConsultation && decryptedMessages.length === 0 && (
             <p className="text-sm text-slate-500">Поки що немає повідомлень у цьому чаті.</p>
           )}
+
+          {isDecrypting && <p className="text-sm text-slate-500">Розшифровка повідомлень...</p>}
 
           {!selectedConsultation && (
             <p className="text-sm text-slate-500">Оберіть чат із лівої панелі, щоб почати спілкування.</p>
           )}
 
-          {messages.map((m, index) => {
-            const isMine = m.senderId === normalizedCurrentUserId;
+          {decryptedMessages.map((m, index) => {
+            const isMine = idsEqual(m.senderId, normalizedCurrentUserId);
 
             return (
               <div key={`${m.id}-${index}`} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>

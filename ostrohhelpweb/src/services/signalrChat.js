@@ -9,6 +9,7 @@ import { SIGNALR_HUB_URL } from "../config/env";
 let connection = null;
 let connectionPromise = null;
 const messageSubscribers = new Set();
+const keySubscribers = new Set();
 
 const normalizeHubUrlForNegotiation = (value) => {
   if (!value || typeof value !== "string") {
@@ -36,6 +37,16 @@ const dispatchIncomingMessage = (payload) => {
   }
 };
 
+const dispatchConsultationKey = (payload) => {
+  for (const subscriber of keySubscribers) {
+    try {
+      subscriber(payload);
+    } catch {
+      // Ignore subscriber errors to keep SignalR stream alive.
+    }
+  }
+};
+
 const buildConnection = () => {
   const hubConnection = new HubConnectionBuilder()
     .withUrl(normalizeHubUrlForNegotiation(SIGNALR_HUB_URL), {
@@ -49,6 +60,10 @@ const buildConnection = () => {
 
   hubConnection.on("ReceiveMessage", (message) => {
     dispatchIncomingMessage(message);
+  });
+
+  hubConnection.on("ReceiveConsultationKey", (payload) => {
+    dispatchConsultationKey(payload);
   });
 
   hubConnection.on("Error", (errorPayload) => {
@@ -89,6 +104,13 @@ export const subscribeToIncomingMessages = (handler) => {
   messageSubscribers.add(handler);
   return () => {
     messageSubscribers.delete(handler);
+  };
+};
+
+export const subscribeToConsultationKeys = (handler) => {
+  keySubscribers.add(handler);
+  return () => {
+    keySubscribers.delete(handler);
   };
 };
 
