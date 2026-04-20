@@ -98,7 +98,12 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Register custom JSON converter for byte[] → Base64 serialization
+        options.JsonSerializerOptions.Converters.Add(new Infrastructure.Serialization.ByteArrayToBase64Converter());
+    });
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Application.ApplicationAssemblyMarker>();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -110,6 +115,12 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+})
+.AddJsonProtocol(options =>
+{
+    // Register custom JSON converter for byte[] → Base64 serialization
+    // This ensures encrypted data (EncryptedContent, Iv, AuthTag) is transmitted as Base64 strings
+    options.PayloadSerializerOptions.Converters.Add(new Infrastructure.Serialization.ByteArrayToBase64Converter());
 });
 
 // Add CORS configuration
