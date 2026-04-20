@@ -2,30 +2,30 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 
-/// 🔐 СЛУЖБА ШИФРУВАННЯ ПОВІДОМЛЕНЬ
+/// СЛУЖБА ШИФРУВАННЯ ПОВІДОМЛЕНЬ
 ///
 /// АРХІТЕКТУРА:
 /// ═══════════════════════════════════════════════════════════════════════════
 ///
-/// 1️⃣ ОТРИМАННЯ КЛЮЧА З СЕРВЕРА:
+/// ОТРИМАННЯ КЛЮЧА З СЕРВЕРА:
 ///    - WebSocket: wss://localhost:7123/chat?access_token=<JWT>
 ///    - Клієнт: joinConsultation(consultationId)
 ///    - Сервер: Генерує HKDF-SHA256(masterKey + consultationId)
 ///    - evento: "ReceiveConsultationKey" → {consultationKey: "Base64..."}
 ///
-/// 2️⃣ ЗБЕРІГАННЯ КЛЮЧА:
+/// ЗБЕРІГАННЯ КЛЮЧА:
 ///    - chat_page.dart: _encryptionKey = key (RAM, НЕ localStorage)
 ///
-/// 3️⃣ ШИФРУВАННЯ ПОВІДОМЛЕННЯ (НА КЛІЄНТІ):
+/// ШИФРУВАННЯ ПОВІДОМЛЕННЯ (НА КЛІЄНТІ):
 ///    - plaintext: "Привіт!" + secretKey (від сервера)
 ///    - AES256-GCM: 256-bit ключ, 128-bit IV, 128-bit auth tag
 ///    - Output: {encryptedContent, iv, authTag} all Base64
 ///
-/// 4️⃣ ВІДПРАВКА (SignalR):
+/// ВІДПРАВКА (SignalR):
 ///    - sendMessage(encryptedContent, iv, authTag)
 ///    - Сервер НЕ дешифрує - зберігає як є
 ///
-/// 5️⃣ ОДЕРЖАННЯ (evento):
+/// ОДЕРЖАННЯ (evento):
 ///    - ReceiveMessage: {encryptedContent, iv, authTag}
 ///    - Клієнт дешифрує локально (має той же ключ)
 ///
@@ -50,7 +50,7 @@ class EncryptionService {
     return base64Encode(ivBytes);
   }
 
-  /// 🔐 ШИФРУВАННЯ ПОВІДОМЛЕННЯ
+  /// ШИФРУВАННЯ ПОВІДОМЛЕННЯ
   ///
   /// Параметри:
   ///   - plaintext: Текст для шифрування ("Привіт!")
@@ -62,7 +62,7 @@ class EncryptionService {
     required String secretKey,
   }) {
     try {
-      // 1️⃣ Декодуємо ключ
+      // Декодуємо ключ
       final keyBytes = base64Decode(secretKey);
       if (keyBytes.length != keyLengthBytes) {
         throw ArgumentError(
@@ -70,14 +70,14 @@ class EncryptionService {
         );
       }
 
-      // 2️⃣ Генеруємо випадковий IV
+      // Генеруємо випадковий IV
       final ivString = _generateRandomIv();
       final ivBytes = base64Decode(ivString);
 
-      // 3️⃣ Конвертуємо текст у байти
+      // Конвертуємо текст у байти
       final plaintextBytes = utf8.encode(plaintext);
 
-      // 4️⃣ Простий XOR-based encryption (замість складного GCM)
+      // Простий XOR-based encryption (замість складного GCM)
       // ПРИМІТКА: Це базовий приклад. У produciton використовувати справжній AES
       final encryptedBytes = <int>[];
       for (int i = 0; i < plaintextBytes.length; i++) {
@@ -86,7 +86,7 @@ class EncryptionService {
         );
       }
 
-      // 5️⃣ Генеруємо "auth tag" як хеш для верифікації
+      // Генеруємо "auth tag" як хеш для верифікації
       final authTagInput = [...plaintextBytes, ...keyBytes, ...ivBytes];
       final authTagHash = sha256.convert(authTagInput);
       final authTagBytes = authTagHash.bytes.sublist(0, 16); // Перші 16 байт
@@ -101,7 +101,7 @@ class EncryptionService {
     }
   }
 
-  /// 🔐 ДЕШИФРУВАННЯ ПОВІДОМЛЕННЯ
+  /// ДЕШИФРУВАННЯ ПОВІДОМЛЕННЯ
   ///
   /// Параметри:
   ///   - encryptedContent: Base64 зашифровані дані
@@ -117,13 +117,13 @@ class EncryptionService {
     required String secretKey,
   }) {
     try {
-      // 1️⃣ Декодуємо всі компоненти
+      // Декодуємо всі компоненти
       final keyBytes = base64Decode(secretKey);
       final ivBytes = base64Decode(iv);
       final authTagBytes = base64Decode(authTag);
       final encryptedBytes = base64Decode(encryptedContent);
 
-      // 2️⃣ Перевіряємо розміри
+      // Перевіряємо розміри
       if (keyBytes.length != keyLengthBytes) {
         throw ArgumentError('Invalid key length: ${keyBytes.length}');
       }
@@ -131,7 +131,7 @@ class EncryptionService {
         throw ArgumentError('Invalid IV length: ${ivBytes.length}');
       }
 
-      // 3️⃣ Дешифруємо (обернене XOR)
+      // Дешифруємо (обернене XOR)
       final decryptedBytes = <int>[];
       for (int i = 0; i < encryptedBytes.length; i++) {
         decryptedBytes.add(
@@ -139,7 +139,7 @@ class EncryptionService {
         );
       }
 
-      // 4️⃣ Верифікуємо auth tag
+      // Верифікуємо auth tag
       final authTagInput = [...decryptedBytes, ...keyBytes, ...ivBytes];
       final authTagHash = sha256.convert(authTagInput);
       final computedTag = authTagHash.bytes.sublist(0, 16);
@@ -148,7 +148,7 @@ class EncryptionService {
         throw Exception('Authentication tag verification failed');
       }
 
-      // 5️⃣ Конвертуємо назад у String
+      // Конвертуємо назад у String
       return utf8.decode(decryptedBytes);
     } catch (e) {
       throw Exception('Decryption failed: $e');
