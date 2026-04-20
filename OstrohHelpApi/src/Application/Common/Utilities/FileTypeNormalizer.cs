@@ -1,16 +1,12 @@
 namespace Application.Common.Utilities;
 
-/// <summary>
 /// Utility for normalizing file types to lowercase without leading dots.
 /// Centralizes file type normalization logic to avoid duplication across the codebase.
-/// </summary>
 public static class FileTypeNormalizer
 {
-    /// <summary>
     /// Normalizes a file type string to lowercase without leading dot.
-    /// </summary>
-    /// <param name="fileType">File type to normalize (e.g., ".jpg", "PDF", "mp4")</param>
-    /// <returns>Normalized file type (e.g., "jpg", "pdf", "mp4")</returns>
+    /// File type to normalize (e.g., ".jpg", "PDF", "mp4")
+    /// Normalized file type (e.g., "jpg", "pdf", "mp4")
     public static string Normalize(string? fileType)
     {
         if (string.IsNullOrWhiteSpace(fileType))
@@ -19,36 +15,28 @@ public static class FileTypeNormalizer
         return fileType.ToLowerInvariant().TrimStart('.');
     }
 
-    /// <summary>
     /// Checks if a file type is an image.
-    /// </summary>
     public static bool IsImage(string fileType)
     {
         var normalized = Normalize(fileType);
         return normalized is "jpg" or "jpeg" or "png" or "gif" or "webp" or "bmp";
     }
 
-    /// <summary>
     /// Checks if a file type is a video.
-    /// </summary>
     public static bool IsVideo(string fileType)
     {
         var normalized = Normalize(fileType);
         return normalized is "mp4" or "webm" or "mov" or "avi" or "mkv" or "flv" or "m4v";
     }
 
-    /// <summary>
     /// Checks if a file type is a document.
-    /// </summary>
     public static bool IsDocument(string fileType)
     {
         var normalized = Normalize(fileType);
         return normalized is "pdf" or "doc" or "docx" or "xlsx" or "xls" or "pptx" or "ppt" or "txt" or "zip";
     }
 
-    /// <summary>
     /// Gets MIME type for a file type.
-    /// </summary>
     public static string GetMimeType(string fileType)
     {
         var normalized = Normalize(fileType);

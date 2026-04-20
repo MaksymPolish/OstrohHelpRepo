@@ -302,8 +302,8 @@ builder.Services.AddHangfireServer();
 // Add Memory Cache for rate limiting
 builder.Services.AddMemoryCache();
 
-// Register Rate Limiting Service
-builder.Services.AddScoped<Application.Common.Services.IRateLimitingService, Application.Common.Services.RateLimitingService>();
+// Register Rate Limiting Service (MUST be Singleton, used in Middleware pipeline at root level)
+builder.Services.AddSingleton<Application.Common.Services.IRateLimitingService, Application.Common.Services.RateLimitingService>();
 
 var app = builder.Build();
 

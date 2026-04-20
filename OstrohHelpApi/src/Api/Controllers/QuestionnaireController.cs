@@ -30,7 +30,6 @@ public class QuestionnaireController(
         );
     }
     
-    [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {

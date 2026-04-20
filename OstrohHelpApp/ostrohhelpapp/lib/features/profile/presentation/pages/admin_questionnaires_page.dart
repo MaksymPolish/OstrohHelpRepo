@@ -91,21 +91,29 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
             return const Center(child: Text('Увійдіть як адміністратор або психолог.'));
           }
           final user = state.user;
+          print('👤 Current user: RoleId=${user.roleId}, RoleName=${user.roleName}');
+          print('🔍 isAdminOrPsychologist=${RoleChecker.isAdminOrPsychologist(user.roleId)}');
+          print('🔍 isAdminOrPsychologistByName=${RoleChecker.isAdminOrPsychologistByName(user.roleName)}');
+          
           if (!RoleChecker.isAdminOrPsychologist(user.roleId) &&
               !RoleChecker.isAdminOrPsychologistByName(user.roleName)) {
+            print('❌ User does not have required role');
             return Center(
               child: Text(
                 'Недостатньо прав для перегляду анкет. RoleId: ${user.roleId ?? 'null'}, RoleName: ${user.roleName ?? 'null'}',
               ),
             );
           }
+          print('✅ User has required role, loading questionnaires...');
           return FutureBuilder<List<Map<String, dynamic>>>(
             future: _apiService.getAllQuestionnaires(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
+                print('⏳ FutureBuilder: waiting...');
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
+                print('❌ FutureBuilder error: ${snapshot.error}');
                 return Center(
                   child: Text(
                     'Помилка: ${snapshot.error}\nRoleId: ${user.roleId ?? 'null'}\nRoleName: ${user.roleName ?? 'null'}\nСпробуйте вийти та увійти знову.',

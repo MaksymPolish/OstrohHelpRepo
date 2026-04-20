@@ -7,28 +7,48 @@ class QuestionnaireApiService {
   final TokenStorage _tokenStorage = TokenStorage();
 
   Future<Map<String, String>> _getHeaders() async {
-    final token = await _tokenStorage.getToken();
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await _tokenStorage.getToken();
+      print('🔐 Token fetched: ${token?.substring(0, 20)}...');
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      } else {
+        print('⚠️ WARNING: Token is null!');
+      }
+      return headers;
+    } catch (e) {
+      print('❌ ERROR in _getHeaders: $e');
+      rethrow;
     }
-    return headers;
   }
 
   Future<List<Map<String, dynamic>>> getAllQuestionnaires() async {
-    final headers = await _getHeaders();
-    final response = await http.get(
-      Uri.parse('$baseUrl/questionnaire/all'),
-      headers: headers,
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
+    try {
+      print('📤 Starting getAllQuestionnaires request...');
+      final headers = await _getHeaders();
+      print('✅ Headers prepared, making HTTP request...');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/questionnaire/all'),
+        headers: headers,
+      );
+      
+      print('📥 Response received: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        print('✅ Questionnaires loaded: ${data.length} items');
+        return data.cast<Map<String, dynamic>>();
+      }
+      throw Exception('Failed to load questionnaires: ${response.statusCode} - ${response.body}');
+    } catch (e) {
+      print('❌ ERROR in getAllQuestionnaires: $e');
+      throw Exception('Failed to load questionnaires: $e');
     }
-    throw Exception('Failed to load questionnaires: ${response.statusCode} - ${response.body}');
   }
 
   Future<Map<String, dynamic>> getQuestionnaireById(String id) async {

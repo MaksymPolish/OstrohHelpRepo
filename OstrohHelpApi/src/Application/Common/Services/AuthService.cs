@@ -19,12 +19,15 @@ public class AuthService : IAuthService
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+        // Отримуємо назву ролі за roleId з enum mapping
+        var roleName = Domain.Users.Roles.Role.GetEnumByGuid(user.RoleId).ToString();
+
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
-            new Claim(ClaimTypes.Role, "Student"),
+            new Claim(ClaimTypes.Role, roleName), // Використовуємо реальну роль
             new Claim("userId", user.Id.ToString()),
             new Claim("roleId", user.RoleId.ToString())
         };

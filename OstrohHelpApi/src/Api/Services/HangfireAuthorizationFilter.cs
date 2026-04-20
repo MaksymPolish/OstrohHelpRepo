@@ -2,10 +2,8 @@ using Hangfire.Dashboard;
 
 namespace Api.Services;
 
-/// <summary>
 /// Authorization filter for Hangfire dashboard access.
 /// Restricts dashboard access to localhost only in development environment.
-/// </summary>
 public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
 {
     private readonly IWebHostEnvironment _environment;

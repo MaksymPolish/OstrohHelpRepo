@@ -24,10 +24,8 @@ public class CloudinaryService : IFileUploadService, IPreviewGenerationService
         _cloudinary = new Cloudinary(new Account(cloudName, apiKey, apiSecret));
     }
 
-    /// <summary>
     /// Helper method to build Cloudinary URLs with secure connection and transformation.
     /// Centralizes URL building logic to avoid duplication.
-    /// </summary>
     private string BuildCloudinaryUrl(string publicId, Transformation transformation)
     {
         return new CloudinaryDotNet.Url(_cloudinary.Api.Account.Cloud)

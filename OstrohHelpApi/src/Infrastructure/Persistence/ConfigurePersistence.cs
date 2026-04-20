@@ -65,7 +65,7 @@ public static class ConfigurePersistence
         
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         
-        // 🔒 SECURITY: Консultation access checker для авторизації месседжів
+        // SECURITY: Консultation access checker для авторизації месседжів
         services.AddScoped<IConsultationAccessChecker, ConsultationAccessChecker>();
         
         services.AddSingleton<IAuthService, AuthService>();

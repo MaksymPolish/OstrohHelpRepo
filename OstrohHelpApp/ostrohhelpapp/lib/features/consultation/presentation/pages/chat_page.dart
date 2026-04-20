@@ -11,6 +11,7 @@ import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_state.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/consultation_api_service.dart';
 import 'package:ostrohhelpapp/core/auth/token_storage.dart';
+import 'package:ostrohhelpapp/core/services/encryption_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:video_player/video_player.dart';
 
@@ -31,8 +32,12 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
   final List<Message> _messages = [];
+  final Map<String, String> _decryptedMessages = {}; // messageId -> plaintext для відображення
   late Future<Map<String, dynamic>> _consultationFuture;
   final List<StreamSubscription> _subscriptions = [];
+  String? _userId; // Зберігаємо userId для використання в _sendMessage
+  String? _receiverId;
+  String? _encryptionKey;
   bool _isUploading = false;
   bool _isConnected = false;
   bool _isTyping = false;
@@ -52,47 +57,169 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _initializeChat(String userId) async {
     try {
+      print('\n═══════════════════════════════════════════════════════════════');
+      print('🔌 INITIALIZING CHAT CONNECTION');
+      print('═══════════════════════════════════════════════════════════════');
+      
+      // 💾 Зберігаємо userId для використання в _sendMessage
+      _userId = userId;
+      print('📍 userId: $userId');
+      
+      try {
+        final consultationData = await _consultationFuture;
+        _receiverId = consultationData['studentId'] == userId
+            ? consultationData['psychologistId']
+            : consultationData['studentId'];
+        print('📍 receiverId: $_receiverId');
+      } catch (e) {
+        print('❌ Error loading consultation data: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не вдалося завантажити дані консультації: $e')),
+        );
+      }
+
+      // Генеруємо ключ шифрування для цієї консультації
+      // АРХІТЕКТУРА: Ключ передається сервером через evento "ReceiveConsultationKey"
+      // Сервер генерує ключ за допомогою HKDF-SHA256:
+      //   - Input: Master Key (з .env) + ConsultationId
+      //   - Output: 256-bit AES-GCM ключ (Base64)
+      // Клієнт отримує ключ та використовує для шифрування/дешифрування
+      
+      // НЕ генеруємо випадковий ключ на клієнті!
+      // _encryptionKey = EncryptionService.generateRandomKey();
+      // Замість того чекаємо на evento "ReceiveConsultationKey" від сервера
+
       final token = await _tokenStorage.getToken();
       if (token == null || token.isEmpty) {
+        print('❌ Token is null or empty');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не вдалося отримати токен доступу.')),
         );
         return;
       }
+      print('✅ Token obtained: ${token.substring(0, 20)}...');
 
+      print('🚀 Initializing ChatService...');
       await _chatService.initialize(
         serverUrl: _hubBaseUrl,
         accessToken: token,
         currentUserId: userId,
       );
+      print('✅ ChatService initialized');
 
       if (mounted) {
         setState(() {
           _isConnected = _chatService.isConnected;
         });
+        print('📊 Connection state: $_isConnected');
       }
 
+      print('\n📡 Setting up stream listeners...\n');
+      
+      // 1️⃣ CONSULTATION KEY LISTENER
+      print('1️⃣ Setting up consultationKey listener...');
+      _subscriptions.add(
+        _chatService.consultationKey.listen((key) {
+          print('📨 [consultationKey] evento received');
+          print('   key length: ${key.length}');
+          print('   key preview: ${key.substring(0, 20)}...');
+          
+          if (!mounted) {
+            print('   ⚠️ Widget not mounted, ignoring');
+            return;
+          }
+          
+          setState(() {
+            _encryptionKey = key;
+          });
+          print('   ✅ Encryption key stored in _encryptionKey');
+          print('   🔐 Отримано ключ для шифрування з сервера');
+        }, onError: (error) {
+          print('   ❌ Error in consultationKey listener: $error');
+        }),
+      );
+      print('✅ consultationKey listener set up\n');
+
+      // 2️⃣ MESSAGES LISTENER
+      print('2️⃣ Setting up messages listener...');
       _subscriptions.add(
         _chatService.messages.listen((message) {
+          print('📨 [messages] evento received: messageId=${message.id}, senderId=${message.senderId}');
+          
           if (!mounted) return;
-          if (_messages.any((m) => m.id == message.id)) return;
+          if (_messages.any((m) => m.id == message.id)) {
+            print('   ⚠️ Message already exists, skipping');
+            return;
+          }
+          
+          // 🔐 ДЕШИФРУВАННЯ ОТРИМАНОГО ПОВІДОМЛЕННЯ
+          if (message.encryptedContent != null && 
+              message.iv != null && 
+              message.authTag != null &&
+              _encryptionKey != null) {
+            try {
+              print('   🔐 Decrypting message...');
+              final plaintext = EncryptionService.decryptMessage(
+                encryptedContent: message.encryptedContent!,
+                iv: message.iv!,
+                authTag: message.authTag!,
+                secretKey: _encryptionKey!,
+              );
+              _decryptedMessages[message.id] = plaintext;
+              print('   ✅ Message decrypted: ${plaintext.substring(0, 30)}...');
+            } catch (e) {
+              _decryptedMessages[message.id] = '[Помилка дешифрування]';
+              print('   ❌ Decryption error for message ${message.id}: $e');
+            }
+          } else {
+            print('   ⚠️ Missing encrypted data: encryptedContent=${message.encryptedContent != null}, iv=${message.iv != null}, authTag=${message.authTag != null}, key=${_encryptionKey != null}');
+          }
+          
           setState(() {
             _messages.add(message);
             _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
           });
           _scrollToBottom();
-          if (message.senderId != userId && !message.isRead) {
+          if (message.senderId != _userId && !message.isRead) {
             _chatService.markAsRead(
               messageId: message.id,
-              consultationId: widget.consultationId,
             );
           }
+        }, onError: (error) {
+          print('   ❌ Error in messages listener: $error');
         }),
       );
+      print('✅ messages listener set up\n');
 
+      // 3️⃣ MESSAGES LOADED LISTENER
+      print('3️⃣ Setting up messagesLoaded listener...');
       _subscriptions.add(
         _chatService.messagesLoaded.listen((messages) {
+          print('📨 [messagesLoaded] evento received: ${messages.length} messages');
+          
           if (!mounted) return;
+          
+          // ДЕШИФРУВАННЯ ЗАВАНТАЖЕНИХ ПОВІДОМЛЕНЬ
+          for (final msg in messages) {
+            if (msg.encryptedContent != null && 
+                msg.iv != null && 
+                msg.authTag != null &&
+                _encryptionKey != null) {
+              try {
+                final plaintext = EncryptionService.decryptMessage(
+                  encryptedContent: msg.encryptedContent!,
+                  iv: msg.iv!,
+                  authTag: msg.authTag!,
+                  secretKey: _encryptionKey!,
+                );
+                _decryptedMessages[msg.id] = plaintext;
+              } catch (e) {
+                _decryptedMessages[msg.id] = '[Помилка дешифрування]';
+                print('   ❌ Decryption error for message ${msg.id}: $e');
+              }
+            }
+          }
+          
           setState(() {
             _messages
               ..clear()
@@ -100,38 +227,58 @@ class _ChatPageState extends State<ChatPage> {
             _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
           });
           for (final message in messages) {
-            if (message.senderId != userId && !message.isRead) {
+            if (message.senderId != _userId && !message.isRead) {
               _chatService.markAsRead(
                 messageId: message.id,
-                consultationId: widget.consultationId,
               );
             }
           }
           _scrollToBottom();
+          print('   ✅ Messages loaded and decrypted');
+        }, onError: (error) {
+          print('   ❌ Error in messagesLoaded listener: $error');
         }),
       );
+      print('✅ messagesLoaded listener set up\n');
 
+      // 4️⃣ CONNECTION STATE LISTENER
+      print('4️⃣ Setting up connectionState listener...');
       _subscriptions.add(
         _chatService.connectionState.listen((state) {
+          print('📨 [connectionState] evento: $state');
           if (!mounted) return;
           setState(() {
             _isConnected = state == HubConnectionState.Connected;
           });
+          print('   ✅ Connection state: $_isConnected');
+        }, onError: (error) {
+          print('   ❌ Error in connectionState listener: $error');
         }),
       );
+      print('✅ connectionState listener set up\n');
 
+      // 5️⃣ USER ONLINE LISTENER
+      print('5️⃣ Setting up userOnline listener...');
       _subscriptions.add(
         _chatService.userOnline.listen((event) {
+          print('📨 [userOnline] evento: userId=${event.userId}, isOnline=${event.isOnline}');
           if (!mounted) return;
           setState(() {
             _otherUserOnline = event.isOnline;
           });
+          print('   ✅ Online state: $_otherUserOnline');
+        }, onError: (error) {
+          print('   ❌ Error in userOnline listener: $error');
         }),
       );
+      print('✅ userOnline listener set up\n');
 
+      // 6️⃣ TYPING USERS LISTENER
+      print('6️⃣ Setting up typingUsers listener...');
       _subscriptions.add(
         _chatService.typingUsers.listen((typingUserId) {
-          if (!mounted || typingUserId == userId) return;
+          print('📨 [typingUsers] evento: userId=$typingUserId');
+          if (!mounted || typingUserId == _userId) return;
           setState(() {
             _otherUserTyping = true;
           });
@@ -143,44 +290,41 @@ class _ChatPageState extends State<ChatPage> {
               });
             }
           });
+          print('   ✅ User is typing');
+        }, onError: (error) {
+          print('   ❌ Error in typingUsers listener: $error');
         }),
       );
+      print('✅ typingUsers listener set up\n');
 
-      _subscriptions.add(
-        _chatService.messageRead.listen((messageId) {
-          if (!mounted) return;
-          final index = _messages.indexWhere((m) => m.id == messageId);
-          if (index == -1) return;
-          setState(() {
-            _messages[index] = _messages[index].copyWith(isRead: true);
-          });
-        }),
-      );
-
-      _subscriptions.add(
-        _chatService.messageDeleted.listen((messageId) {
-          if (!mounted) return;
-          setState(() {
-            _messages.removeWhere((m) => m.id == messageId);
-          });
-        }),
-      );
-
+      // 7️⃣ ERRORS LISTENER
+      print('7️⃣ Setting up errors listener...');
       _subscriptions.add(
         _chatService.errors.listen((error) {
+          print('📨 [errors] evento: $error');
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Помилка: $error')),
+            SnackBar(content: Text('Помилка чату: $error')),
           );
         }),
       );
-
+      print('✅ errors listener set up\n');
+      
+      print('═══════════════════════════════════════════════════════════════');
+      print('✅ CHAT INITIALIZATION COMPLETED');
+      print('═══════════════════════════════════════════════════════════════\n');
+      
+      print('🚀 Joining consultation...');
       await _chatService.joinConsultation(widget.consultationId);
+      print('✅ Joined consultation successfully');
+      
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не вдалося підключитися: $e')),
-      );
+      print('❌ FATAL ERROR in _initializeChat: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Помилка ініціалізації чату: $e')),
+        );
+      }
     }
   }
 
@@ -189,33 +333,58 @@ class _ChatPageState extends State<ChatPage> {
     required String filePath,
     String? caption,
   }) async {
-    if (_isUploading) return;
+    if (_isUploading || _receiverId == null || _encryptionKey == null) return;
     setState(() {
       _isUploading = true;
     });
 
     try {
-      final upload = await _messageApiService.uploadToCloud(
-        userId: userId,
-        filePath: filePath,
+      // Завантажуємо файл як batch
+      final uploadResult = await _messageApiService.batchUpload(
+        filePaths: [filePath],
+        messageId: null,
       );
-      final url = upload['url']?.toString();
-      final fileType = upload['fileType']?.toString();
-      if (url == null || url.isEmpty || fileType == null || fileType.isEmpty) {
+
+      // Витягуємо результати завантаження
+      final results = uploadResult['results'] as List?;
+      if (results == null || results.isEmpty) {
+        throw Exception('No files uploaded');
+      }
+
+      final fileResult = results[0] as Map<String, dynamic>;
+      final fileUrl = fileResult['fileUrl']?.toString();
+      final fileType = fileResult['fileType']?.toString();
+
+      if (fileUrl == null || fileUrl.isEmpty || fileType == null || fileType.isEmpty) {
         throw Exception('Upload returned empty url');
       }
+
+      // Готуємо текст (опис вкладення)
       final rawCaption = (caption ?? _controller.text).trim();
-      final textPayload = rawCaption.isEmpty ? 'Attachment' : rawCaption;
+      final messageText = rawCaption.isEmpty ? 'Attachment' : rawCaption;
+
+      // 🔐 ШИФРУВАННЯ ПОВІДОМЛЕННЯ
+      // Перевіряємо що ключ отриманий з сервера
+      if (_encryptionKey == null || _encryptionKey!.isEmpty) {
+        throw Exception('Encryption key not received from server. Please wait for connection to stabilize.');
+      }
+
+      // Шифруємо текст повідомлення за допомогою AES256-GCM
+      // Input: plaintext (текст) + secretKey (отриманий з сервера)
+      // Output: encryptedContent, iv, authTag (все Base64)
+      final encryptedData = EncryptionService.encryptMessage(
+        plaintext: messageText,
+        secretKey: _encryptionKey!,
+      );
+
+      // Відправляємо зашифроване повідомлення через SignalR
       await _chatService.sendMessage(
         consultationId: widget.consultationId,
-        text: textPayload,
-        attachments: [
-          ChatAttachment(
-            fileUrl: url,
-            fileType: fileType,
-          ),
-        ],
+        encryptedContent: encryptedData['encryptedContent']!,
+        iv: encryptedData['iv']!,
+        authTag: encryptedData['authTag']!,
       );
+
       if (rawCaption.isNotEmpty || caption == null) {
         _controller.clear();
       }
@@ -287,7 +456,6 @@ class _ChatPageState extends State<ChatPage> {
     try {
       await _chatService.deleteMessage(
         messageId: messageId,
-        consultationId: widget.consultationId,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -334,16 +502,76 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _sendMessage() async {
-    if (!_isConnected) return;
+    // АРХІТЕКТУРА ШИФРУВАННЯ ПОВІДОМЛЕННЯ:
+    // 1. Перевіряємо що отримали ключ з сервера (evento "ReceiveConsultationKey")
+    // 2. Шифруємо текст на КЛІЄНТІ за допомогою AES256-GCM
+    // 3. Відправляємо зашифровані дані через SignalR (сервер їх не дешифрує)
+    // 4. Одержувач отримує evento, дешифрує використовуючи той же ключ
+    
+    if (!_isConnected || _receiverId == null || _encryptionKey == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            !_isConnected ? 'Немає з\'єднання' : 
+            _receiverId == null ? 'Не знайдено одержувача' : 
+            'Ключ шифрування не отриманий',
+          ),
+        ),
+      );
+      return;
+    }
 
     final content = _controller.text.trim();
     if (content.isEmpty) return;
 
     try {
+      // 🔐 ШИФРУВАННЯ - AES256-GCM
+      // Використовуємо ключ отриманий від сервера через evento "ReceiveConsultationKey"
+      final encryptedData = EncryptionService.encryptMessage(
+        plaintext: content,
+        secretKey: _encryptionKey!,  // Ключ від сервера (HKDF-SHA256 детерминований)
+      );
+
+      // 📱 ОПТИМІСТИЧНЕ ВІДОБРАЖЕННЯ - показуємо текст користувачу одразу
+      // Тимчасовий ID доки сервер не поверне реальний
+      final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+      _decryptedMessages[tempMessageId] = content; // Зберігаємо plaintext для відображення
+      
+      setState(() {
+        _messages.add(
+          Message(
+            id: tempMessageId,
+            consultationId: widget.consultationId,
+            senderId: _userId ?? '',
+            senderName: 'Ви',
+            senderPhotoUrl: null,
+            receiverId: _receiverId!,
+            receiverName: '', // Заповниться при отриманні від сервера
+            receiverPhotoUrl: null,
+            encryptedContent: encryptedData['encryptedContent'],
+            iv: encryptedData['iv'],
+            authTag: encryptedData['authTag'],
+            text: null,
+            sentAt: DateTime.now(),
+            isRead: true,
+            isDeleted: false,
+            attachments: [],
+          ),
+        );
+      });
+      _scrollToBottom();
+
+      // ПЕРЕДАЧА - SignalR WebSocket
+      // Сервер отримує: encryptedContent, iv, authTag (все Base64)
+      // Сервер вычисляет receiverId сам на основі консультації
+      // Інші клієнти отримують evento "ReceiveMessage" з тими ж даними
       await _chatService.sendMessage(
         consultationId: widget.consultationId,
-        text: content,
+        encryptedContent: encryptedData['encryptedContent']!,
+        iv: encryptedData['iv']!,
+        authTag: encryptedData['authTag']!,
       );
+
       _controller.clear();
       _typingTimer?.cancel();
       if (_isTyping) {
@@ -577,12 +805,19 @@ class _ChatPageState extends State<ChatPage> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final msg = _messages[index];
-                          final isMe = msg.senderId == userId;
+                          final isMe = msg.senderId == _userId;
                           final bubbleColor = isMe
                               ? colorScheme.primary.withOpacity(0.18)
                               : colorScheme.surface;
                           final textColor = colorScheme.onSurface;
-                          final attachments = msg.mediaPaths;
+                          final attachments = msg.getMediaPaths();
+
+                          // 🔐 ВИБІР ТЕКСТУ ДЛЯ ВІДОБРАЖЕННЯ:
+                          // 1. Якщо є дешифрований текст в _decryptedMessages - показуємо його
+                          // 2. Якщо є старий text поле (для сумісності) - показуємо його
+                          // 3. Інакше - текст недоступний
+                          final displayText = _decryptedMessages[msg.id] ?? 
+                                              (msg.text?.isNotEmpty ?? false ? msg.text : null);
 
                           return GestureDetector(
                             onLongPress: () => _showDeleteMenu(context, msg.id),
@@ -608,13 +843,13 @@ class _ChatPageState extends State<ChatPage> {
                                     crossAxisAlignment:
                                         isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                                     children: [
-                                      if (msg.text.trim().isNotEmpty)
+                                      if ((displayText?.trim() ?? '').isNotEmpty)
                                         Text(
-                                          msg.text,
+                                          displayText ?? '',
                                           style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
                                         ),
                                       if (attachments.isNotEmpty) ...[
-                                        if (msg.text.trim().isNotEmpty) const SizedBox(height: 10),
+                                        if ((displayText?.trim() ?? '').isNotEmpty) const SizedBox(height: 10),
                                         ...attachments.map((url) => Padding(
                                               padding: const EdgeInsets.only(bottom: 8),
                                               child: _buildAttachment(context, url),

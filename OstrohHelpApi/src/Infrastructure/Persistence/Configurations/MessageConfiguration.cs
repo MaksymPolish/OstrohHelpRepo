@@ -32,10 +32,11 @@ public class MessageConfiguration :IEntityTypeConfiguration<Message>
             .IsRequired()
             .HasColumnType("uuid");
 
-        // Текст
+        // Текст (nullable - используется только для legacy plaintext messages)
+        // Зашифрованные сообщения не используют Text поле
         builder.Property(m => m.Text)
             .HasColumnType("text")
-            .IsRequired();
+            .IsRequired(false);
 
         // Часи
         builder.Property(m => m.SentAt)

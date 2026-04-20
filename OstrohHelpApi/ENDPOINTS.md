@@ -59,6 +59,63 @@ Authorization: Bearer <JWT_TOKEN>
 
 ---
 
+## 🔑 Шифрування Даних - Key Distribution
+
+### Де передається ключ для шифрування?
+
+**SignalR evento `ReceiveConsultationKey`** при приєднанні до консультації
+
+**Flow:**
+```
+1. Клієнт підключається до WebSocket:
+   wss://localhost:7123/chat?access_token=<JWT_TOKEN>
+   
+2. Надсилає: JoinConsultation(consultationId)
+   
+3. Сервер генерує ключ за допомогою HKDF-SHA256:
+   - Input: Master Key (з .env) + ConsultationId
+   - Output: 256-bit детерминированний ключ
+   
+4. Сервер передає клієнту:
+   evento: "ReceiveConsultationKey"
+   {
+     ConsultationId: "abc-123...",
+     Key: "XtLurkNiKAseW287L...",     ← BASE64!
+     Algorithm: "AES-256-GCM",
+     Timestamp: "2026-04-18T14:30:00Z"
+   }
+   
+5. Клієнт:
+   - Декодує Key з Base64
+   - Зберігає в RAM пам'яті (НЕ в localStorage)
+   - Використовує для шифрування/дешифрування повідомлень
+```
+
+### Деталі реалізації
+
+| Параметр | Значення |
+|----------|---------|
+| **Метод передачі** | SignalR evento (WebSocket) |
+| **Точка передачі** | `JoinConsultation` метод в ChatHub |
+| **Evento ім'я** | `ReceiveConsultationKey` |
+| **Master Key** | Зберігається в `.env` файлі (`ENCRYPTION_MASTER_KEY=...`) |
+| **Key Derivation** | HKDF-SHA256 (RFC 5869) |
+| **Output Key Size** | 256-bit (32 bytes) |
+| **Детерминізм** | Одна консультація = один ключ (завжди однаковий) |
+| **Transport Encoding** | Base64 (для передачі по WebSocket) |
+| **Client Storage** | RAM пам'ять (не зберігається на диску) |
+| **Шифрування** | Відбувається на КЛІЄНТІ (сервер не бачить plaintext) |
+
+### Безпека ключей
+
+- ✅ Master Key ніколи НЕ передається клієнту
+- ✅ Консультаційні ключи генеруються динамічно для кожної консультації
+- ✅ Ключи НЕ логуються або НЕ зберігаються в БД
+- ✅ Клієнт отримує ключ тільки якщо є членом консультації (перевіряється JWT + консультація ID)
+- ✅ Шифрування/дешифрування на клієнті - сервер ніколи не дешифрує дані
+
+---
+
 # 🔐 AuthController
 
 **Base Route:** `/api/auth`
@@ -681,11 +738,24 @@ file[1]: <binary data - document.pdf>
 ## 1️⃣ JoinConsultation
 **🔐 АВТОРИЗОВАНИЙ | 🔴 ПЕРЕВІРЯЄ ЧЛЕНСТВО**
 
-**Описание:** Приєднання користувача до групи консультації для отримання real-time повідомлень
+**Описание:** Приєднання користувача до групи консультації для отримання real-time повідомлень + **ПЕРЕДАЧА КЛЮЧА ДЛЯ ШИФРУВАННЯ**
+
+**🔑 Важливо - Де передається ключ для шифрування:**
+
+При приєднанні до консультації, сервер **генерує та передає encryption key** для цієї консультації:
+
+```
+МЕТОД ПЕРЕДАЧІ: SignalR evento "ReceiveConsultationKey"
+АЛГОРИТМ: HKDF-SHA256 (детерминированный вивід ключа)
+INPUT: Master Key (з .env) + ConsultationId
+OUTPUT: 256-bit AES-GCM ключ (Base64 encoded)
+ЧАСТОТА: При кожному JoinConsultation (одинаковий для однієї консультації)
+```
 
 **Flow (Workflow):**
 ```
-1. Клієнт надсилає consultationId
+1. Клієнт надсилає consultationId через WebSocket:
+   wss://localhost:7123/chat?access_token=<JWT_TOKEN>
 
 2. Сервер перевіряє JWT токен (з query параметра)
 
@@ -699,19 +769,47 @@ file[1]: <binary data - document.pdf>
 5. Додає користувача до SignalR групи:
    await Groups.AddToGroupAsync(Context.ConnectionId, $"consultation_{consultationId}")
 
-6. Відправляє клієнту підтвердження
+6. ⭐ ГЕНЕРУЄ ENCRYPTION KEY для консультації:
+   byte[] consultationKey = _keyDerivationService.DeriveKeyForConsultation(
+       masterKeyFromEnvironment,    // Із .env файла
+       consultationId               // GUID консультації
+   )
+   
+   Алгоритм: HKDF-SHA256
+   - Extract: HMAC-SHA256(salt=ConsultationId, key=MasterKey)
+   - Expand: HMAC-SHA256 з info="OstrohHelp-MessageEncryption"
+   - Результат: 256-bit (32 bytes) детерминированний ключ
 
-7. BROADCAST до ГРУПИ (всім у групі):
-   await Clients.Group(...).SendAsync("ReceiveJoinedConsultation", {
+7. ⭐ ПЕРЕДАЄ КЛЮЧ КЛІЄНТУ через evento "ReceiveConsultationKey":
+   {
+     ConsultationId: guid,
+     Key: "XtLurkNiKAseW287L...",    ← BASE64 ENCODED!
+     Algorithm: "AES-256-GCM",
+     Timestamp: datetime
+   }
+
+8. BROADCAST до ГРУПИ (всім у групі - evento "ReceiveJoinedConsultation"):
+   {
      consultationId: guid,
      userId: guid,
      userName: string,
      photoUrl: string,
      timestamp: datetime
-   })
+   }
 
-8. Клієнт отримує список активних користувачів в консультації
+9. Клієнт:
+   - Отримує ключ з ReceiveConsultationKey
+   - Зберігає його в RAM (НЕ в localStorage!)
+   - Використовує для шифрування/дешифрування повідомлень локально
 ```
+
+**Важливо для клієнта:**
+- ✅ Ключ передається АВТОМАТИЧНО при приєднанні (не потрібно запитувати)
+- ✅ Ключ одинаковий для однієї консультації (детерминированний)
+- ✅ Клієнт отримує ключ в BASE64, потрібно декодувати перед використанням
+- ❌ Ключ НЕ передається в REST API запитах
+- ❌ Ключ НЕ зберігається в localStorage (тільки в памяті)
+- ✅ Шифрування/дешифрування відбувається на КЛІЄНТІ (сервер не бачить plaintext)
 
 **Client Send:**
 ```json
