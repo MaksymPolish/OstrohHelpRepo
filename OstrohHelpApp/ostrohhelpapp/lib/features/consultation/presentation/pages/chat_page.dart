@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:file_selector/file_selector.dart';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:ostrohhelpapp/features/message/data/services/message_api_service.dart';
 import 'package:ostrohhelpapp/features/message/data/models/message.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/chat_service.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
@@ -24,13 +24,17 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final MessageApiService _messageApiService = MessageApiService();
   final ChatService _chatService = ChatService();
   final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
+  
+  // REST API базовий URL для завантаження історії
+  static const String _apiBaseUrl = 'http://10.0.2.2:5000/api';
+  
+  // SignalR hub URL для real-time обновлень
+  final String _hubBaseUrl = 'http://10.0.2.2:5000';
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final ImagePicker _imagePicker = ImagePicker();
   final List<Message> _messages = [];
   final Map<String, String> _decryptedMessages = {}; // messageId -> plaintext для відображення
   late Future<Map<String, dynamic>> _consultationFuture;
@@ -38,30 +42,64 @@ class _ChatPageState extends State<ChatPage> {
   String? _userId; // Зберігаємо userId для використання в _sendMessage
   String? _receiverId;
   String? _encryptionKey;
-  bool _isUploading = false;
   bool _isConnected = false;
   bool _isTyping = false;
   bool _otherUserTyping = false;
   bool _otherUserOnline = false;
+  bool _isUploading = false;
   Timer? _typingTimer;
   Timer? _typingIndicatorTimer;
   bool _didInitChat = false;
-  late final String _hubBaseUrl;
 
   @override
   void initState() {
     super.initState();
     _consultationFuture = _consultationApiService.getConsultationById(widget.consultationId);
-    _hubBaseUrl = _messageApiService.baseUrl.replaceFirst('/api', '');
+  }
+
+  /// Завантажити історію повідомлень через REST API
+  /// (як на веб: GET /Message/Recive?idConsultation={id})
+  Future<List<Message>> _loadMessageHistory(String consultationId) async {
+    try {
+      final token = await _tokenStorage.getToken();
+      if (token == null) {
+        throw Exception('No token available');
+      }
+
+      final url = Uri.parse('$_apiBaseUrl/Message/Recive?idConsultation=$consultationId');
+      print('📥 Loading message history from REST: $url');
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final messages = data
+            .map((m) => Message.fromJson(m as Map<String, dynamic>))
+            .toList();
+        print('✅ Loaded ${messages.length} messages from history');
+        return messages;
+      } else {
+        print('⚠️ Failed to load messages: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Error loading message history: $e');
+      return [];
+    }
   }
 
   Future<void> _initializeChat(String userId) async {
     try {
       print('\n═══════════════════════════════════════════════════════════════');
-      print('INITIALIZING CHAT CONNECTION');
+      print('INITIALIZING CHAT - Web-compatible flow');
       print('═══════════════════════════════════════════════════════════════');
       
-      // 💾 Зберігаємо userId для використання в _sendMessage
       _userId = userId;
       print('userId: $userId');
       
@@ -78,17 +116,6 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
 
-      // Генеруємо ключ шифрування для цієї консультації
-      // АРХІТЕКТУРА: Ключ передається сервером через evento "ReceiveConsultationKey"
-      // Сервер генерує ключ за допомогою HKDF-SHA256:
-      //   - Input: Master Key (з .env) + ConsultationId
-      //   - Output: 256-bit AES-GCM ключ (Base64)
-      // Клієнт отримує ключ та використовує для шифрування/дешифрування
-      
-      // НЕ генеруємо випадковий ключ на клієнті!
-      // _encryptionKey = EncryptionService.generateRandomKey();
-      // Замість того чекаємо на evento "ReceiveConsultationKey" від сервера
-
       final token = await _tokenStorage.getToken();
       if (token == null || token.isEmpty) {
         print('Error: Token is null or empty');
@@ -99,7 +126,19 @@ class _ChatPageState extends State<ChatPage> {
       }
       print('Token obtained: ${token.substring(0, 20)}...');
 
-      print('Initializing ChatService...');
+      // КРОК 1: Завантажити історію через REST API
+      print('\n1️⃣  Loading message history via REST...');
+      final historyMessages = await _loadMessageHistory(widget.consultationId);
+      if (mounted) {
+        setState(() {
+          _messages.addAll(historyMessages);
+          _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+        });
+      }
+      _scrollToBottom();
+
+      // КРОК 2: Ініціалізувати SignalR для нових повідомлень
+      print('2️⃣  Initializing SignalR...');
       await _chatService.initialize(
         serverUrl: _hubBaseUrl,
         accessToken: token,
@@ -114,7 +153,7 @@ class _ChatPageState extends State<ChatPage> {
         print('📊 Connection state: $_isConnected');
       }
 
-      print('\n📡 Setting up stream listeners...\n');
+      print('\n3️⃣  Setting up stream listeners...\n');
       
       // Consultation key listener
       print('Setting up consultationKey listener...');
@@ -124,116 +163,59 @@ class _ChatPageState extends State<ChatPage> {
           print('   key length: ${key.length}');
           print('   key preview: ${key.substring(0, 20)}...');
           
-          if (!mounted) {
-            print('Error: Widget not mounted');
-            return;
-          }
+          if (!mounted) return;
           
           setState(() {
             _encryptionKey = key;
           });
+          
+          // Дешифруємо всю історію однієї разу
+          _decryptHistoricalMessages();
         }, onError: (error) {
           print('Error in consultationKey listener: $error');
         }),
       );
       print('consultationKey listener set up\n');
 
-      // Messages listener
+      // Messages listener - ТІЛЬКИ для нових повідомлень (з SignalR)
       print('Setting up messages listener...');
       _subscriptions.add(
         _chatService.messages.listen((message) {
           if (!mounted) return;
-          
-          // Дешифрування отриманого повідомлення
-          if (message.encryptedContent != null && 
-              message.iv != null && 
-              message.authTag != null &&
-              _encryptionKey != null) {
-            if (message.encryptedContent != 'System.Byte[]' && 
-                message.iv != 'System.Byte[]' && 
-                message.authTag != 'System.Byte[]') {
-              try {
-                final plaintext = EncryptionService.decryptMessage(
-                  encryptedContent: message.encryptedContent!,
-                  iv: message.iv!,
-                  authTag: message.authTag!,
-                  secretKey: _encryptionKey!,
-                );
-                _decryptedMessages[message.id] = plaintext;
-              } catch (e) {
-                _decryptedMessages[message.id] = '[Помилка дешифрування]';
-                print('Error decrypting message ${message.id}: $e');
-              }
-            } else {
-              _decryptedMessages[message.id] = '[Зашифроване повідомлення]';
-            }
-          }
-          
-          // Заміна temp повідомлення на реальне зі сервера
-          final tempIndex = _messages.indexWhere((m) => 
-              m.id.startsWith('temp_') && 
-              m.encryptedContent == message.encryptedContent);
-          
-          if (tempIndex != -1) {
-            setState(() {
-              _messages[tempIndex] = message;
-            });
-          } else {
-            setState(() {
-              _messages.add(message);
-              _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-            });
-          }
-          _scrollToBottom();
-        }, onError: (error) {
-          print('Error in messages listener: $error');
-        }),
-      );
 
-      // Messages loaded listener
-      _subscriptions.add(
-        _chatService.messagesLoaded.listen((messages) {
-          
-          if (!mounted) return;
-          
-          // Дешифрування завантажених повідомлень
-          for (final msg in messages) {
-            if (msg.encryptedContent != null && 
-                msg.iv != null && 
-                msg.authTag != null &&
-                _encryptionKey != null) {
-              if (msg.encryptedContent != 'System.Byte[]' && 
-                  msg.iv != 'System.Byte[]' && 
-                  msg.authTag != 'System.Byte[]') {
-                try {
-                  final plaintext = EncryptionService.decryptMessage(
-                    encryptedContent: msg.encryptedContent!,
-                    iv: msg.iv!,
-                    authTag: msg.authTag!,
-                    secretKey: _encryptionKey!,
-                  );
-                  _decryptedMessages[msg.id] = plaintext;
-                  final preview = plaintext.length > 30 
-                      ? plaintext.substring(0, 30) 
-                      : plaintext;
-                  print('LoadMessagesResult: Message decrypted: "$preview"');
-                } catch (e) {
-                  _decryptedMessages[msg.id] = '[Помилка дешифрування]';
-                  print('LoadMessagesResult: Decryption error for message ${msg.id}: $e');
+          final tempIndex = _messages.indexWhere((m) =>
+              m.id.startsWith('temp_') &&
+              m.senderId == _userId &&
+              m.encryptedContent == message.encryptedContent);
+
+          final existsById = _messages.any((m) => m.id == message.id);
+          if (existsById && tempIndex == -1) {
+            return;
+          }
+
+          // Дешифруємо нове повідомлення при отриманні
+          _decryptMessage(message);
+
+          setState(() {
+            if (tempIndex != -1) {
+              final tempId = _messages[tempIndex].id;
+              final tempPlaintext = _decryptedMessages[tempId];
+              _messages[tempIndex] = message;
+              if (tempPlaintext != null && tempPlaintext.isNotEmpty) {
+                _decryptedMessages[message.id] = tempPlaintext;
+                if (tempId != message.id) {
+                  _decryptedMessages.remove(tempId);
                 }
               }
+            } else if (!existsById) {
+              _messages.add(message);
             }
-          }
-          
-          setState(() {
-            _messages
-              ..clear()
-              ..addAll(messages);
+
             _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
           });
           _scrollToBottom();
         }, onError: (error) {
-          print('Error in messagesLoaded listener: $error');
+          print('Error in messages listener: $error');
         }),
       );
 
@@ -296,6 +278,7 @@ class _ChatPageState extends State<ChatPage> {
       print('CHAT INITIALIZATION COMPLETED');
       print('═══════════════════════════════════════════════════════════════\n');
       
+      // КРОК 3: Приєднатись до консультації (отримати ключ)
       await _chatService.joinConsultation(widget.consultationId);
       
     } catch (e) {
@@ -308,128 +291,112 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  /// Дешифрувати одне повідомлення
+  void _decryptMessage(Message message) {
+    if (message.encryptedContent == null || 
+        message.iv == null || 
+        message.authTag == null ||
+        _encryptionKey == null) {
+      return;
+    }
+
+    if (message.encryptedContent == 'System.Byte[]' || 
+        message.iv == 'System.Byte[]' || 
+        message.authTag == 'System.Byte[]') {
+      _decryptedMessages[message.id] = '[Зашифроване повідомлення]';
+      return;
+    }
+
+    try {
+      final plaintext = EncryptionService.decryptMessage(
+        encryptedContent: message.encryptedContent!,
+        iv: message.iv!,
+        authTag: message.authTag!,
+        secretKey: _encryptionKey!,
+      );
+      _decryptedMessages[message.id] = plaintext;
+      print('✅ Message decrypted: ${plaintext.substring(0, math.min(30, plaintext.length))}');
+    } catch (e) {
+      _decryptedMessages[message.id] = '[Помилка дешифрування]';
+      print('❌ Decryption error for message ${message.id}: $e');
+    }
+  }
+
+  /// Дешифрувати всю історію повідомлень одного разу
+  void _decryptHistoricalMessages() {
+    if (_encryptionKey == null) {
+      print('⚠️ Encryption key not available yet');
+      return;
+    }
+
+    int successCount = 0;
+    int errorCount = 0;
+
+    for (final msg in _messages) {
+      if (msg.encryptedContent != null && 
+          msg.iv != null && 
+          msg.authTag != null) {
+        if (msg.encryptedContent != 'System.Byte[]' && 
+            msg.iv != 'System.Byte[]' && 
+            msg.authTag != 'System.Byte[]') {
+          try {
+            final plaintext = EncryptionService.decryptMessage(
+              encryptedContent: msg.encryptedContent!,
+              iv: msg.iv!,
+              authTag: msg.authTag!,
+              secretKey: _encryptionKey!,
+            );
+            _decryptedMessages[msg.id] = plaintext;
+            successCount++;
+          } catch (e) {
+            _decryptedMessages[msg.id] = '[Помилка дешифрування]';
+            errorCount++;
+            print('⚠️ Decryption error for message ${msg.id}: $e');
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    print('📊 Decryption results: $successCount success, $errorCount errors');
+  }
+
   Future<void> _uploadAndSendFile({
     required String userId,
     required String filePath,
     String? caption,
   }) async {
-    if (_isUploading || _receiverId == null || _encryptionKey == null) return;
-    setState(() {
-      _isUploading = true;
-    });
-
-    try {
-      // Завантажуємо файл як batch
-      final uploadResult = await _messageApiService.batchUpload(
-        filePaths: [filePath],
-        messageId: null,
-      );
-
-      // Витягуємо результати завантаження
-      final results = uploadResult['results'] as List?;
-      if (results == null || results.isEmpty) {
-        throw Exception('No files uploaded');
-      }
-
-      final fileResult = results[0] as Map<String, dynamic>;
-      final fileUrl = fileResult['fileUrl']?.toString();
-      final fileType = fileResult['fileType']?.toString();
-
-      if (fileUrl == null || fileUrl.isEmpty || fileType == null || fileType.isEmpty) {
-        throw Exception('Upload returned empty url');
-      }
-
-      // Готуємо текст (опис вкладення)
-      final rawCaption = (caption ?? _controller.text).trim();
-      final messageText = rawCaption.isEmpty ? 'Attachment' : rawCaption;
-
-      // Encryption message decryption
-      // Перевіряємо що ключ отриманий з сервера
-      if (_encryptionKey == null || _encryptionKey!.isEmpty) {
-        throw Exception('Encryption key not received from server. Please wait for connection to stabilize.');
-      }
-
-      // Шифруємо текст повідомлення за допомогою AES256-GCM
-      // Input: plaintext (текст) + secretKey (отриманий з сервера)
-      // Output: encryptedContent, iv, authTag (все Base64)
-      final encryptedData = EncryptionService.encryptMessage(
-        plaintext: messageText,
-        secretKey: _encryptionKey!,
-      );
-
-      // Відправляємо зашифроване повідомлення через SignalR
-      await _chatService.sendMessage(
-        consultationId: widget.consultationId,
-        encryptedContent: encryptedData['encryptedContent']!,
-        iv: encryptedData['iv']!,
-        authTag: encryptedData['authTag']!,
-      );
-
-      if (rawCaption.isNotEmpty || caption == null) {
-        _controller.clear();
-      }
-      _typingTimer?.cancel();
-      if (_isTyping) {
-        setState(() {
-          _isTyping = false;
-        });
-      }
-      await _chatService.stopTyping(widget.consultationId);
-    } catch (e) {
+    // 📌 FILE UPLOAD DISABLED - Фокусуємось на SignalR текстові повідомлення
+    // Для майбутнього: реалізувати завантаження файлів через SignalR
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не вдалося завантажити файл: $e')),
+        const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
     }
   }
 
   Future<void> _pickImageFromGallery(String userId) async {
-    final file = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (file == null) return;
-    await _uploadAndSendFile(userId: userId, filePath: file.path);
+    // 📌 FILE PICKER DISABLED
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+    );
   }
 
   Future<void> _pickImageFromCamera(String userId) async {
-    final file = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85);
-    if (file == null) return;
-    await _uploadAndSendFile(userId: userId, filePath: file.path);
+    // 📌 FILE PICKER DISABLED
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+    );
   }
 
   Future<void> _pickFile(String userId) async {
-    const mediaGroup = XTypeGroup(
-      label: 'Media',
-      extensions: [
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-        'gif',
-        'mp4',
-        'mov',
-        'webm',
-      ],
+    // 📌 FILE PICKER DISABLED
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
     );
-    const documentGroup = XTypeGroup(
-      label: 'Documents',
-      extensions: [
-        'pdf',
-        'doc',
-        'docx',
-        'ppt',
-        'pptx',
-        'xls',
-        'xlsx',
-        'txt',
-      ],
-    );
-    final file = await openFile(acceptedTypeGroups: [mediaGroup, documentGroup]);
-    if (file == null) return;
-    await _uploadAndSendFile(userId: userId, filePath: file.path);
   }
 
   Future<void> _deleteMessage(String messageId) async {
@@ -482,12 +449,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _sendMessage() async {
-    // АРХІТЕКТУРА ШИФРУВАННЯ ПОВІДОМЛЕННЯ:
-    // 1. Перевіряємо що отримали ключ з сервера (evento "ReceiveConsultationKey")
-    // 2. Шифруємо текст на КЛІЄНТІ за допомогою AES256-GCM
-    // 3. Відправляємо зашифровані дані через SignalR (сервер їх не дешифрує)
-    // 4. Одержувач отримує evento, дешифрує використовуючи той же ключ
-    
     if (!_isConnected || _receiverId == null || _encryptionKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -505,17 +466,15 @@ class _ChatPageState extends State<ChatPage> {
     if (content.isEmpty) return;
 
     try {
-      // Encryption - AES256-GCM
-      // Використовуємо ключ отриманий від сервера через evento "ReceiveConsultationKey"
+      // Encrypt message on client
       final encryptedData = EncryptionService.encryptMessage(
         plaintext: content,
-        secretKey: _encryptionKey!,  // Ключ від сервера (HKDF-SHA256 детерминований)
+        secretKey: _encryptionKey!,
       );
 
-      // ОПТИМІСТИЧНЕ ВІДОБРАЖЕННЯ - показуємо текст користувачу одразу
-      // Тимчасовий ID доки сервер не поверне реальний
+      // Show optimistic message with temp ID
       final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-      _decryptedMessages[tempMessageId] = content; // Зберігаємо plaintext для відображення
+      _decryptedMessages[tempMessageId] = content;
       
       setState(() {
         _messages.add(
@@ -526,7 +485,7 @@ class _ChatPageState extends State<ChatPage> {
             senderName: 'Ви',
             senderPhotoUrl: null,
             receiverId: _receiverId!,
-            receiverName: '', // Заповниться при отриманні від сервера
+            receiverName: '',
             receiverPhotoUrl: null,
             encryptedContent: encryptedData['encryptedContent'],
             iv: encryptedData['iv'],
@@ -541,10 +500,7 @@ class _ChatPageState extends State<ChatPage> {
       });
       _scrollToBottom();
 
-      // ПЕРЕДАЧА - SignalR WebSocket
-      // Сервер отримує: encryptedContent, iv, authTag (все Base64)
-      // Сервер вычисляет receiverId сам на основі консультації
-      // Інші клієнти отримують evento "ReceiveMessage" з тими ж даними
+      // Send via SignalR
       await _chatService.sendMessage(
         consultationId: widget.consultationId,
         encryptedContent: encryptedData['encryptedContent']!,

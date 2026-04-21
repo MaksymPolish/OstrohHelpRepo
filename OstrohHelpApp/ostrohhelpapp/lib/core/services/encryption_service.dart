@@ -184,6 +184,7 @@ class EncryptionService {
       }
 
       // Верифікуємо auth tag
+      // ВАЖЛИВО: Використовуємо ОРИГІНАЛЬНИЙ IV (не padded) для верифікації, як при шифруванні
       final authTagInput = [...decryptedBytes, ...keyBytes, ...ivBytes];
       final authTagHash = sha256.convert(authTagInput);
       final computedTag = authTagHash.bytes.sublist(0, 16);

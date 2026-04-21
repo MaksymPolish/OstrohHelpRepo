@@ -139,14 +139,22 @@ Authorization: Bearer <JWT_TOKEN>
 6. Повертає UserDto з токенами та інформацією
 ```
 
-**Request:**
+### Input
+
+**Body (JSON):**
 ```json
 {
   "googleToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6Ik..."
 }
 ```
 
-**Response (200 OK):**
+| Поле | Тип | Обов'язковий | Опис |
+|------|-----|------------|------|
+| googleToken | string | Так | Google ID token від Google OAuth 2.0 |
+
+### Output
+
+**Success (200 OK):**
 ```json
 {
   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -161,10 +169,12 @@ Authorization: Bearer <JWT_TOKEN>
 }
 ```
 
-**Помилки:**
-- `400 Bad Request` - Немає googleToken в запиті
-- `401 Unauthorized` - Google токен невалідний/експайрився
-- `500 Internal Server Error` - Помилка при створенні користувача
+**Errors:**
+| Код | Статус | Опис |
+|-----|--------|------|
+| InvalidToken | 400 | Немає googleToken в запиті |
+| InvalidGoogle Token | 401 | Google токен невалідний або експайрився |
+| CreationError | 500 | Помилка при створенні користувача в БД |
 
 ---
 
@@ -222,14 +232,18 @@ Authorization: Bearer <JWT_TOKEN>
 5. Якщо не знайден - 404
 ```
 
-**Parameters:**
-| Назва | Тип | Розташування | Обов'язковий |
-|-------|-----|--------------|-------------|
-| email | string | Query | Так |
+### Input
+
+**Query Parameters:**
+| Назва | Тип | Обов'язковий | Приклад |
+|-------|-----|------------|----------|
+| email | string | Так | `student@example.com` |
 
 **Example:** `GET /api/auth/get-by-email?email=student@example.com`
 
-**Response (200 OK):**
+### Output
+
+**Success (200 OK):**
 ```json
 {
   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -240,6 +254,12 @@ Authorization: Bearer <JWT_TOKEN>
   "roleName": "Student"
 }
 ```
+
+**Errors:**
+| Код | Статус | Опис |
+|-----|--------|------|
+| MissingAuth | 401 | Невалідний JWT токен |
+| NotFound | 404 | Користувач не знайдений |
 
 ---
 
@@ -732,6 +752,121 @@ file[1]: <binary data - document.pdf>
 🔐 **Усі методи АВТОРИЗОВАНІ & SECURED**
 
 **Важливо:** SignalR підтримує real-time обмін через WebSocket. Клієнт підписується на групу консультації для отримання live повідомлень.
+
+---
+
+## 📊 Polling (СТАРИЙ) vs SignalR (НОВИЙ) - Порівняння
+
+### ❌ СТАРИЙ МЕТОД: REST API Polling (GET /api/messages)
+
+```
+Клієнт                              Сервер
+  ↓                                   ↓
+  ├─ Таймер: кожні 2-5 сек
+  │
+  ├─→ GET /api/messages?...  ────────→ Запит #1
+  │   {"messages": [...]}    ←────────
+  │
+  ├─→ GET /api/messages?...  ────────→ Запит #2
+  │   {"messages": [...]}    ←────────
+  │
+  ├─→ GET /api/messages?...  ────────→ Запит #3 (без змін!)
+  │   {"messages": [...]}    ←────────
+  │
+  └─→ GET /api/messages?...  ────────→ Запит #4
+      {"messages": [...]}    ←────────
+```
+
+**Проблеми:**
+- ⚠️ **N+1 запитів** - много однакових запитів, часто без нових даних
+- ⚠️ **Затримки** - нові повідомлення затримуються на 2-5 сек (poll interval)
+- ⚠️ **Перегрузка сервера** - тисячі непотрібних запитів в секунду
+- ⚠️ **Батарея мобільних** - постійна активність Wi-Fi/LTE
+- ⚠️ **Користувацька експерієнція** - не real-time, повідомлення приходять з затримкою
+- ⚠️ **Масштабованість** - вимагає більше сервера з росту користувачів
+
+### ✅ НОВИЙ МЕТОД: SignalR WebSocket (Real-Time)
+
+```
+Клієнт                              Сервер
+  ↓                                   ↓
+  └─ WebSocket підключення
+  ============ ONE PERSISTENT CONNECTION ============
+    ↓                                   ↓
+    │ JoinConsultation               │ Verify + Generate Key
+    │─────────────────────→────────→ │
+    │←────────────────────←──────────│ ReceiveConsultationKey
+    │ (ключ для шифрування)          │
+    │                                 │
+    │ (чекаємо на события)            │
+    │                                 │
+    │ SendMessage (user1 пише)        │
+    │─────────────────────→────────→ │ Process
+    │                                 │
+    │←────────────────────←──────────│ ReceiveMessage (user2)
+    │ (миттєво! 0 latency)            │ (миттєво!)
+    │                                 │
+    │ (інші дії без нових запитів)    │
+    │                                 │
+    └─────────────────────────────────┘ Connection active
+```
+
+**Переваги:**
+- ✅ **Single Connection** - одне постійне WebSocket з'єднання
+- ✅ **Real-Time Delivery** - повідомлення приходять миттєво (< 100ms)
+- ✅ **Zero Polling** - немає зайвих запитів
+- ✅ **Efficient** - мінімальний трафік, мало CPU
+- ✅ **Battery-Friendly** - одне з'єднання вместо постійних запитів
+- ✅ **Scalable** - тисячи клієнтів без перегрузки
+- ✅ **Better UX** -真正的 real-time experience
+
+### 📊 Метрики порівняння
+
+| Параметр | Polling (REST) | SignalR (WebSocket) |
+|----------|--------|---------|
+| **Затримка** | 2-5 сек | <100ms |
+| **Запитів за 5 хв** | ~60-150 | 1 (connection) |
+| **Трафік за сеанс (1 час)** | ~10-30 MB | ~1-2 MB |
+| **CPU сервера** | Високе | Дуже низьке |
+| **Батарея мобільного** | ❌ Швидко розряджається | ✅ Економить 30-50% |
+| **Real-Time?** | ❌ Нi | ✅ Так |
+| **Масштабованість** | 500 користувачів | 5000+ користувачів |
+| **Складність** | Простіша | Дещо складніша (але варто) |
+
+### 🔄 Міграція з Polling на SignalR
+
+**Для Flutter розробників:**
+
+```dart
+// ❌ СТАРИЙ КОД (polling):
+Timer.periodic(Duration(seconds: 3), (_) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/messages?idConsultation=$consultationId'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  // Парсинг, оновлення UI... кожні 3 секунди!
+});
+
+// ✅ НОВИЙ КОД (SignalR):
+final chatHub = ChatHubService(baseUrl: 'wss://localhost:7123', jwtToken: token);
+
+chatHub.onReceiveMessage = (message) {
+  // Миттєво при отриманні повідомлення!
+  updateUI(message);
+};
+
+await chatHub.initialize();
+await chatHub.joinConsultation(consultationId);
+// Готово! Слухаємо real-time события, немає таймерів!
+```
+
+**Переваги для дев-тиму:**
+- 🚀 Менш кода (немає таймерів, retry logic)
+- 🔍 Легше дебажити (ясні события вмiсто N запитiв)
+- 📈 Лучше перформанс (батарея, трафік, CPU)
+- 🛡️ Краще безпека (одна connection, JWT один раз)
+
+---
 
 ---
 

@@ -294,10 +294,6 @@ class ChatService {
       print('   Invoking JoinConsultation...');
       await _hubConnection!.invoke('JoinConsultation', args: [consultationId]);
       print('   ✅ JoinConsultation invoked successfully');
-      
-      print('   Loading messages...');
-      await loadMessages(consultationId);
-      print('   ✅ Messages loaded');
     } catch (e) {
       print('   ❌ Failed to join consultation: $e');
       _errorController.add('Failed to join consultation: $e');
@@ -317,14 +313,24 @@ class ChatService {
   }
 
   Future<void> loadMessages(String consultationId) async {
-    if (!isConnected) return;
+    // 📌 DEPRECATED - завантаження історії тепер через REST API (chat_page.dart)
+    // Цей метод залишається для сумісності, але більше не викликається
+    if (!isConnected) {
+      print('⚠️ Cannot load messages: not connected to chat hub');
+      return;
+    }
 
     try {
+      print('📨 Invoking LoadMessages for consultation: $consultationId (deprecated)');
       await _hubConnection!.invoke('LoadMessages', args: [consultationId]);
+      print('✅ LoadMessages invoked successfully (but use REST API instead)');
     } catch (e) {
+      print('❌ Error invoking LoadMessages: $e');
       _errorController.add('Failed to load messages: $e');
     }
   }
+
+
 
   Future<void> sendMessage({
     required String consultationId,
