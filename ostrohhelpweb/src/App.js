@@ -10,7 +10,6 @@ import translations from "./i18n/translations";
 // Layout Components
 import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
-import Sidebar from "./components/Layout/Sidebar";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -103,7 +102,6 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState("home");
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem("language") || "uk";
@@ -135,7 +133,7 @@ function AppContent() {
     };
   }, [language, t, handleLanguageChange]);
 
-  // Navigation items for Sidebar with lucide-react icons - memoized
+  // Navigation items for Header with lucide-react icons - memoized
   const navItems = useMemo(() => [
     { id: "home", label: t("home"), icon: Home },
     { id: "consultations", label: t("consultations"), icon: MessageSquare },
@@ -278,13 +276,7 @@ function AppContent() {
     });
   }, []);
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   const handleNavigation = (viewId) => {
-    setSidebarOpen(false);
-
     // Navigate to page
     const routeMap = {
       home: "/",
@@ -353,11 +345,11 @@ function AppContent() {
           className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
         >
           <Header
-            onMenuToggle={handleSidebarToggle}
             isDarkMode={isDarkMode}
             onDarkModeToggle={handleDarkModeToggle}
             navItems={navItems}
             currentView={currentView}
+            onNavigate={handleNavigation}
             onLogout={handleLogout}
             userInitial={userInitial}
             userName={userDisplayName}
@@ -365,15 +357,6 @@ function AppContent() {
           />
 
           <div className="flex flex-1 overflow-hidden relative">
-            <Sidebar
-              isOpen={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
-              navItems={navItems}
-              currentView={currentView}
-              onNavigate={handleNavigation}
-              onLogout={handleLogout}
-            />
-
             <main className="flex-1 overflow-y-auto">
               {error && (
                 <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 m-4 rounded">
