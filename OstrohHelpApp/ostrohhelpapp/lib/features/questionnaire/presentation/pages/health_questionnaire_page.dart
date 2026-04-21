@@ -3,7 +3,8 @@ import '../../data/models/questionnaire_question.dart';
 import '../../data/models/questionnaire_result.dart';
 import '../../data/services/questionnaire_data.dart';
 import '../../data/services/questionnaire_calculation_service.dart';
-import '../../data/services/questionnaire_service.dart';
+import '../../data/services/questionnaire_api_service.dart';
+import 'questionnaire_page.dart';
 
 class HealthQuestionnairePage extends StatefulWidget {
   final String? token;
@@ -76,14 +77,9 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
       final calculatedResult =
           QuestionnaireCalculationService.calculateResult(answers);
 
-      // Відправити на сервер якщо є token
-      if (widget.token != null && widget.token!.isNotEmpty) {
-        final questionnaireService = QuestionnaireService();
-        await questionnaireService.submitQuestionnaireResult(
-          token: widget.token!,
-          result: calculatedResult,
-        );
-      }
+      // Відправити на сервер
+      final apiService = QuestionnaireApiService();
+      await apiService.submitQuestionnaireResult(result: calculatedResult);
 
       setState(() {
         result = calculatedResult;
@@ -214,7 +210,25 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
 
     if (result != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Результати')),
+        appBar: AppBar(
+          title: const Text('Результати'),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const QuestionnairePage()),
+                    );
+                  },
+                  child: const Text('Заповнити форму заявки'),
+                ),
+              ),
+            ),
+          ],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -253,6 +267,25 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const QuestionnairePage()),
+                        );
+                      },
+                      child: const Text(
+                        'Заповнити форму заявки',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Повернутися'),
                     ),

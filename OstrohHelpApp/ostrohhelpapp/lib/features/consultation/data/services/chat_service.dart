@@ -353,21 +353,6 @@ class ChatService {
     }
   }
 
-  Future<void> markAsRead({
-    required String messageId,
-  }) async {
-    if (!isConnected) return;
-
-    try {
-      await _hubConnection!.invoke(
-        'MarkAsRead',
-        args: [messageId],
-      );
-    } catch (e) {
-      _errorController.add('Failed to mark message as read: $e');
-    }
-  }
-
   Future<void> typing(String consultationId) async {
     if (!isConnected) return;
 

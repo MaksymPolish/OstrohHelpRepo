@@ -4,9 +4,11 @@ import 'package:intl/intl.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
+import '../../../../core/auth/token_storage.dart';
 import '../../data/services/questionnaire_api_service.dart';
 import 'questionnaire_page.dart';
 import 'questionnaire_details_page.dart';
+import 'health_questionnaire_page.dart';
 
 class QuestionnairesListPage extends StatelessWidget {
   const QuestionnairesListPage({super.key});
@@ -180,19 +182,251 @@ class QuestionnairesListPage extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const QuestionnairePage(),
+      floatingActionButton: Stack(
+        children: [
+          // Кнопка "Своя анкета" - внизу справа
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const _CustomQuestionnaireForm(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.create),
+              label: const Text('Своя анкета'),
+              backgroundColor: Colors.brown,
             ),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Нова анкета'),
+          ),
+          // Кнопка "Заповнити анкету" - вище
+          Positioned(
+            bottom: 88,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () async {
+                final tokenStorage = TokenStorage();
+                final token = await tokenStorage.getToken();
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HealthQuestionnairePage(token: token),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.assignment),
+              label: const Text('Заповнити анкету'),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: const CustomBottomNavBar(currentIndex: 1),
+    );
+  }
+}
+
+class _CustomQuestionnaireForm extends StatefulWidget {
+  const _CustomQuestionnaireForm();
+
+  @override
+  State<_CustomQuestionnaireForm> createState() => _CustomQuestionnaireFormState();
+}
+
+class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _themeController;
+  late TextEditingController _descriptionController;
+  String _urgency = 'Середня';
+  bool _isSubmitting = false;
+
+  final List<String> _urgencyOptions = [
+    'Низька',
+    'Середня',
+    'Висока',
+    'Критична',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _themeController = TextEditingController();
+    _descriptionController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _themeController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      // Формуємо опис у потрібному форматі
+      final description = '''Тема: ${_themeController.text}
+Терміновість: $_urgency
+Опис: ${_descriptionController.text}''';
+
+      final apiService = QuestionnaireApiService();
+      await apiService.createQuestionnaire({
+        'description': description,
+        'isAnonymous': false,
+        'submittedAt': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Анкета успішно відправлена'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Помилка: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Своя анкета'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Форма заявки',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Опишіть вашу проблему, і ми передамо її спеціалісту.',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              // Тема звернення
+              const Text(
+                'Тема звернення',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _themeController,
+                decoration: InputDecoration(
+                  hintText: 'Тривожність, вигорання, конфлікти у групі',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                validator: (value) {
+                  if (value?.isEmpty ?? true) {
+                    return 'Будь ласка, введіть тему';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Терміновість
+              const Text(
+                'Терміновість',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _urgency,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                items: _urgencyOptions.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() => _urgency = newValue ?? 'Середня');
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Детальний опис
+              const Text(
+                'Детальний опис',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  hintText: 'Опишіть ситуацію детальніше',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 6,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) {
+                    return 'Будь ласка, введіть опис';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+
+              // Кнопка відправки
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Відправити заявку',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 } 

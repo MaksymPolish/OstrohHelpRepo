@@ -185,11 +185,6 @@ class _ChatPageState extends State<ChatPage> {
             });
           }
           _scrollToBottom();
-          if (message.senderId != _userId && !message.isRead) {
-            _chatService.markAsRead(
-              messageId: message.id,
-            );
-          }
         }, onError: (error) {
           print('Error in messages listener: $error');
         }),
@@ -236,13 +231,6 @@ class _ChatPageState extends State<ChatPage> {
               ..addAll(messages);
             _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
           });
-          for (final message in messages) {
-            if (message.senderId != _userId && !message.isRead) {
-              _chatService.markAsRead(
-                messageId: message.id,
-              );
-            }
-          }
           _scrollToBottom();
         }, onError: (error) {
           print('Error in messagesLoaded listener: $error');

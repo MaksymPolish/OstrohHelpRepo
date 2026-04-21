@@ -2,6 +2,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/questionnaire.dart';
 import '../models/questionnaire_result.dart';
+import '../../../../core/auth/user_storage.dart';
+import 'questionnaire_data.dart';
 
 class QuestionnaireService {
   final String baseUrl = 'https://localhost:7123';
@@ -35,16 +37,27 @@ class QuestionnaireService {
     required QuestionnaireResult result,
   }) async {
     try {
+      final userStorage = UserStorage();
+      final user = await userStorage.getUser();
+      final userId = user?.id;
+
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      // Формуємо красивий опис
+      final questionnaire = QuestionnaireData.getQuestionnaire();
+      final description = _formatQuestionnaireDescription(result, questionnaire);
+
       final payload = {
-        'depressionScore': result.depressionScore,
-        'burnoutScore': result.burnoutScore,
-        'depressionLevel': result.depressionLevel,
-        'burnoutLevel': result.burnoutLevel,
-        'answers': result.answers,
+        'userId': userId,
+        'description': description,
+        'isAnonymous': false,
+        'submittedAt': DateTime.now().toUtc().toIso8601String(),
       };
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/questionnaire/submit'),
+        Uri.parse('$baseUrl/api/questionnaire/Create-Questionnaire'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -60,6 +73,67 @@ class QuestionnaireService {
     } catch (e) {
       print('Error submitting questionnaire: $e');
       rethrow;
+    }
+  }
+
+  // Форматує опис анкети в красивий текст
+  String _formatQuestionnaireDescription(
+    QuestionnaireResult result,
+    Questionnaire questionnaire,
+  ) {
+    final buffer = StringBuffer();
+
+    // Стан студента
+    buffer.writeln('Стан студента: ${_getDepressionDescription(result.depressionLevel)}');
+    buffer.writeln('Рівень вигорання: ${_getBurnoutDescription(result.burnoutLevel)}');
+    buffer.writeln();
+
+    // Підсумок балів
+    buffer.writeln('Підсумок балів:');
+    buffer.writeln('- Депресія (1-9): ${result.depressionScore}');
+    buffer.writeln('- Вигорання (10-15): ${result.burnoutScore}');
+    buffer.writeln();
+
+    // Питання та відповіді
+    buffer.writeln('Питання та відповіді:');
+    final allQuestions = questionnaire.questions;
+    for (var i = 0; i < allQuestions.length; i++) {
+      final question = allQuestions[i];
+      final answer = result.answers[question.id] ?? 0;
+      final optionText = question.options[answer];
+
+      buffer.writeln('${question.id}. ${question.text}');
+      buffer.writeln('   Відповідь: $optionText (бал: $answer)');
+    }
+
+    return buffer.toString();
+  }
+
+  String _getDepressionDescription(String level) {
+    switch (level) {
+      case 'Норма':
+        return 'Стан у межах норми. Депресія відсутня.';
+      case 'Легкий':
+        return 'Легкі ознаки депресії. Рекомендується звернутися до фахівця для консультації.';
+      case 'Помірний':
+        return 'Помірні ознаки депресії. Важливо отримати професійну допомогу.';
+      case 'Високий':
+        return 'Високий рівень депресії. Негайно звернітеся до психолога або психіатра!';
+      default:
+        return level;
+    }
+  }
+
+  String _getBurnoutDescription(String level) {
+    switch (level) {
+      case 'Низький':
+        return 'Низький рівень вигорання. Ви в ресурсі.';
+      case 'Середній':
+        return 'Середній рівень вигорання. Розгляньте способи зняття стресу та відновлення.';
+      case 'Високий':
+        return 'Високий рівень вигорання. Необхідна невідкладна психологічна допомога.';
+      default:
+        return level;
     }
   }
 

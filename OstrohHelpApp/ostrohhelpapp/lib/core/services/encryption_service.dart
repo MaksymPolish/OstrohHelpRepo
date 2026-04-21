@@ -101,12 +101,39 @@ class EncryptionService {
     }
   }
 
+  /// Конвертує HEX рядок (0x... або звичайний hex) в Base64
+  static String _hexToBase64(String hexString) {
+    try {
+      // Видаляємо "0x" префікс якщо є
+      String hex = hexString.startsWith('0x') 
+          ? hexString.substring(2) 
+          : hexString;
+      
+      // Конвертуємо hex в bytes
+      final bytes = <int>[];
+      for (int i = 0; i < hex.length; i += 2) {
+        final hexByte = hex.substring(i, i + 2);
+        bytes.add(int.parse(hexByte, radix: 16));
+      }
+      
+      return base64Encode(bytes);
+    } catch (e) {
+      throw Exception('Failed to convert hex to base64: $e');
+    }
+  }
+
+  /// Детектує чи рядок у hex форматі
+  static bool _isHexFormat(String value) {
+    return value.startsWith('0x') || 
+           RegExp(r'^[0-9a-fA-F]+$').hasMatch(value);
+  }
+
   /// ДЕШИФРУВАННЯ ПОВІДОМЛЕННЯ
   ///
   /// Параметри:
-  ///   - encryptedContent: Base64 зашифровані дані
-  ///   - iv: Base64 ініціалізуючий вектор
-  ///   - authTag: Base64 тег для верифікації
+  ///   - encryptedContent: Base64 або HEX зашифровані дані
+  ///   - iv: Base64 або HEX ініціалізуючий вектор
+  ///   - authTag: Base64 або HEX тег для верифікації
   ///   - secretKey: Base64 ключ від сервера
   ///
   /// Повертає: Дешифрований текст
@@ -117,25 +144,42 @@ class EncryptionService {
     required String secretKey,
   }) {
     try {
+      // Конвертуємо hex на Base64 якщо потрібно
+      final encContentBase64 = _isHexFormat(encryptedContent) 
+          ? _hexToBase64(encryptedContent)
+          : encryptedContent;
+      final ivBase64 = _isHexFormat(iv)
+          ? _hexToBase64(iv)
+          : iv;
+      final authTagBase64 = _isHexFormat(authTag)
+          ? _hexToBase64(authTag)
+          : authTag;
+
       // Декодуємо всі компоненти
       final keyBytes = base64Decode(secretKey);
-      final ivBytes = base64Decode(iv);
-      final authTagBytes = base64Decode(authTag);
-      final encryptedBytes = base64Decode(encryptedContent);
+      final ivBytes = base64Decode(ivBase64);
+      final authTagBytes = base64Decode(authTagBase64);
+      final encryptedBytes = base64Decode(encContentBase64);
 
-      // Перевіряємо розміри
+      // Перевіряємо ключ
       if (keyBytes.length != keyLengthBytes) {
         throw ArgumentError('Invalid key length: ${keyBytes.length}');
       }
-      if (ivBytes.length != ivLengthBytes) {
-        throw ArgumentError('Invalid IV length: ${ivBytes.length}');
+
+      // Обробляємо IV різної довжини (12 або 16 байт)
+      // Якщо IV менше 16 байт, паддуємо нулями
+      final processedIvBytes = <int>[...ivBytes];
+      if (processedIvBytes.length < ivLengthBytes) {
+        processedIvBytes.addAll(
+          List<int>.filled(ivLengthBytes - processedIvBytes.length, 0)
+        );
       }
 
       // Дешифруємо (обернене XOR)
       final decryptedBytes = <int>[];
       for (int i = 0; i < encryptedBytes.length; i++) {
         decryptedBytes.add(
-          encryptedBytes[i] ^ keyBytes[i % keyBytes.length] ^ ivBytes[i % ivBytes.length]
+          encryptedBytes[i] ^ keyBytes[i % keyBytes.length] ^ processedIvBytes[i % processedIvBytes.length]
         );
       }
 
