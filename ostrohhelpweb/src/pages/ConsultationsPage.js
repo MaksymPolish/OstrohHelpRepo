@@ -211,6 +211,7 @@ export default function ConsultationsPage() {
   const [keyVersion, setKeyVersion] = useState(0);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
+  const messageInputRef = useRef(null);
   const consultationKeysRef = useRef({});
 
   const normalizedCurrentUserId = useMemo(() => normalizeId(currentUser?.id), [currentUser?.id]);
@@ -505,6 +506,29 @@ export default function ConsultationsPage() {
     setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndex));
   };
 
+  useEffect(() => {
+    if (!messageInputRef.current) {
+      return;
+    }
+
+    messageInputRef.current.style.height = "auto";
+    messageInputRef.current.style.height = `${Math.min(messageInputRef.current.scrollHeight, 160)}px`;
+  }, [msg]);
+
+  const handleMessageKeyDown = (event) => {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!canSend || !selectedConsultation) {
+      return;
+    }
+
+    handleSend();
+  };
+
   const handleSend = async () => {
     const text = msg.trim();
     if ((!text && pendingFiles.length === 0) || !selectedConsultation || !normalizedCurrentUserId) {
@@ -783,13 +807,15 @@ export default function ConsultationsPage() {
               <Paperclip size={20} />
             </button>
 
-            <input
-              type="text"
+            <textarea
+              ref={messageInputRef}
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
+              onKeyDown={handleMessageKeyDown}
               placeholder={t("messagePlaceholder")}
               disabled={!selectedConsultation || isSending}
-              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              rows={1}
+              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none overflow-y-auto min-h-12 max-h-40 leading-6"
             />
 
             <Button

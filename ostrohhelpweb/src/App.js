@@ -15,6 +15,7 @@ import Footer from "./components/Layout/Footer";
 import LoginPage from "./pages/LoginPage";
 import HomePageClean from "./pages/HomePageClean";
 import QuestionnairesPage from "./pages/QuestionnairesPage";
+import MyQuestionnairesPage from "./pages/MyQuestionnairesPage";
 import ConsultationsPage from "./pages/ConsultationsPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -148,6 +149,7 @@ function AppContent() {
       "/homepage": "home",
       "/consultations": "consultations",
       "/questionnaires": "questionnaires",
+      "/my-questionnaires": "questionnaires",
       "/profile": "profile",
     };
     
@@ -282,6 +284,7 @@ function AppContent() {
       home: "/",
       consultations: "/consultations",
       questionnaires: "/questionnaires",
+      myQuestionnaires: "/my-questionnaires",
       profile: "/profile",
     };
     navigate(routeMap[viewId] || "/");
@@ -374,6 +377,8 @@ function AppContent() {
                       return <HomePageClean />;
                     case "/questionnaires":
                       return <QuestionnairesPage />;
+                    case "/my-questionnaires":
+                      return <MyQuestionnairesPage />;
                     case "/consultations":
                       return <ConsultationsPage />;
                     case "/profile":
