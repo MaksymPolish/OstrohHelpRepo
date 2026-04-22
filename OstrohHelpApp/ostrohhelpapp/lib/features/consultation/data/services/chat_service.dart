@@ -33,6 +33,8 @@ class ChatService {
   HubConnection? _hubConnection;
   String? _currentConsultationId;
   String? _currentUserId;
+  String? _serverUrl;
+  String? _accessToken;
 
   final _messageController = StreamController<Message>.broadcast();
   final _typingController = StreamController<String>.broadcast();
@@ -63,7 +65,35 @@ class ChatService {
     required String currentUserId,
   }) async {
     await _hubConnection?.stop();
+    _serverUrl = serverUrl;
+    _accessToken = accessToken;
     _currentUserId = currentUserId;
+
+    await _connectWithFallback();
+    _connectionStateController.add(HubConnectionState.Connected);
+  }
+
+  Future<void> _connectWithFallback() async {
+    if (_serverUrl == null || _accessToken == null) {
+      throw Exception('SignalR connection config is missing');
+    }
+
+    final primaryHubUrl = '$_serverUrl/chat?access_token=${Uri.encodeComponent(_accessToken!)}';
+    final fallbackHubUrl = '$_serverUrl/hubs/chat?access_token=${Uri.encodeComponent(_accessToken!)}';
+
+    try {
+      await _connectToHub(primaryHubUrl, _accessToken!);
+      print('✅ Connected to SignalR hub: /chat');
+    } catch (primaryError) {
+      print('⚠️ Failed to connect to /chat: $primaryError');
+      print('↩️ Trying fallback hub URL: /hubs/chat');
+      await _connectToHub(fallbackHubUrl, _accessToken!);
+      print('✅ Connected to SignalR hub: /hubs/chat (fallback)');
+    }
+  }
+
+  Future<void> _connectToHub(String hubUrl, String accessToken) async {
+    await _hubConnection?.stop();
 
     final httpConnectionOptions = HttpConnectionOptions(
       accessTokenFactory: () async => accessToken,
@@ -74,7 +104,7 @@ class ChatService {
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-          '$serverUrl/hubs/chat?access_token=${Uri.encodeComponent(accessToken)}',
+          hubUrl,
           options: httpConnectionOptions,
         )
         .withAutomaticReconnect(
@@ -85,7 +115,6 @@ class ChatService {
     _setupEventHandlers();
 
     await _hubConnection!.start();
-    _connectionStateController.add(HubConnectionState.Connected);
   }
 
   void _setupEventHandlers() {
@@ -128,19 +157,53 @@ class ChatService {
       }
     });
 
-    // ReceiveMessage - отримання нового повідомлення зі зашифрованими даними
-    _hubConnection!.on('ReceiveMessage', (arguments) {
+    void handleReceiveMessage(List<Object?>? arguments) {
       print('📨 [ReceiveMessage] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
-          final messageJson = arguments[0] as Map<String, dynamic>;
+          final raw = arguments[0];
+          if (raw is! Map) {
+            print('   ❌ Invalid message payload type: ${raw.runtimeType}');
+            return;
+          }
+
+          final messageJson = raw.map((key, value) => MapEntry(key.toString(), value));
           print('   messageId: ${messageJson['id']}, senderId: ${messageJson['senderId']}');
           final message = Message.fromJson(messageJson);
+          if (message.id.isEmpty) {
+            print('   ❌ Skipping message with empty id (likely payload shape mismatch)');
+            return;
+          }
           _messageController.add(message);
           print('   ✅ Message added');
         } catch (e) {
           print('   ❌ Error parsing message: $e');
           _errorController.add('Error parsing message: $e');
+        }
+      }
+    }
+
+    // ReceiveMessage - основний evento
+    _hubConnection!.on('ReceiveMessage', handleReceiveMessage);
+    // Додаткові aliases для сумісності з різними backend-реалізаціями
+    _hubConnection!.on('ReceiveNewMessage', handleReceiveMessage);
+    _hubConnection!.on('MessageReceived', handleReceiveMessage);
+
+    // Keep old event for compatibility (legacy)
+    _hubConnection!.on('LoadMessagesResult', (arguments) {
+      print('📨 [LoadMessagesResult] evento received');
+      if (arguments != null && arguments.isNotEmpty) {
+        try {
+          final messages = (arguments[0] as List?)
+                  ?.map((m) => Message.fromJson((m as Map).map((k, v) => MapEntry(k.toString(), v))))
+                  .toList() ??
+              [];
+          print('   Loaded ${messages.length} messages');
+          _messagesLoadedController.add(messages);
+          print('   ✅ Messages loaded');
+        } catch (e) {
+          print('   ❌ Error parsing LoadMessagesResult: $e');
+          _errorController.add('Error parsing LoadMessagesResult: $e');
         }
       }
     });
@@ -230,24 +293,6 @@ class ChatService {
         } catch (e) {
           print('   ❌ Error parsing MessageDeleted: $e');
           _errorController.add('Error parsing MessageDeleted: $e');
-        }
-      }
-    });
-
-    _hubConnection!.on('LoadMessagesResult', (arguments) {
-      print('📨 [LoadMessagesResult] evento received');
-      if (arguments != null && arguments.isNotEmpty) {
-        try {
-          final messages = (arguments[0] as List?)
-                  ?.map((m) => Message.fromJson(m as Map<String, dynamic>))
-                  .toList() ??
-              [];
-          print('   Loaded ${messages.length} messages');
-          _messagesLoadedController.add(messages);
-          print('   ✅ Messages loaded');
-        } catch (e) {
-          print('   ❌ Error parsing LoadMessagesResult: $e');
-          _errorController.add('Error parsing LoadMessagesResult: $e');
         }
       }
     });

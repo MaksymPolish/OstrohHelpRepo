@@ -166,20 +166,15 @@ class EncryptionService {
         throw ArgumentError('Invalid key length: ${keyBytes.length}');
       }
 
-      // Обробляємо IV різної довжини (12 або 16 байт)
-      // Якщо IV менше 16 байт, паддуємо нулями
-      final processedIvBytes = <int>[...ivBytes];
-      if (processedIvBytes.length < ivLengthBytes) {
-        processedIvBytes.addAll(
-          List<int>.filled(ivLengthBytes - processedIvBytes.length, 0)
-        );
+      if (ivBytes.isEmpty) {
+        throw ArgumentError('Invalid IV: empty');
       }
 
       // Дешифруємо (обернене XOR)
       final decryptedBytes = <int>[];
       for (int i = 0; i < encryptedBytes.length; i++) {
         decryptedBytes.add(
-          encryptedBytes[i] ^ keyBytes[i % keyBytes.length] ^ processedIvBytes[i % processedIvBytes.length]
+          encryptedBytes[i] ^ keyBytes[i % keyBytes.length] ^ ivBytes[i % ivBytes.length]
         );
       }
 

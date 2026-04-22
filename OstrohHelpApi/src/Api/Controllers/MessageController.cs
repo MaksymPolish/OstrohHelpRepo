@@ -11,6 +11,8 @@ using Domain.Messages;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Api.Hubs;
 
 namespace Api.Controllers;
 
@@ -27,6 +29,7 @@ public class MessageController : ControllerBase
     private readonly Application.Common.Interfaces.Services.IPreviewGenerationService _previewGenerationService;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<MessageController> _logger;
+    private readonly IHubContext<ChatHub> _chatHubContext;
 
     public MessageController(
         IMediator mediator,
@@ -36,7 +39,8 @@ public class MessageController : ControllerBase
         IConsultationAccessChecker accessChecker,
         Application.Common.Interfaces.Services.IPreviewGenerationService previewGenerationService,
         IAuditLogService auditLogService,
-        ILogger<MessageController> logger)
+        ILogger<MessageController> logger,
+        IHubContext<ChatHub> chatHubContext)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -46,6 +50,7 @@ public class MessageController : ControllerBase
         _previewGenerationService = previewGenerationService;
         _auditLogService = auditLogService;
         _logger = logger;
+        _chatHubContext = chatHubContext;
     }
 
     /// <summary>
@@ -224,9 +229,39 @@ public class MessageController : ControllerBase
         // command.MediaPaths може бути null або списком шляхів до медіа
         var result = await _mediator.Send(command, ct);
 
-        return result.Match<IActionResult>(
-            message => CreatedAtAction(nameof(Send), new { id = message.Id }, message),
-            errors => BadRequest(new { Error = errors.Message })
+        return await result.Match<Task<IActionResult>>(
+            async message =>
+            {
+                // REST Send must also broadcast via SignalR so connected clients get real-time updates.
+                var fullMessageOption = await _messageQuery.GetMessageById(message.Id, ct);
+
+                await fullMessageOption.Match(
+                    async fullMessage =>
+                    {
+                        var senderOption = await _userQuery.GetByIdAsync(fullMessage.SenderId, ct);
+                        var receiverOption = await _userQuery.GetByIdAsync(fullMessage.ReceiverId, ct);
+
+                        var dto = _mapper.Map<MessageDto>(fullMessage);
+                        dto.FullNameSender = senderOption.Match(u => u.FullName, () => "Unknown");
+                        dto.FullNameReceiver = receiverOption.Match(u => u.FullName, () => "Unknown");
+
+                        await _chatHubContext.Clients
+                            .Group(fullMessage.ConsultationId.ToString())
+                            .SendAsync("ReceiveMessage", dto, ct);
+                    },
+                    async () =>
+                    {
+                        // Fallback to minimal payload if full projection failed.
+                        var dto = _mapper.Map<MessageDto>(message);
+                        await _chatHubContext.Clients
+                            .Group(message.ConsultationId.ToString())
+                            .SendAsync("ReceiveMessage", dto, ct);
+                    }
+                );
+
+                return CreatedAtAction(nameof(Send), new { id = message.Id }, message);
+            },
+            errors => Task.FromResult<IActionResult>(BadRequest(new { Error = errors.Message }))
         );
     }
 
