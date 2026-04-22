@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
+import '../notifiers/online_users_notifier.dart';
 import '../../data/services/consultation_api_service.dart';
 
 class Consultation {
@@ -13,6 +14,7 @@ class Consultation {
   final String statusName;
   final String studentName;
   final String psychologistName;
+  final String? studentPhotoUrl;
   final String? psychologistPhotoUrl;
   final DateTime scheduledTime;
   final DateTime createdAt;
@@ -24,6 +26,7 @@ class Consultation {
     required this.statusName,
     required this.studentName,
     required this.psychologistName,
+    required this.studentPhotoUrl,
     required this.psychologistPhotoUrl,
     required this.scheduledTime,
     required this.createdAt,
@@ -37,6 +40,7 @@ class Consultation {
       statusName: json['statusName'],
       studentName: json['studentName'],
       psychologistName: json['psychologistName'],
+      studentPhotoUrl: json['studentPhotoUrl'],
       psychologistPhotoUrl: json['psychologistPhotoUrl'],
       scheduledTime: DateTime.parse(json['scheduledTime']),
       createdAt: DateTime.parse(json['createdAt']),
@@ -46,6 +50,8 @@ class Consultation {
 
 class ConsultationListPage extends StatelessWidget {
   const ConsultationListPage({super.key});
+
+  static final OnlineUsersNotifier _onlineUsersNotifier = OnlineUsersNotifier.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -103,94 +109,135 @@ class ConsultationListPage extends StatelessWidget {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: consultations.length,
-                itemBuilder: (context, index) {
-                  final consultation = Consultation.fromJson(consultations[index]);
-                  final now = DateTime.now();
-                  final isChatAvailable = now.isAfter(consultation.scheduledTime);
-                  final initials = consultation.psychologistName.isNotEmpty
-                      ? consultation.psychologistName
-                          .trim()
-                          .split(' ')
-                          .map((part) => part.isNotEmpty ? part[0] : '')
-                          .take(2)
-                          .join()
-                      : 'P';
+              final currentUserId = state.user.id ?? '';
+              return AnimatedBuilder(
+                animation: _onlineUsersNotifier,
+                builder: (context, _) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: consultations.length,
+                    itemBuilder: (context, index) {
+                      final consultation = Consultation.fromJson(consultations[index]);
+                      final now = DateTime.now();
+                      final isChatAvailable = now.isAfter(consultation.scheduledTime);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: colorScheme.primary.withOpacity(0.15),
-                            backgroundImage: consultation.psychologistPhotoUrl != null
-                                ? NetworkImage(consultation.psychologistPhotoUrl!)
-                                : null,
-                            child: consultation.psychologistPhotoUrl == null
-                                ? Text(
-                                    initials.toUpperCase(),
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  consultation.psychologistName,
-                                  style: theme.textTheme.headlineSmall,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Статус: ${consultation.statusName}',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurface.withOpacity(0.7),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
+                      final isCurrentUserStudent = consultation.studentId == currentUserId;
+                      final peerId = isCurrentUserStudent
+                          ? consultation.psychologistId
+                          : consultation.studentId;
+                      final peerName = isCurrentUserStudent
+                          ? consultation.psychologistName
+                          : consultation.studentName;
+                      final peerPhotoUrl = isCurrentUserStudent
+                          ? consultation.psychologistPhotoUrl
+                          : consultation.studentPhotoUrl;
+                      final isPeerOnline = _onlineUsersNotifier.isOnline(peerId);
+
+                      final initials = peerName.isNotEmpty
+                          ? peerName
+                              .trim()
+                              .split(' ')
+                              .map((part) => part.isNotEmpty ? part[0] : '')
+                              .take(2)
+                              .join()
+                          : 'U';
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 26,
+                                backgroundColor: colorScheme.primary.withOpacity(0.15),
+                                backgroundImage: peerPhotoUrl != null && peerPhotoUrl.isNotEmpty
+                                    ? NetworkImage(peerPhotoUrl)
+                                    : null,
+                                child: (peerPhotoUrl == null || peerPhotoUrl.isEmpty)
+                                    ? Text(
+                                        initials.toUpperCase(),
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.calendar_today, size: 14, color: colorScheme.primary),
-                                    const SizedBox(width: 6),
                                     Text(
-                                      DateFormat('dd.MM.yyyy HH:mm').format(consultation.scheduledTime),
+                                      peerName,
+                                      style: theme.textTheme.headlineSmall,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: isPeerOnline ? Colors.green : Colors.grey,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          isPeerOnline ? 'Online' : 'Offline',
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            color: isPeerOnline
+                                                ? Colors.green
+                                                : colorScheme.onSurface.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Статус: ${consultation.statusName}',
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         color: colorScheme.onSurface.withOpacity(0.7),
                                       ),
                                     ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, size: 14, color: colorScheme.primary),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          DateFormat('dd.MM.yyyy HH:mm').format(consultation.scheduledTime),
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            color: colorScheme.onSurface.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: isChatAvailable
+                                    ? () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/chat',
+                                          arguments: consultation.id,
+                                        );
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                label: const Text('Чат'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: isChatAvailable
-                                ? () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/chat',
-                                      arguments: consultation.id,
-                                    );
-                                  }
-                                : null,
-                            icon: const Icon(Icons.chat_bubble_outline),
-                            label: const Text('Чат'),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   );
                 },
               );
