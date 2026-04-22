@@ -10,6 +10,8 @@ let connection = null;
 let connectionPromise = null;
 const messageSubscribers = new Set();
 const keySubscribers = new Set();
+const presenceSubscribers = new Set();
+const onlineUserIds = new Set();
 
 const normalizeHubUrlForNegotiation = (value) => {
   if (!value || typeof value !== "string") {
@@ -47,6 +49,32 @@ const dispatchConsultationKey = (payload) => {
   }
 };
 
+const dispatchUserStatusChanged = (userId, isOnline) => {
+  const normalizedUserId = typeof userId === "string" || typeof userId === "number"
+    ? String(userId).trim()
+    : "";
+
+  if (!normalizedUserId) {
+    return;
+  }
+
+  if (isOnline) {
+    onlineUserIds.add(normalizedUserId);
+  } else {
+    onlineUserIds.delete(normalizedUserId);
+  }
+
+  const snapshot = new Set(onlineUserIds);
+
+  for (const subscriber of presenceSubscribers) {
+    try {
+      subscriber({ userId: normalizedUserId, isOnline: Boolean(isOnline), onlineUserIds: snapshot });
+    } catch {
+      // Ignore subscriber errors to keep SignalR stream alive.
+    }
+  }
+};
+
 const buildConnection = () => {
   const hubConnection = new HubConnectionBuilder()
     .withUrl(normalizeHubUrlForNegotiation(SIGNALR_HUB_URL), {
@@ -64,6 +92,10 @@ const buildConnection = () => {
 
   hubConnection.on("ReceiveConsultationKey", (payload) => {
     dispatchConsultationKey(payload);
+  });
+
+  hubConnection.on("UserStatusChanged", (userId, isOnline) => {
+    dispatchUserStatusChanged(userId, isOnline);
   });
 
   hubConnection.on("Error", (errorPayload) => {
@@ -114,6 +146,25 @@ export const subscribeToConsultationKeys = (handler) => {
   };
 };
 
+export const subscribeToUserStatusChanges = (handler) => {
+  presenceSubscribers.add(handler);
+  return () => {
+    presenceSubscribers.delete(handler);
+  };
+};
+
+export const getOnlineUserIdsSnapshot = () => new Set(onlineUserIds);
+
+export const getUserOnlineStatus = (userId) => {
+  if (!userId) {
+    return false;
+  }
+
+  return onlineUserIds.has(String(userId).trim());
+};
+
+export const startChatConnection = ensureConnection;
+
 export const joinConsultationRoom = async (consultationId) => {
   if (!consultationId) {
     return;
@@ -142,4 +193,6 @@ export const stopChatConnection = async () => {
   }
 
   connection = null;
+  connectionPromise = null;
+  onlineUserIds.clear();
 };

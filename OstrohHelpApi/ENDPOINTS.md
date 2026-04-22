@@ -753,6 +753,83 @@ file[1]: <binary data - document.pdf>
 
 **Важливо:** SignalR підтримує real-time обмін через WebSocket. Клієнт підписується на групу консультації для отримання live повідомлень.
 
+## 🟢 Presence (Online/Offline) в реальному часі
+
+Сервер відстежує кількість активних зʼєднань для кожного користувача.
+
+- При першому активному зʼєднанні користувача: статус у БД оновлюється на `IsOnline = true`.
+- При останньому відключенні користувача: статус у БД оновлюється на `IsOnline = false`.
+- Усі інші клієнти отримують подію:
+
+**Event:** `UserStatusChanged(string userId, bool isOnline)`
+
+### Як підключитися до хабу
+
+1. Відкрити WebSocket підключення до `/hubs/chat`.
+2. Передати JWT через `access_token`.
+3. Підписатись на `UserStatusChanged`.
+4. Викликати `JoinConsultation(consultationId)` для чату.
+
+### React приклад (@microsoft/signalr)
+
+```typescript
+import * as signalR from "@microsoft/signalr";
+
+const token = "YOUR_JWT_TOKEN";
+
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl("https://localhost:7123/hubs/chat", {
+    accessTokenFactory: () => token,
+  })
+  .withAutomaticReconnect()
+  .build();
+
+connection.on("UserStatusChanged", (userId: string, isOnline: boolean) => {
+  console.log("User status changed", { userId, isOnline });
+  // update your store/UI here
+});
+
+connection.on("ReceiveMessage", (message) => {
+  console.log("ReceiveMessage", message);
+});
+
+await connection.start();
+await connection.invoke("JoinConsultation", "4bf57625-929f-4e12-9451-c53a40862943");
+```
+
+### Flutter приклад (signalr_netcore)
+
+```dart
+import 'package:signalr_netcore/signalr_client.dart';
+
+final token = 'YOUR_JWT_TOKEN';
+
+final connection = HubConnectionBuilder()
+    .withUrl(
+      'https://localhost:7123/hubs/chat',
+      options: HttpConnectionOptions(
+        accessTokenFactory: () async => token,
+        transport: HttpTransportType.WebSockets,
+      ),
+    )
+    .withAutomaticReconnect()
+    .build();
+
+connection.on('UserStatusChanged', (args) {
+  final userId = args?[0] as String;
+  final isOnline = args?[1] as bool;
+  print('UserStatusChanged: $userId => $isOnline');
+  // update your state/UI here
+});
+
+connection.on('ReceiveMessage', (args) {
+  print('ReceiveMessage: ${args?[0]}');
+});
+
+await connection.start();
+await connection.invoke('JoinConsultation', args: ['4bf57625-929f-4e12-9451-c53a40862943']);
+```
+
 ---
 
 ## 📊 Polling (СТАРИЙ) vs SignalR (НОВИЙ) - Порівняння

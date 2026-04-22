@@ -6,7 +6,7 @@ namespace Domain.Users;
 public class User
 {
     public Guid Id { get; set; }
-        public Guid RoleId { get; set; }
+    public Guid RoleId { get; set; }
     
     public string GoogleId { get; set; }
     public string FullName { get; set; }
@@ -14,6 +14,7 @@ public class User
     public string Email { get; set; }
     public string? PhotoUrl { get; set; } // URL фото профілю з Google
     public bool IsLoggedIn { get; set; }
+
     public DateTime CreatedAt { get; set; }
     
     //Звязок з токенами

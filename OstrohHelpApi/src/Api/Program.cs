@@ -313,6 +313,9 @@ builder.Services.AddHangfireServer();
 // Add Memory Cache for rate limiting
 builder.Services.AddMemoryCache();
 
+// Presence tracking for SignalR online/offline status across multiple devices.
+builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
+
 // Register Rate Limiting Service (MUST be Singleton, used in Middleware pipeline at root level)
 builder.Services.AddSingleton<Application.Common.Services.IRateLimitingService, Application.Common.Services.RateLimitingService>();
 

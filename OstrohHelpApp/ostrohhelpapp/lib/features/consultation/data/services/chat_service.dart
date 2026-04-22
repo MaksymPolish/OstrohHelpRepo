@@ -229,18 +229,57 @@ class ChatService {
 
     _hubConnection!.on('UserOnline', (arguments) {
       print('📨 [UserOnline] evento received');
-      if (arguments != null && arguments.isNotEmpty) {
-        try {
-          final data = arguments[0] as Map<String, dynamic>;
-          print('   UserId: ${data['UserId']}, IsOnline: ${data['IsOnline']}');
-          _userOnlineController.add(UserOnlineEvent(
-            userId: data['UserId']?.toString() ?? '',
-            isOnline: data['IsOnline'] ?? false,
-          ));
-        } catch (e) {
-          print('   ❌ Error parsing UserOnline: $e');
-          _errorController.add('Error parsing UserOnline: $e');
+      if (arguments == null || arguments.isEmpty) return;
+      try {
+        String userId = '';
+        bool isOnline = false;
+
+        if (arguments.length >= 2) {
+          userId = arguments[0]?.toString() ?? '';
+          isOnline = arguments[1] == true;
+        } else {
+          final raw = arguments[0];
+          if (raw is Map) {
+            final data = raw.map((k, v) => MapEntry(k.toString(), v));
+            userId = data['userId']?.toString() ?? data['UserId']?.toString() ?? '';
+            isOnline = data['isOnline'] == true || data['IsOnline'] == true;
+          }
         }
+
+        print('   UserId: $userId, IsOnline: $isOnline');
+        if (userId.isNotEmpty) {
+          _userOnlineController.add(UserOnlineEvent(
+            userId: userId,
+            isOnline: isOnline,
+          ));
+        }
+      } catch (e) {
+        print('   ❌ Error parsing UserOnline: $e');
+        _errorController.add('Error parsing UserOnline: $e');
+      }
+    });
+
+    _hubConnection!.on('UserStatusChanged', (arguments) {
+      print('📨 [UserStatusChanged] evento received');
+      if (arguments == null || arguments.length < 2) {
+        print('   ⚠️ Invalid UserStatusChanged payload: $arguments');
+        return;
+      }
+
+      try {
+        final userId = arguments[0]?.toString() ?? '';
+        final isOnline = arguments[1] == true;
+        print('   UserId: $userId, IsOnline: $isOnline');
+
+        if (userId.isNotEmpty) {
+          _userOnlineController.add(UserOnlineEvent(
+            userId: userId,
+            isOnline: isOnline,
+          ));
+        }
+      } catch (e) {
+        print('   ❌ Error parsing UserStatusChanged: $e');
+        _errorController.add('Error parsing UserStatusChanged: $e');
       }
     });
 
@@ -354,6 +393,34 @@ class ChatService {
       _currentConsultationId = null;
     } catch (e) {
       _errorController.add('Failed to leave consultation: $e');
+    }
+  }
+
+  Future<void> pauseConnection() async {
+    try {
+      await _hubConnection?.stop();
+      _connectionStateController.add(HubConnectionState.Disconnected);
+    } catch (e) {
+      _errorController.add('Failed to pause SignalR connection: $e');
+    }
+  }
+
+  Future<void> resumeConnection() async {
+    if (isConnected) return;
+    if (_serverUrl == null || _accessToken == null || _currentUserId == null) {
+      _errorController.add('Cannot resume SignalR: missing connection context');
+      return;
+    }
+
+    try {
+      await _connectWithFallback();
+      _connectionStateController.add(HubConnectionState.Connected);
+
+      if (_currentConsultationId != null) {
+        await joinConsultation(_currentConsultationId!);
+      }
+    } catch (e) {
+      _errorController.add('Failed to resume SignalR connection: $e');
     }
   }
 

@@ -8,11 +8,14 @@ using Domain.Conferences;
 using Domain.Messages;
 using Domain.Users;
 using Infrastructure.Encryption;
+using Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using DotNetEnv;
+using Api.Services;
 
 namespace Api.Hubs;
 
@@ -38,6 +41,8 @@ public class ChatHub : Hub
     private readonly IEncryptionService _encryptionService;
     private readonly IKeyDerivationService _keyDerivationService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IPresenceTracker _presenceTracker;
+    private readonly ApplicationDbContext _dbContext;
 
     public ChatHub(
         IMediator mediator,
@@ -49,7 +54,9 @@ public class ChatHub : Hub
         IConsultationAccessChecker accessChecker,
         IEncryptionService encryptionService,
         IKeyDerivationService keyDerivationService,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        IPresenceTracker presenceTracker,
+        ApplicationDbContext dbContext)
     {
         _mediator = mediator;
         _messageQuery = messageQuery;
@@ -61,6 +68,8 @@ public class ChatHub : Hub
         _encryptionService = encryptionService;
         _keyDerivationService = keyDerivationService;
         _auditLogService = auditLogService;
+        _presenceTracker = presenceTracker;
+        _dbContext = dbContext;
     }
 
     /// Користувач відкрив чат консультації
@@ -455,9 +464,20 @@ public class ChatHub : Hub
     public override async Task OnConnectedAsync()
     {
         var userId = GetUserId();
-        
+
         _logger.LogInformation("User {UserId} connected. Connection {ConnectionId}", 
             userId, Context.ConnectionId);
+
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            var isFirstConnection = _presenceTracker.UserConnected(userId, Context.ConnectionId);
+
+            if (isFirstConnection)
+            {
+                await UpdateOnlineStatusAsync(userId, true, Context.ConnectionAborted);
+                await Clients.Others.SendAsync("UserStatusChanged", userId, true, Context.ConnectionAborted);
+            }
+        }
         
         await base.OnConnectedAsync();
     }
@@ -465,11 +485,47 @@ public class ChatHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = GetUserId();
-        
+
         _logger.LogInformation("User {UserId} disconnected. Connection {ConnectionId}", 
             userId, Context.ConnectionId);
+
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            var wasLastConnection = _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
+
+            if (wasLastConnection)
+            {
+                await UpdateOnlineStatusAsync(userId, false, CancellationToken.None);
+                await Clients.Others.SendAsync("UserStatusChanged", userId, false);
+            }
+        }
         
         await base.OnDisconnectedAsync(exception);
+    }
+
+    private async Task UpdateOnlineStatusAsync(string userId, bool isOnline, CancellationToken ct)
+    {
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            _logger.LogWarning("Invalid user id format in presence update: {UserId}", userId);
+            return;
+        }
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userGuid, ct);
+        if (user == null)
+        {
+            _logger.LogWarning("User not found for presence update: {UserId}", userId);
+            return;
+        }
+
+        if (user.IsLoggedIn == isOnline)
+        {
+            return;
+        }
+
+        // Persist online/offline status in database.
+        user.IsLoggedIn = isOnline;
+        await _dbContext.SaveChangesAsync(ct);
     }
 
     /// Helper для отримання userId з JWT

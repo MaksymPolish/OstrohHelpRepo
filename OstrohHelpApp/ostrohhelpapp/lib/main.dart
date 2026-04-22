@@ -15,6 +15,9 @@ import 'features/profile/presentation/pages/admin_questionnaires_page.dart';
 import 'features/profile/presentation/pages/admin_users_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
+import 'core/auth/token_storage.dart';
+import 'core/services/presence_service.dart';
+import 'features/consultation/presentation/notifiers/online_users_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -143,23 +146,102 @@ class AuthRoot extends StatefulWidget {
 }
 
 class _AuthRootState extends State<AuthRoot> {
+  final TokenStorage _tokenStorage = TokenStorage();
+  final PresenceService _presenceService = PresenceService.instance;
+  bool _presenceEnabled = false;
+
+  static const String _hubBaseUrl = 'http://10.0.2.2:5000';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(_lifecycleObserver);
+  }
+
+  final WidgetsBindingObserver _lifecycleObserver = _PresenceLifecycleObserver();
+
+  Future<void> _startPresence(Authenticated state) async {
+    final token = await _tokenStorage.getToken();
+    final userId = state.user.id ?? '';
+    if (token == null || token.isEmpty || userId.isEmpty) return;
+
+    await _presenceService.start(
+      serverUrl: _hubBaseUrl,
+      accessToken: token,
+      currentUserId: userId,
+    );
+    _presenceEnabled = true;
+  }
+
+  Future<void> _stopPresence() async {
+    if (!_presenceEnabled) return;
+    await _presenceService.stop();
+    _presenceEnabled = false;
+    OnlineUsersNotifier.instance.clear();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(_lifecycleObserver);
+    _presenceService.stop();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        if (state is AuthLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) async {
         if (state is Authenticated) {
-          return const HomePage();
+          await _startPresence(state);
+          (_lifecycleObserver as _PresenceLifecycleObserver).onResume = () {
+            _presenceService.resume();
+          };
+          (_lifecycleObserver as _PresenceLifecycleObserver).onPause = () {
+            _presenceService.pause();
+          };
+        } else {
+          (_lifecycleObserver as _PresenceLifecycleObserver).onResume = null;
+          (_lifecycleObserver as _PresenceLifecycleObserver).onPause = null;
+          await _stopPresence();
         }
-        return const LoginPage();
       },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthLoading) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          if (state is Authenticated) {
+            return const HomePage();
+          }
+          return const LoginPage();
+        },
+      ),
     );
+  }
+}
+
+class _PresenceLifecycleObserver with WidgetsBindingObserver {
+  VoidCallback? onPause;
+  VoidCallback? onResume;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        onPause?.call();
+        break;
+      case AppLifecycleState.resumed:
+        onResume?.call();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 }
 

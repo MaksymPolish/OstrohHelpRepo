@@ -10,6 +10,7 @@ import 'package:ostrohhelpapp/features/consultation/data/services/chat_service.d
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_state.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/consultation_api_service.dart';
+import 'package:ostrohhelpapp/features/consultation/presentation/notifiers/online_users_notifier.dart';
 import 'package:ostrohhelpapp/core/auth/token_storage.dart';
 import 'package:ostrohhelpapp/core/services/encryption_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
@@ -23,8 +24,9 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ChatService _chatService = ChatService();
+  final OnlineUsersNotifier _onlineUsersNotifier = OnlineUsersNotifier.instance;
   final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
   
@@ -50,11 +52,40 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _typingTimer;
   Timer? _typingIndicatorTimer;
   bool _didInitChat = false;
+  late final VoidCallback _onlineUsersListener;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _consultationFuture = _consultationApiService.getConsultationById(widget.consultationId);
+
+    _onlineUsersListener = () {
+      if (!mounted || _receiverId == null) return;
+      final isOnline = _onlineUsersNotifier.isOnline(_receiverId!);
+      if (_otherUserOnline != isOnline) {
+        setState(() {
+          _otherUserOnline = isOnline;
+        });
+      }
+    };
+    _onlineUsersNotifier.addListener(_onlineUsersListener);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        _chatService.pauseConnection();
+        break;
+      case AppLifecycleState.resumed:
+        _chatService.resumeConnection();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   /// Завантажити історію повідомлень через REST API
@@ -109,6 +140,10 @@ class _ChatPageState extends State<ChatPage> {
             ? consultationData['psychologistId']
             : consultationData['studentId'];
         print('receiverId: $_receiverId');
+
+        if (_receiverId != null) {
+          _otherUserOnline = _onlineUsersNotifier.isOnline(_receiverId!);
+        }
       } catch (e) {
         print('Error loading consultation data: $e');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -234,10 +269,10 @@ class _ChatPageState extends State<ChatPage> {
       // User online listener
       _subscriptions.add(
         _chatService.userOnline.listen((event) {
-          if (!mounted) return;
-          setState(() {
-            _otherUserOnline = event.isOnline;
-          });
+          _onlineUsersNotifier.setUserStatus(
+            userId: event.userId,
+            isOnline: event.isOnline,
+          );
         }, onError: (error) {
           print('Error in userOnline listener: $error');
         }),
@@ -901,6 +936,8 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _onlineUsersNotifier.removeListener(_onlineUsersListener);
     _typingTimer?.cancel();
     _typingIndicatorTimer?.cancel();
     for (final subscription in _subscriptions) {

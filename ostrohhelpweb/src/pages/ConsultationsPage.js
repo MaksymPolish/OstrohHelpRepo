@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Paperclip, Send, Activity } from "lucide-react";
 import Button from "../components/Common/Button";
-import { useLanguage, useSecurity } from "../App";
+import { useLanguage, usePresence, useSecurity } from "../App";
 import {
   getConsultationMessages,
   getUserConsultations,
@@ -198,6 +198,7 @@ const sortMessagesOldToNew = (items) => {
 export default function ConsultationsPage() {
   const { t } = useLanguage();
   const { currentUser } = useSecurity();
+  const { isUserOnline } = usePresence();
   const [msg, setMsg] = useState("");
   const [consultations, setConsultations] = useState([]);
   const [selectedConsultationId, setSelectedConsultationId] = useState(null);
@@ -242,6 +243,9 @@ export default function ConsultationsPage() {
       photoUrl: consultation.psychologistPhotoUrl || null,
     };
   };
+
+  const selectedPeer = resolvePeer(selectedConsultation);
+  const isSelectedPeerOnline = Boolean(selectedPeer.id && isUserOnline(selectedPeer.id));
 
   const formatMessageTime = (value) => {
     if (!value) {
@@ -607,7 +611,6 @@ export default function ConsultationsPage() {
     }
   };
 
-  const selectedPeer = resolvePeer(selectedConsultation);
   const canSend = !isSending && (msg.trim().length > 0 || pendingFiles.length > 0);
 
   return (
@@ -660,6 +663,12 @@ export default function ConsultationsPage() {
                       {initials || "U"}
                     </div>
                   )}
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${
+                      peer.id && isUserOnline(peer.id) ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-500"
+                    }`}
+                    aria-hidden="true"
+                  />
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between items-center mb-0.5">
@@ -693,7 +702,9 @@ export default function ConsultationsPage() {
             )}
             <div>
               <h3 className="font-bold text-slate-800 dark:text-white">{selectedPeer.name || "Оберіть чат"}</h3>
-              <p className="text-xs text-emerald-500 font-medium">{selectedConsultation ? t("online") : ""}</p>
+              <p className={`text-xs font-medium ${isSelectedPeerOnline ? "text-emerald-500" : "text-slate-400"}`}>
+                {selectedConsultation ? (isSelectedPeerOnline ? t("online") : t("offline")) : ""}
+              </p>
             </div>
           </div>
           <Button variant="ghost" className="p-2 rounded-full">

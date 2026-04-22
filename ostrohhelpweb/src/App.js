@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from
 import "./App.css";
 import { Home, ClipboardList, MessageSquare, User } from "lucide-react";
 import api from "./services/api";
+import useUserPresence from "./hooks/useUserPresence";
 
 // Translations
 import translations from "./i18n/translations";
@@ -23,6 +24,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 // Create Language Context
 export const LanguageContext = createContext();
 export const SecurityContext = createContext();
+export const PresenceContext = createContext();
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
@@ -36,6 +38,14 @@ export const useSecurity = () => {
   const context = useContext(SecurityContext);
   if (!context) {
     throw new Error("useSecurity must be used within SecurityContext provider");
+  }
+  return context;
+};
+
+export const usePresence = () => {
+  const context = useContext(PresenceContext);
+  if (!context) {
+    throw new Error("usePresence must be used within PresenceContext provider");
   }
   return context;
 };
@@ -107,6 +117,7 @@ function AppContent() {
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem("language") || "uk";
   });
+  const presence = useUserPresence(isAuthenticated);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -343,57 +354,59 @@ function AppContent() {
 
   return (
     <SecurityContext.Provider value={securityContextValue}>
-      <LanguageContext.Provider value={contextValue}>
-        <div
-          className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
-        >
-          <Header
-            isDarkMode={isDarkMode}
-            onDarkModeToggle={handleDarkModeToggle}
-            navItems={navItems}
-            currentView={currentView}
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userInitial={userInitial}
-            userName={userDisplayName}
-            userPhotoUrl={currentUser?.photoUrl || null}
-          />
+      <PresenceContext.Provider value={presence}>
+        <LanguageContext.Provider value={contextValue}>
+          <div
+            className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
+          >
+            <Header
+              isDarkMode={isDarkMode}
+              onDarkModeToggle={handleDarkModeToggle}
+              navItems={navItems}
+              currentView={currentView}
+              onNavigate={handleNavigation}
+              onLogout={handleLogout}
+              userInitial={userInitial}
+              userName={userDisplayName}
+              userPhotoUrl={currentUser?.photoUrl || null}
+            />
 
-          <div className="flex flex-1 overflow-hidden relative">
-            <main className="flex-1 overflow-y-auto">
-              {error && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 m-4 rounded">
-                  <p className="font-bold">Error</p>
-                  <p>{error}</p>
+            <div className="flex flex-1 overflow-hidden relative">
+              <main className="flex-1 overflow-y-auto">
+                {error && (
+                  <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 m-4 rounded">
+                    <p className="font-bold">Error</p>
+                    <p>{error}</p>
+                  </div>
+                )}
+
+                <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
+                  {/* Direct component rendering based on location - solves Outlet hydration issue with language context */}
+                  {(() => {
+                    switch (location.pathname) {
+                      case "/":
+                      case "/homepage":
+                        return <HomePageClean />;
+                      case "/questionnaires":
+                        return <QuestionnairesPage />;
+                      case "/my-questionnaires":
+                        return <MyQuestionnairesPage />;
+                      case "/consultations":
+                        return <ConsultationsPage />;
+                      case "/profile":
+                        return <ProfilePage />;
+                      default:
+                        return <NotFoundPage />;
+                    }
+                  })()}
                 </div>
-              )}
+              </main>
+            </div>
 
-              <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto w-full">
-                {/* Direct component rendering based on location - solves Outlet hydration issue with language context */}
-                {(() => {
-                  switch (location.pathname) {
-                    case "/":
-                    case "/homepage":
-                      return <HomePageClean />;
-                    case "/questionnaires":
-                      return <QuestionnairesPage />;
-                    case "/my-questionnaires":
-                      return <MyQuestionnairesPage />;
-                    case "/consultations":
-                      return <ConsultationsPage />;
-                    case "/profile":
-                      return <ProfilePage />;
-                    default:
-                      return <NotFoundPage />;
-                  }
-                })()}
-              </div>
-            </main>
+            <Footer />
           </div>
-
-          <Footer />
-        </div>
-      </LanguageContext.Provider>
+        </LanguageContext.Provider>
+      </PresenceContext.Provider>
     </SecurityContext.Provider>
   );
 }
