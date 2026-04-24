@@ -265,6 +265,76 @@ public class MessageController : ControllerBase
         );
     }
 
+    // Edit message text
+    [HttpPut("EditMessage")]
+    public async Task<IActionResult> EditMessage([FromBody] UpdateMessageCommand command, CancellationToken ct)
+    {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (currentUserId == null)
+        {
+            return Unauthorized("User identity not found");
+        }
+
+        var isOwner = await _accessChecker.IsMessageOwner(Guid.Parse(currentUserId), command.id, ct);
+        if (!isOwner)
+        {
+            return Forbid("You can only edit your own messages");
+        }
+
+        var result = await _mediator.Send(command, ct);
+
+        if (result.IsSuccess)
+        {
+            var ipAddress = HttpContext?.Connection.RemoteIpAddress?.ToString();
+            var details = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                MessageId = command.id
+            });
+
+            await _auditLogService.LogAsync(
+                Guid.Parse(currentUserId),
+                "EditMessage",
+                "Message",
+                command.id,
+                ipAddress,
+                details
+            );
+        }
+
+        return await result.Match<Task<IActionResult>>(
+            async message =>
+            {
+                var fullMessageOption = await _messageQuery.GetMessageById(message.Id, ct);
+
+                await fullMessageOption.Match(
+                    async fullMessage =>
+                    {
+                        var senderOption = await _userQuery.GetByIdAsync(fullMessage.SenderId, ct);
+                        var receiverOption = await _userQuery.GetByIdAsync(fullMessage.ReceiverId, ct);
+
+                        var dto = _mapper.Map<MessageDto>(fullMessage);
+                        dto.FullNameSender = senderOption.Match(u => u.FullName, () => "Unknown");
+                        dto.FullNameReceiver = receiverOption.Match(u => u.FullName, () => "Unknown");
+
+                        await _chatHubContext.Clients
+                            .Group(fullMessage.ConsultationId.ToString())
+                            .SendAsync("MessageUpdated", dto, ct);
+                    },
+                    async () =>
+                    {
+                        var dto = _mapper.Map<MessageDto>(message);
+                        await _chatHubContext.Clients
+                            .Group(message.ConsultationId.ToString())
+                            .SendAsync("MessageUpdated", dto, ct);
+                    }
+                );
+
+                return Ok(message);
+            },
+            errors => Task.FromResult<IActionResult>(BadRequest(new { Error = errors.Message }))
+        );
+    }
+
     //Delete
     [HttpDelete("Delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteMessageCommand command, CancellationToken ct)

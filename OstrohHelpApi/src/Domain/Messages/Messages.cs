@@ -80,6 +80,14 @@ public class Message
         Text = newText;
     }
 
+    public void UpdateEncryptedPayload(byte[] encryptedContent, byte[] iv, byte[] authTag)
+    {
+        EncryptedContent = encryptedContent;
+        Iv = iv;
+        AuthTag = authTag;
+        Text = null; // Keep edited message in encrypted-only form.
+    }
+
     public void MarkAsRead()
     {
         IsRead = true;

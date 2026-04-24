@@ -4,10 +4,15 @@ using Application.Common.Interfaces.Repositories;
 using Application.Messages.Exceptions;
 using Domain.Messages;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace Application.Messages.Commands;
 
-public record UpdateMessageCommand(Guid id, string text) : IRequest<Result<Message, MessageExceptions>>;
+public record UpdateMessageCommand(
+    Guid id,
+    [property: JsonPropertyName("encrypted_content")] byte[] encryptedContent,
+    [property: JsonPropertyName("iv")] byte[] iv,
+    [property: JsonPropertyName("auth_tag")] byte[] authTag) : IRequest<Result<Message, MessageExceptions>>;
 
 public class UpdateMessageCommandHandler(
     IMessageQuery _messageQuery,
@@ -21,8 +26,8 @@ public class UpdateMessageCommandHandler(
         return await messageOption.Match(
             async message =>
             {
-                // Оновлення тексту
-                message.UpdateText(command.text);
+                // Re-encrypt edited message on client and persist new ciphertext payload.
+                message.UpdateEncryptedPayload(command.encryptedContent, command.iv, command.authTag);
                 
                 // Збереження через репозиторій
                 return await _messageRepository.UpdateAsync(message, ct);

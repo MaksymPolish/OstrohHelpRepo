@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Paperclip, Send, Activity } from "lucide-react";
+import { Paperclip, Send, Activity, Pencil, Trash2, X } from "lucide-react";
 import Button from "../components/Common/Button";
 import { useLanguage, usePresence, useSecurity } from "../App";
 import {
   getConsultationMessages,
   getUserConsultations,
+  deleteConsultationMessage,
   sendConsultationMessage,
-  uploadMessageFile,
+  uploadMessageFiles,
 } from "../services/chatApi";
 import {
   joinConsultationRoom,
@@ -119,6 +120,80 @@ const isImageUrl = (url) => {
   return /(\.png|\.jpg|\.jpeg|\.gif|\.webp|\.bmp|\.svg)(\?|$)/i.test(url);
 };
 
+const isVideoUrl = (url) => {
+  if (!url || typeof url !== "string") {
+    return false;
+  }
+
+  return /(\.mp4|\.webm|\.ogg|\.mov|\.m4v|\.avi|\.mkv)(\?|$)/i.test(url);
+};
+
+const getFileNameFromUrl = (url) => {
+  if (!url || typeof url !== "string") {
+    return "Файл";
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const fileName = parsedUrl.pathname.split("/").filter(Boolean).pop();
+    return fileName ? decodeURIComponent(fileName) : "Файл";
+  } catch {
+    const fileName = url.split("/").filter(Boolean).pop();
+    return fileName ? decodeURIComponent(fileName) : "Файл";
+  }
+};
+
+const MessageAttachment = ({ url, isMine }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const fileName = getFileNameFromUrl(url);
+
+  if (!url || typeof url !== "string") {
+    return (
+      <p className={`text-xs ${isMine ? "text-blue-100" : "text-slate-500"}`}>
+        Файл недоступний
+      </p>
+    );
+  }
+
+  if (isImageUrl(url) && !imageFailed) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer">
+        <img
+          src={url}
+          alt="attachment"
+          className="max-h-48 rounded-lg object-cover"
+          referrerPolicy="no-referrer"
+          onError={() => setImageFailed(true)}
+        />
+      </a>
+    );
+  }
+
+  if (isVideoUrl(url) && !videoFailed) {
+    return (
+      <video
+        className="max-h-56 w-full rounded-lg bg-black"
+        controls
+        preload="metadata"
+        onError={() => setVideoFailed(true)}
+      >
+        <source src={url} />
+      </video>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      download={fileName}
+      className={`underline break-all text-sm ${isMine ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`}
+    >
+      {`Завантажити: ${fileName}`}
+    </a>
+  );
+};
+
 const normalizeMessage = (item) => {
   const attachments = [];
 
@@ -195,6 +270,19 @@ const sortMessagesOldToNew = (items) => {
   });
 };
 
+const MAX_PENDING_FILES = 6;
+
+const extractCreatedMessageId = (payload) => {
+  return normalizeId(
+    readFirstDefined(
+      payload?.id,
+      payload?.Id,
+      payload?.messageId,
+      payload?.MessageId
+    )
+  );
+};
+
 export default function ConsultationsPage() {
   const { t } = useLanguage();
   const { currentUser } = useSecurity();
@@ -208,9 +296,12 @@ export default function ConsultationsPage() {
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [keyVersion, setKeyVersion] = useState(0);
   const [error, setError] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const fileInputRef = useRef(null);
   const messageInputRef = useRef(null);
   const consultationKeysRef = useRef({});
@@ -502,7 +593,23 @@ export default function ConsultationsPage() {
     if (selectedFiles.length === 0) {
       return;
     }
-    setPendingFiles((prev) => [...prev, ...selectedFiles]);
+
+    setPendingFiles((prev) => {
+      const availableSlots = Math.max(0, MAX_PENDING_FILES - prev.length);
+      const nextFiles = selectedFiles.slice(0, availableSlots);
+
+      if (availableSlots <= 0) {
+        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
+        return prev;
+      }
+
+      if (selectedFiles.length > nextFiles.length) {
+        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
+      }
+
+      return [...prev, ...nextFiles];
+    });
+
     event.target.value = "";
   };
 
@@ -539,6 +646,19 @@ export default function ConsultationsPage() {
       return;
     }
 
+    const normalizedEditingMessageId = normalizeId(editingMessageId);
+    const isEditMode = Boolean(normalizedEditingMessageId);
+
+    if (isEditMode && pendingFiles.length > 0) {
+      setError("Під час редагування не можна додавати файли. Збережіть текст або скасуйте редагування.");
+      return;
+    }
+
+    if (pendingFiles.length > MAX_PENDING_FILES) {
+      setError(`Можна відправити максимум ${MAX_PENDING_FILES} файлів за раз.`);
+      return;
+    }
+
     const consultationKey = getConsultationKey(selectedConsultation.id);
     if (!consultationKey) {
       setError("Ключ шифрування ще не отримано. Спробуйте через кілька секунд.");
@@ -564,29 +684,22 @@ export default function ConsultationsPage() {
     setIsSending(true);
     setError("");
     try {
-      const uploadedPaths = await Promise.all(
-        pendingFiles.map(async (file) => {
-          const uploadedFile = await uploadMessageFile(currentUser.id, file);
-          return uploadedFile?.url || null;
-        })
-      );
-
-      const mediaPaths = uploadedPaths.filter(Boolean);
-      const encryptedPayload = await encryptMessage(text || "Файл", consultationKey);
+      const encryptedPayload = await encryptMessage(text || "attachment", consultationKey);
 
       let sent = false;
       let lastSendError = null;
+      let createdMessage = null;
 
       for (const receiverId of receiverCandidates) {
         try {
-          await sendConsultationMessage({
+          createdMessage = await sendConsultationMessage({
             senderId: normalizedCurrentUserId,
             receiverId,
             consultationId: normalizeId(selectedConsultation.id),
             encryptedContent: encryptedPayload.encryptedContent,
             iv: encryptedPayload.iv,
             authTag: encryptedPayload.authTag,
-            mediaPaths,
+            mediaPaths: [],
           });
           sent = true;
           break;
@@ -599,15 +712,104 @@ export default function ConsultationsPage() {
         throw lastSendError || new Error("Failed to send message");
       }
 
+      if (pendingFiles.length > 0) {
+        const createdMessageId = extractCreatedMessageId(createdMessage);
+        if (!createdMessageId) {
+          throw new Error("Не вдалося отримати messageId для завантаження файлів.");
+        }
+
+        setIsUploadingFiles(true);
+        const uploadedFiles = await uploadMessageFiles(pendingFiles, {
+          messageId: createdMessageId,
+        });
+
+        const failedUploads = uploadedFiles.filter((file) => !file?.isSuccess || !file?.url);
+        const successfulUploads = uploadedFiles.filter((file) => file?.isSuccess && file?.url);
+
+        if (successfulUploads.length === 0) {
+          throw new Error("Повідомлення створено, але файли не завантажилися.");
+        }
+
+        if (failedUploads.length > 0) {
+          const firstFailed = failedUploads[0];
+          const failedName = firstFailed?.fileName || "файл";
+          setError(`Деякі файли не завантажилися. Перевірте ${failedName}.`);
+        }
+      }
+
+      if (isEditMode) {
+        try {
+          await deleteConsultationMessage(normalizedEditingMessageId);
+        } catch {
+          setError("Текст оновлено, але старе повідомлення не вдалося видалити.");
+        }
+      }
+
       const refreshedMessages = await getConsultationMessages(selectedConsultation.id);
       setMessages(sortMessagesOldToNew((refreshedMessages || []).map(normalizeMessage)));
       setMsg("");
       setPendingFiles([]);
+      setEditingMessageId(null);
     } catch (sendError) {
       const serverMessage = extractServerErrorMessage(sendError);
-      setError(serverMessage || "Не вдалося відправити повідомлення.");
+      setError(serverMessage || sendError?.message || "Не вдалося відправити повідомлення.");
     } finally {
+      setIsUploadingFiles(false);
       setIsSending(false);
+    }
+  };
+
+  const handleStartEditing = (messageItem) => {
+    const messageId = normalizeId(messageItem?.id);
+    if (!messageId) {
+      return;
+    }
+
+    if (Array.isArray(messageItem?.attachments) && messageItem.attachments.length > 0) {
+      setError("Редагування повідомлень з файлами не підтримується.");
+      return;
+    }
+
+    setEditingMessageId(messageId);
+    setMsg(messageItem?.content || "");
+    setPendingFiles([]);
+    setError("");
+    messageInputRef.current?.focus();
+  };
+
+  const handleCancelEditing = () => {
+    setEditingMessageId(null);
+    setMsg("");
+    setError("");
+  };
+
+  const handleDeleteMessage = async (messageItem) => {
+    const messageId = normalizeId(messageItem?.id);
+    if (!messageId) {
+      return;
+    }
+
+    if (!window.confirm("Видалити це повідомлення?")) {
+      return;
+    }
+
+    setIsDeletingMessage(true);
+    setError("");
+    try {
+      await deleteConsultationMessage(messageId);
+
+      if (idsEqual(editingMessageId, messageId)) {
+        setEditingMessageId(null);
+        setMsg("");
+      }
+
+      const refreshedMessages = await getConsultationMessages(selectedConsultation.id);
+      setMessages(sortMessagesOldToNew((refreshedMessages || []).map(normalizeMessage)));
+    } catch (deleteError) {
+      const serverMessage = extractServerErrorMessage(deleteError);
+      setError(serverMessage || "Не вдалося видалити повідомлення.");
+    } finally {
+      setIsDeletingMessage(false);
     }
   };
 
@@ -750,31 +952,33 @@ export default function ConsultationsPage() {
                     <div className="mt-2 space-y-2">
                       {m.attachments.map((attachmentUrl, attachmentIndex) => (
                         <div key={`${attachmentUrl}-${attachmentIndex}`}>
-                          {isImageUrl(attachmentUrl) ? (
-                            <a href={attachmentUrl} target="_blank" rel="noreferrer">
-                              <img
-                                src={attachmentUrl}
-                                alt="attachment"
-                                className="max-h-48 rounded-lg object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            </a>
-                          ) : (
-                            <a
-                              href={attachmentUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={`underline break-all ${isMine ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`}
-                            >
-                              {attachmentUrl}
-                            </a>
-                          )}
+                          <MessageAttachment url={attachmentUrl} isMine={isMine} />
                         </div>
                       ))}
                     </div>
                   )}
 
                   <div className={`text-[10px] mt-1 ${isMine ? "text-blue-100 text-right" : "text-slate-400"}`}>
+                    {isMine && (
+                      <span className="block text-[11px] mb-1">
+                        <button
+                          type="button"
+                          className={`inline-flex items-center gap-1 mr-3 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                          onClick={() => handleStartEditing(m)}
+                          disabled={isSending || isDeletingMessage}
+                        >
+                          <Pencil size={12} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                          onClick={() => handleDeleteMessage(m)}
+                          disabled={isSending || isDeletingMessage}
+                        >
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </span>
+                    )}
                     <span className="block">{formatMessageTime(m.createdAt)}</span>
                     <span className="block">{formatMessageDate(m.createdAt)}</span>
                   </div>
@@ -801,6 +1005,23 @@ export default function ConsultationsPage() {
             </div>
           )}
 
+          {isUploadingFiles && (
+            <p className="mb-3 text-xs text-slate-500">Завантаження файлів...</p>
+          )}
+
+          {editingMessageId && (
+            <div className="mb-3 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              <span>Режим редагування повідомлення</span>
+              <button
+                type="button"
+                onClick={handleCancelEditing}
+                className="inline-flex items-center gap-1 text-amber-700"
+              >
+                <X size={12} /> Скасувати
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center space-x-2">
             <input
               ref={fileInputRef}
@@ -824,7 +1045,7 @@ export default function ConsultationsPage() {
               onChange={(e) => setMsg(e.target.value)}
               onKeyDown={handleMessageKeyDown}
               placeholder={t("messagePlaceholder")}
-              disabled={!selectedConsultation || isSending}
+              disabled={!selectedConsultation || isSending || isDeletingMessage}
               rows={1}
               className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none overflow-y-auto min-h-12 max-h-40 leading-6"
             />
@@ -832,7 +1053,7 @@ export default function ConsultationsPage() {
             <Button
               className="rounded-full w-11 h-11 p-0 flex items-center justify-center"
               onClick={handleSend}
-              disabled={!selectedConsultation || !canSend}
+              disabled={!selectedConsultation || !canSend || isDeletingMessage}
             >
               <Send size={18} className="ml-1" />
             </Button>

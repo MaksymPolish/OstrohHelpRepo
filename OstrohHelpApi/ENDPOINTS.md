@@ -605,7 +605,57 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 4️⃣ DELETE /Delete
+## 4️⃣ PUT /EditMessage
+**🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
+
+**Описание:** Оновлення (редагування) повідомлення з повторним клієнтським шифруванням.
+
+**Flow (Workflow):**
+```
+1. Клієнт змінює текст локально і шифрує його тим самим consultation key
+2. Надсилає message id + нові encrypted bytes (encrypted_content, iv, auth_tag)
+3. Сервер перевіряє JWT та власність повідомлення
+4. Оновлює поля Message.EncryptedContent / Message.Iv / Message.AuthTag
+5. Зберігає в БД та логує audit Action="EditMessage"
+6. Відправляє в SignalR групу подію MessageUpdated з актуальним MessageDto
+7. Повертає оновлене повідомлення
+```
+
+**Request:**
+```json
+{
+  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "encrypted_content": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
+  "iv": "MTIzNDU2Nzg5MDEy",
+  "auth_tag": "QUJDREVGR0hJSktMTU5PUA=="
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "senderId": "1fa85f64-5717-4562-b3fc-2c963f66afa0",
+  "receiverId": "2fa85f64-5717-4562-b3fc-2c963f66afa1",
+  "encryptedContent": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
+  "iv": "MTIzNDU2Nzg5MDEy",
+  "authTag": "QUJDREVGR0hJSktMTU5PUA==",
+  "isRead": false,
+  "sentAt": "2026-04-18T14:30:00Z",
+  "isDeleted": false
+}
+```
+
+**Помилки:**
+- `400 Bad Request` - Невалідний payload (`encrypted_content`/`iv`/`auth_tag`)
+- `401 Unauthorized` - Невалідний JWT
+- `403 Forbidden` - Не власник повідомлення
+- `404 Not Found` - Повідомлення не існує
+
+---
+
+## 5️⃣ DELETE /Delete
 **🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Soft Delete повідомлення (видалення логічне, дані очищуються)
@@ -662,7 +712,7 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 5️⃣ PUT /mark-as-read
+## 6️⃣ PUT /mark-as-read
 **🔐 АВТОРИЗОВАНИЙ (тільки одержувач) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Позначення повідомлення як прочитаного
@@ -699,7 +749,7 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 6️⃣ DELETE /Attachment/{attachmentId}
+## 7️⃣ DELETE /Attachment/{attachmentId}
 **🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Soft Delete одного вкладення повідомлення
@@ -793,6 +843,12 @@ connection.on("ReceiveMessage", (message) => {
   console.log("ReceiveMessage", message);
 });
 
+connection.on("MessageUpdated", (message) => {
+  console.log("MessageUpdated", message);
+  // payload fields: message.id, message.encryptedContent, message.iv, message.authTag
+  // replace message in UI store by message.id and decrypt on client
+});
+
 await connection.start();
 await connection.invoke("JoinConsultation", "4bf57625-929f-4e12-9451-c53a40862943");
 ```
@@ -825,6 +881,35 @@ connection.on('UserStatusChanged', (args) {
 connection.on('ReceiveMessage', (args) {
   print('ReceiveMessage: ${args?[0]}');
 });
+
+connection.on('MessageUpdated', (args) {
+  final message = args?[0] as Map<String, dynamic>;
+  print('MessageUpdated id: ${message['id']}');
+  print('encryptedContent: ${message['encryptedContent']}');
+  print('iv: ${message['iv']}');
+  print('authTag: ${message['authTag']}');
+  // replace message in state by id and decrypt on client
+});
+
+### Payload події MessageUpdated
+
+**Event:** `MessageUpdated(messageDto)`
+
+```json
+{
+  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "senderId": "1fa85f64-5717-4562-b3fc-2c963f66afa0",
+  "receiverId": "2fa85f64-5717-4562-b3fc-2c963f66afa1",
+  "encryptedContent": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
+  "iv": "MTIzNDU2Nzg5MDEy",
+  "authTag": "QUJDREVGR0hJSktMTU5PUA==",
+  "isRead": false,
+  "sentAt": "2026-04-18T14:35:00Z",
+  "isDeleted": false,
+  "attachments": []
+}
+```
 
 await connection.start();
 await connection.invoke('JoinConsultation', args: ['4bf57625-929f-4e12-9451-c53a40862943']);
