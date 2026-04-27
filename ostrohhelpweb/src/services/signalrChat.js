@@ -9,6 +9,7 @@ import { SIGNALR_HUB_URL } from "../config/env";
 let connection = null;
 let connectionPromise = null;
 const messageSubscribers = new Set();
+const messageUpdatedSubscribers = new Set();
 const keySubscribers = new Set();
 const presenceSubscribers = new Set();
 const onlineUserIds = new Set();
@@ -31,6 +32,16 @@ const normalizeHubUrlForNegotiation = (value) => {
 
 const dispatchIncomingMessage = (payload) => {
   for (const subscriber of messageSubscribers) {
+    try {
+      subscriber(payload);
+    } catch {
+      // Ignore subscriber errors to keep SignalR stream alive.
+    }
+  }
+};
+
+const dispatchMessageUpdated = (payload) => {
+  for (const subscriber of messageUpdatedSubscribers) {
     try {
       subscriber(payload);
     } catch {
@@ -90,6 +101,10 @@ const buildConnection = () => {
     dispatchIncomingMessage(message);
   });
 
+  hubConnection.on("MessageUpdated", (message) => {
+    dispatchMessageUpdated(message);
+  });
+
   hubConnection.on("ReceiveConsultationKey", (payload) => {
     dispatchConsultationKey(payload);
   });
@@ -136,6 +151,13 @@ export const subscribeToIncomingMessages = (handler) => {
   messageSubscribers.add(handler);
   return () => {
     messageSubscribers.delete(handler);
+  };
+};
+
+export const subscribeToMessageUpdates = (handler) => {
+  messageUpdatedSubscribers.add(handler);
+  return () => {
+    messageUpdatedSubscribers.delete(handler);
   };
 };
 

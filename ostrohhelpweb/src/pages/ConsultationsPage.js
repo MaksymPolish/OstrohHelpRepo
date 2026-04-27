@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Paperclip, Send, Activity, Pencil, Trash2, X } from "lucide-react";
+import { Paperclip, Send, Activity, Pencil, Trash2, X, Check } from "lucide-react";
 import Button from "../components/Common/Button";
 import { useLanguage, usePresence, useSecurity } from "../App";
 import {
   getConsultationMessages,
   getUserConsultations,
+  editConsultationMessage,
   deleteConsultationMessage,
   sendConsultationMessage,
   uploadMessageFiles,
@@ -14,6 +15,7 @@ import {
   leaveConsultationRoom,
   subscribeToConsultationKeys,
   subscribeToIncomingMessages,
+  subscribeToMessageUpdates,
 } from "../services/signalrChat";
 import { decryptMessage, encryptMessage } from "../services/encryptionService";
 
@@ -194,6 +196,54 @@ const MessageAttachment = ({ url, isMine }) => {
   );
 };
 
+const InlineMessageEditor = ({ value, onChange, onSave, onCancel, isSaving, disabled }) => {
+  const editTextareaRef = useRef(null);
+
+  useEffect(() => {
+    if (!editTextareaRef.current) {
+      return;
+    }
+
+    editTextareaRef.current.style.height = "auto";
+    editTextareaRef.current.style.height = `${Math.min(editTextareaRef.current.scrollHeight, 180)}px`;
+  }, [value]);
+
+  return (
+    <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 px-4 py-3 shadow-sm">
+      <textarea
+        ref={editTextareaRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled || isSaving}
+        rows={2}
+        className="w-full bg-transparent border-0 outline-none resize-none text-slate-800 dark:text-white leading-6 min-h-16 max-h-44"
+      />
+
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSaving}
+          className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <X size={12} />
+          Скасувати
+        </button>
+
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={disabled || isSaving || !String(value || "").trim()}
+          className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          <Check size={12} />
+          Зберегти
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const normalizeMessage = (item) => {
   const attachments = [];
 
@@ -270,6 +320,36 @@ const sortMessagesOldToNew = (items) => {
   });
 };
 
+const formatMessageSeparatorDate = (value, language) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return parsedDate.toLocaleDateString(language === "en" ? "en-US" : "uk-UA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const getDateKey = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
+};
+
 const MAX_PENDING_FILES = 6;
 
 const extractCreatedMessageId = (payload) => {
@@ -284,7 +364,7 @@ const extractCreatedMessageId = (payload) => {
 };
 
 export default function ConsultationsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { currentUser } = useSecurity();
   const { isUserOnline } = usePresence();
   const [msg, setMsg] = useState("");
@@ -354,23 +434,6 @@ export default function ConsultationsPage() {
     });
   };
 
-  const formatMessageDate = (value) => {
-    if (!value) {
-      return "";
-    }
-
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "";
-    }
-
-    return parsedDate.toLocaleDateString([], {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   const getConsultationKey = useCallback((consultationId) => {
     const normalizedId = normalizeId(consultationId);
     if (!normalizedId) {
@@ -435,6 +498,34 @@ export default function ConsultationsPage() {
       }
 
       return sortMessagesOldToNew([...prevMessages, nextMessage]);
+    });
+  };
+
+  const replaceMessage = (nextMessage) => {
+    setMessages((prevMessages) => {
+      if (!nextMessage?.id) {
+        return prevMessages;
+      }
+
+      const normalizedNextMessage = normalizeMessage(nextMessage);
+      const exists = prevMessages.some((messageItem) => messageItem.id === normalizedNextMessage.id);
+
+      if (!exists) {
+        return sortMessagesOldToNew([...prevMessages, normalizedNextMessage]);
+      }
+
+      return sortMessagesOldToNew(
+        prevMessages.map((messageItem) => {
+          if (messageItem.id !== normalizedNextMessage.id) {
+            return messageItem;
+          }
+
+          return {
+            ...messageItem,
+            ...normalizedNextMessage,
+          };
+        })
+      );
     });
   };
 
@@ -511,6 +602,36 @@ export default function ConsultationsPage() {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMessageUpdates((payload) => {
+      if (!payload || payload.__signalrError) {
+        return;
+      }
+
+      const normalizedIncoming = normalizeMessage(payload);
+      if (!normalizedIncoming) {
+        return;
+      }
+
+      const incomingConsultationId = normalizeId(
+        payload.consultationId ||
+        payload.ConsultationId ||
+        normalizedIncoming.consultationId ||
+        null
+      );
+
+      if (String(incomingConsultationId || "") !== String(selectedConsultationId)) {
+        return;
+      }
+
+      replaceMessage(normalizedIncoming);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [selectedConsultationId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -686,6 +807,26 @@ export default function ConsultationsPage() {
     try {
       const encryptedPayload = await encryptMessage(text || "attachment", consultationKey);
 
+      if (isEditMode) {
+        const updatedMessage = await editConsultationMessage({
+          id: normalizedEditingMessageId,
+          encryptedContent: encryptedPayload.encryptedContent,
+          iv: encryptedPayload.iv,
+          authTag: encryptedPayload.authTag,
+        });
+
+        if (updatedMessage) {
+          replaceMessage(updatedMessage);
+        }
+
+        const refreshedMessages = await getConsultationMessages(selectedConsultation.id);
+        setMessages(sortMessagesOldToNew((refreshedMessages || []).map(normalizeMessage)));
+        setMsg("");
+        setPendingFiles([]);
+        setEditingMessageId(null);
+        return;
+      }
+
       let sent = false;
       let lastSendError = null;
       let createdMessage = null;
@@ -737,14 +878,6 @@ export default function ConsultationsPage() {
         }
       }
 
-      if (isEditMode) {
-        try {
-          await deleteConsultationMessage(normalizedEditingMessageId);
-        } catch {
-          setError("Текст оновлено, але старе повідомлення не вдалося видалити.");
-        }
-      }
-
       const refreshedMessages = await getConsultationMessages(selectedConsultation.id);
       setMessages(sortMessagesOldToNew((refreshedMessages || []).map(normalizeMessage)));
       setMsg("");
@@ -762,11 +895,6 @@ export default function ConsultationsPage() {
   const handleStartEditing = (messageItem) => {
     const messageId = normalizeId(messageItem?.id);
     if (!messageId) {
-      return;
-    }
-
-    if (Array.isArray(messageItem?.attachments) && messageItem.attachments.length > 0) {
-      setError("Редагування повідомлень з файлами не підтримується.");
       return;
     }
 
@@ -936,60 +1064,89 @@ export default function ConsultationsPage() {
 
           {decryptedMessages.map((m, index) => {
             const isMine = idsEqual(m.senderId, normalizedCurrentUserId);
+            const isEditingThisMessage = idsEqual(editingMessageId, m.id);
+            const currentDateKey = getDateKey(m.createdAt);
+            const previousDateKey = index > 0 ? getDateKey(decryptedMessages[index - 1]?.createdAt) : "";
+            const showDateSeparator = Boolean(currentDateKey) && currentDateKey !== previousDateKey;
 
             return (
-              <div key={`${m.id}-${index}`} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[75%] rounded-2xl px-5 py-3 ${
-                    isMine
-                      ? "bg-blue-600 text-white rounded-br-sm shadow-sm"
-                      : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-bl-sm shadow-sm"
-                  }`}
-                >
-                  {m.content && <p>{m.content}</p>}
+              <React.Fragment key={`${m.id}-${index}`}>
+                {showDateSeparator && (
+                  <div className="flex items-center gap-3 my-4 text-xs text-slate-400">
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                    <span className="whitespace-nowrap font-medium">
+                      {formatMessageSeparatorDate(m.createdAt, language)}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                )}
 
-                  {Array.isArray(m.attachments) && m.attachments.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {m.attachments.map((attachmentUrl, attachmentIndex) => (
-                        <div key={`${attachmentUrl}-${attachmentIndex}`}>
-                          <MessageAttachment url={attachmentUrl} isMine={isMine} />
+                <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-5 py-3 ${
+                      isMine
+                        ? "bg-blue-600 text-white rounded-br-sm shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-bl-sm shadow-sm"
+                    }`}
+                  >
+                    {isEditingThisMessage && isMine ? (
+                      <InlineMessageEditor
+                        value={msg}
+                        onChange={setMsg}
+                        onSave={handleSend}
+                        onCancel={handleCancelEditing}
+                        isSaving={isSending}
+                        disabled={isDeletingMessage}
+                      />
+                    ) : (
+                      <>
+                        {m.content && <p>{m.content}</p>}
+
+                        {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {m.attachments.map((attachmentUrl, attachmentIndex) => (
+                              <div key={`${attachmentUrl}-${attachmentIndex}`}>
+                                <MessageAttachment url={attachmentUrl} isMine={isMine} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className={`text-[10px] mt-1 ${isMine ? "text-blue-100 text-right" : "text-slate-400"}`}>
+                          {isMine && (
+                            <span className="block text-[11px] mb-1">
+                              <button
+                                type="button"
+                                className={`inline-flex items-center gap-1 mr-3 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                                onClick={() => handleStartEditing(m)}
+                                disabled={isSending || isDeletingMessage}
+                              >
+                                <Pencil size={12} /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                                onClick={() => handleDeleteMessage(m)}
+                                disabled={isSending || isDeletingMessage}
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </span>
+                          )}
+                          <span className="block">{formatMessageTime(m.createdAt)}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className={`text-[10px] mt-1 ${isMine ? "text-blue-100 text-right" : "text-slate-400"}`}>
-                    {isMine && (
-                      <span className="block text-[11px] mb-1">
-                        <button
-                          type="button"
-                          className={`inline-flex items-center gap-1 mr-3 ${isMine ? "text-blue-100" : "text-slate-400"}`}
-                          onClick={() => handleStartEditing(m)}
-                          disabled={isSending || isDeletingMessage}
-                        >
-                          <Pencil size={12} /> Edit
-                        </button>
-                        <button
-                          type="button"
-                          className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-slate-400"}`}
-                          onClick={() => handleDeleteMessage(m)}
-                          disabled={isSending || isDeletingMessage}
-                        >
-                          <Trash2 size={12} /> Delete
-                        </button>
-                      </span>
+                      </>
                     )}
-                    <span className="block">{formatMessageTime(m.createdAt)}</span>
-                    <span className="block">{formatMessageDate(m.createdAt)}</span>
                   </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })}
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
+        {!editingMessageId && (
+          <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
           {pendingFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
               {pendingFiles.map((file, index) => (
@@ -1058,7 +1215,8 @@ export default function ConsultationsPage() {
               <Send size={18} className="ml-1" />
             </Button>
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

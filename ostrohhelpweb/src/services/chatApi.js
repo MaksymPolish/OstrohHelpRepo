@@ -181,6 +181,24 @@ export const deleteConsultationMessage = async (messageId) => {
   });
 };
 
+export const editConsultationMessage = async ({ id, encryptedContent, iv, authTag }) => {
+  const payload = {
+    id,
+    Id: id,
+    encrypted_content: encryptedContent,
+    encryptedContent,
+    EncryptedContent: encryptedContent,
+    iv,
+    Iv: iv,
+    auth_tag: authTag,
+    authTag,
+    AuthTag: authTag,
+  };
+
+  const response = await api.put("/Message/EditMessage", payload);
+  return response.data || null;
+};
+
 export const sendConsultationMessage = async ({
   senderId,
   receiverId,

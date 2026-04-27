@@ -608,7 +608,7 @@ file[1]: <binary data - document.pdf>
 ## 4️⃣ PUT /EditMessage
 **🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
-**Описание:** Оновлення (редагування) повідомлення з повторним клієнтським шифруванням.
+**Описание:** Оновлення повідомлення з повторним клієнтським шифруванням.
 
 **Flow (Workflow):**
 ```
@@ -631,6 +631,11 @@ file[1]: <binary data - document.pdf>
 }
 ```
 
+**Important:**
+- `encrypted_content` is a base64-encoded `byte[]` payload
+- `iv` must be 12 bytes after base64 decoding
+- `auth_tag` must be 16 bytes after base64 decoding
+
 **Response (200 OK):**
 ```json
 {
@@ -638,6 +643,7 @@ file[1]: <binary data - document.pdf>
   "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "senderId": "1fa85f64-5717-4562-b3fc-2c963f66afa0",
   "receiverId": "2fa85f64-5717-4562-b3fc-2c963f66afa1",
+  "text": null,
   "encryptedContent": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
   "iv": "MTIzNDU2Nzg5MDEy",
   "authTag": "QUJDREVGR0hJSktMTU5PUA==",
@@ -712,7 +718,7 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 6️⃣ PUT /mark-as-read
+## 5️⃣ PUT /mark-as-read
 **🔐 АВТОРИЗОВАНИЙ (тільки одержувач) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Позначення повідомлення як прочитаного
@@ -749,7 +755,7 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 7️⃣ DELETE /Attachment/{attachmentId}
+## 6️⃣ DELETE /Attachment/{attachmentId}
 **🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Soft Delete одного вкладення повідомлення
@@ -845,8 +851,7 @@ connection.on("ReceiveMessage", (message) => {
 
 connection.on("MessageUpdated", (message) => {
   console.log("MessageUpdated", message);
-  // payload fields: message.id, message.encryptedContent, message.iv, message.authTag
-  // replace message in UI store by message.id and decrypt on client
+  // replace message in UI store by message.id
 });
 
 await connection.start();
@@ -883,33 +888,9 @@ connection.on('ReceiveMessage', (args) {
 });
 
 connection.on('MessageUpdated', (args) {
-  final message = args?[0] as Map<String, dynamic>;
-  print('MessageUpdated id: ${message['id']}');
-  print('encryptedContent: ${message['encryptedContent']}');
-  print('iv: ${message['iv']}');
-  print('authTag: ${message['authTag']}');
-  // replace message in state by id and decrypt on client
+  print('MessageUpdated: ${args?[0]}');
+  // replace message in state by id
 });
-
-### Payload події MessageUpdated
-
-**Event:** `MessageUpdated(messageDto)`
-
-```json
-{
-  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
-  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "senderId": "1fa85f64-5717-4562-b3fc-2c963f66afa0",
-  "receiverId": "2fa85f64-5717-4562-b3fc-2c963f66afa1",
-  "encryptedContent": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
-  "iv": "MTIzNDU2Nzg5MDEy",
-  "authTag": "QUJDREVGR0hJSktMTU5PUA==",
-  "isRead": false,
-  "sentAt": "2026-04-18T14:35:00Z",
-  "isDeleted": false,
-  "attachments": []
-}
-```
 
 await connection.start();
 await connection.invoke('JoinConsultation', args: ['4bf57625-929f-4e12-9451-c53a40862943']);
