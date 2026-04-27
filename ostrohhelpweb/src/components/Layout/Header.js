@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Brain, ChevronDown, Moon, Sun } from "lucide-react";
+import { Brain, ChevronDown, Moon, ShieldCheck, Sun } from "lucide-react";
 import { useLanguage } from "../../App";
 
 export default function Header({
@@ -12,6 +12,7 @@ export default function Header({
   userName = "Іван П.",
   userPhotoUrl = null,
   onLogout,
+  showAdminPanel = false,
 }) {
   const { t } = useLanguage();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -59,6 +60,11 @@ export default function Header({
   const handleOpenMyQuestionnaires = () => {
     setIsQuestionnairesMenuOpen(false);
     onNavigate("myQuestionnaires");
+  };
+
+  const handleOpenAdminPanel = () => {
+    setIsProfileMenuOpen(false);
+    onNavigate("admin");
   };
 
   return (
@@ -183,6 +189,16 @@ export default function Header({
                 >
                   {t("profile")}
                 </button>
+                {showAdminPanel && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAdminPanel}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 inline-flex items-center gap-2"
+                  >
+                    <ShieldCheck size={14} />
+                    <span>{t("adminPanel")}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {

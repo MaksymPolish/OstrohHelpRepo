@@ -18,8 +18,10 @@ import HomePageClean from "./pages/HomePageClean";
 import QuestionnairesPage from "./pages/QuestionnairesPage";
 import MyQuestionnairesPage from "./pages/MyQuestionnairesPage";
 import ConsultationsPage from "./pages/ConsultationsPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import { hasAdminPanelAccess } from "./utils/access";
 
 // Create Language Context
 export const LanguageContext = createContext();
@@ -101,11 +103,13 @@ const normalizeSessionUser = (userData) => {
     department: pickFirst(userData.department, userData.Department, nestedUser.department, nestedUser.Department),
     course: courseValue,
     enrollmentYear: pickFirst(userData.enrollmentYear, userData.EnrollmentYear, nestedUser.enrollmentYear, nestedUser.EnrollmentYear),
-    roleId: pickFirst(userData.roleId, userData.RoleId, nestedUser.roleId, nestedUser.RoleId),
-    roleName: pickFirst(userData.roleName, userData.RoleName, nestedUser.roleName, nestedUser.RoleName),
+    roleId: pickFirst(userData.roleId, userData.RoleId, userData.role_id, userData.Role_ID, nestedUser.roleId, nestedUser.RoleId, nestedUser.role_id, nestedUser.Role_ID),
+    roleName: pickFirst(userData.roleName, userData.RoleName, userData.role_name, userData.Role_Name, nestedUser.roleName, nestedUser.RoleName, nestedUser.role_name, nestedUser.Role_Name),
     expiresAt: pickFirst(userData.expiresAt, userData.ExpiresAt, nestedUser.expiresAt, nestedUser.ExpiresAt),
   };
 };
+
+const isAdminRouteUser = (user) => hasAdminPanelAccess(user);
 
 // Wrapper to update currentView based on route
 function AppContent() {
@@ -153,6 +157,8 @@ function AppContent() {
     { id: "profile", label: t("profile"), icon: User },
   ], [t]);
 
+  const showAdminPanel = useMemo(() => isAdminRouteUser(currentUser), [currentUser]);
+
   // Update currentView when route changes
   useEffect(() => {
     const pathMap = {
@@ -162,6 +168,7 @@ function AppContent() {
       "/questionnaires": "questionnaires",
       "/my-questionnaires": "questionnaires",
       "/profile": "profile",
+      "/admin": "admin",
     };
     
     const matchedView = pathMap[location.pathname] || "";
@@ -297,6 +304,7 @@ function AppContent() {
       questionnaires: "/questionnaires",
       myQuestionnaires: "/my-questionnaires",
       profile: "/profile",
+      admin: "/admin",
     };
     navigate(routeMap[viewId] || "/");
   };
@@ -369,6 +377,7 @@ function AppContent() {
               userInitial={userInitial}
               userName={userDisplayName}
               userPhotoUrl={currentUser?.photoUrl || null}
+              showAdminPanel={showAdminPanel}
             />
 
             <div className="flex flex-1 overflow-hidden relative">
@@ -395,6 +404,8 @@ function AppContent() {
                         return <ConsultationsPage />;
                       case "/profile":
                         return <ProfilePage />;
+                      case "/admin":
+                        return <AdminPanelPage />;
                       default:
                         return <NotFoundPage />;
                     }

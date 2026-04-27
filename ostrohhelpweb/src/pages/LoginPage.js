@@ -92,8 +92,8 @@ export default function LoginPage({ onLoginSuccess }) {
         department: authData.department || authData.Department || null,
         course: authData.course ?? authData.Course ?? null,
         enrollmentYear: authData.enrollmentYear || authData.EnrollmentYear || null,
-        roleId: authData.roleId,
-        roleName: authData.roleName || null,
+          roleId: authData.roleId || authData.RoleId || authData.role_id || authData.Role_ID || null,
+          roleName: authData.roleName || authData.RoleName || authData.role_name || authData.Role_Name || null,
         expiresAt: authData.expiresAt,
       })
     );

@@ -4,6 +4,14 @@ import Card from "../components/Common/Card";
 import Badge from "../components/Common/Badge";
 import { useLanguage, useSecurity } from "../App";
 
+const normalizeRoleToken = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+};
+
 export default function ProfilePage() {
   const { language, setLanguage, t } = useLanguage();
   const { currentUser, handleLogout } = useSecurity();
@@ -13,7 +21,8 @@ export default function ProfilePage() {
   const fullNameParts = resolvedFullName.trim().split(/\s+/).filter(Boolean);
   const firstNameFromSession = fullNameParts[0] || "Користувач";
   const lastNameFromSession = fullNameParts.slice(1).join(" ") || "-";
-  const roleLabel = currentUser?.roleName || t("student");
+  const roleId = normalizeRoleToken(currentUser?.roleId || currentUser?.RoleId || currentUser?.role_id || currentUser?.Role_ID);
+  const roleLabel = currentUser?.roleName || currentUser?.RoleName || currentUser?.role_name || currentUser?.Role_Name || (roleId === "000000000002" ? t("clinicalPsychologist") : roleId === "000000000003" ? (language === "uk" ? "Керівник служби" : "Service head") : t("student"));
   const departmentLabel = currentUser?.department || currentUser?.faculty || (language === "uk" ? "Не вказано" : "Not specified");
 
   const profileData = {
