@@ -369,18 +369,6 @@ public class MessageController : ControllerBase
         );
     }
     
-    //Read
-    [HttpPut("mark-as-read")]
-    public async Task<IActionResult> Read([FromBody] MarkMessageAsReadCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-
-        return result.Match<IActionResult>(
-            message => CreatedAtAction(nameof(Read), new { id = message.Id }, message),
-            errors => BadRequest(new {Error = errors.Message})
-        );
-    }
-
     /// <summary>
     /// Soft delete an attachment - clears its data and marks as deleted.
     /// File remains on Cloudinary but is hidden from users.

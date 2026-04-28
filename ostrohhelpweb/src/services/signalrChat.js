@@ -10,6 +10,7 @@ let connection = null;
 let connectionPromise = null;
 const messageSubscribers = new Set();
 const messageUpdatedSubscribers = new Set();
+const messageReadSubscribers = new Set();
 const keySubscribers = new Set();
 const presenceSubscribers = new Set();
 const onlineUserIds = new Set();
@@ -42,6 +43,16 @@ const dispatchIncomingMessage = (payload) => {
 
 const dispatchMessageUpdated = (payload) => {
   for (const subscriber of messageUpdatedSubscribers) {
+    try {
+      subscriber(payload);
+    } catch {
+      // Ignore subscriber errors to keep SignalR stream alive.
+    }
+  }
+};
+
+const dispatchMessageRead = (payload) => {
+  for (const subscriber of messageReadSubscribers) {
     try {
       subscriber(payload);
     } catch {
@@ -105,6 +116,18 @@ const buildConnection = () => {
     dispatchMessageUpdated(message);
   });
 
+  hubConnection.on("MessageRead", (payload) => {
+    dispatchMessageRead(payload);
+  });
+
+  hubConnection.on("ReceiveMarkedAsRead", (payload) => {
+    dispatchMessageRead(payload);
+  });
+
+  hubConnection.on("ReceiveMessageRead", (payload) => {
+    dispatchMessageRead(payload);
+  });
+
   hubConnection.on("ReceiveConsultationKey", (payload) => {
     dispatchConsultationKey(payload);
   });
@@ -161,6 +184,13 @@ export const subscribeToMessageUpdates = (handler) => {
   };
 };
 
+export const subscribeToMessageReadUpdates = (handler) => {
+  messageReadSubscribers.add(handler);
+  return () => {
+    messageReadSubscribers.delete(handler);
+  };
+};
+
 export const subscribeToConsultationKeys = (handler) => {
   keySubscribers.add(handler);
   return () => {
@@ -203,6 +233,18 @@ export const leaveConsultationRoom = async (consultationId) => {
 
   const hub = await ensureConnection();
   await hub.invoke("LeaveConsultation", String(consultationId));
+};
+
+export const markMessageAsRead = async (messageId, consultationId) => {
+  const normalizedMessageId = typeof messageId === "string" || typeof messageId === "number" ? String(messageId).trim() : "";
+  const normalizedConsultationId = typeof consultationId === "string" || typeof consultationId === "number" ? String(consultationId).trim() : "";
+
+  if (!normalizedMessageId || !normalizedConsultationId) {
+    return;
+  }
+
+  const hub = await ensureConnection();
+  await hub.invoke("MarkAsRead", normalizedMessageId, normalizedConsultationId);
 };
 
 export const stopChatConnection = async () => {

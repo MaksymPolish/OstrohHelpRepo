@@ -11,7 +11,7 @@ public class Message
     public Guid SenderId { get; set; }
     public Guid ReceiverId { get; set; }
     
-    // Legacy: kept for backward compatibility, will be removed in Phase 3
+    // Legacy: kept for backward compatibility
     public string? Text { get; set; }
     
     // Encryption fields (Phase 2)

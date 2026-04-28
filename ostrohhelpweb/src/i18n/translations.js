@@ -55,6 +55,9 @@ const translations = {
     messagePlaceholder: "Напишіть повідомлення...",
     send: "Надіслати",
     attach: "Прикріпити",
+    messageDeleted: "Повідомлення видалено",
+    messageRead: "Прочитано",
+    unreadMessages: "Непрочитані",
     
     // Questionnaires Page
     emotionalState: "Оцінка вашого емоційного стану",
@@ -223,6 +226,9 @@ const translations = {
     messagePlaceholder: "Type a message...",
     send: "Send",
     attach: "Attach",
+    messageDeleted: "Message deleted",
+    messageRead: "Read",
+    unreadMessages: "Unread",
     
     // Questionnaires Page
     emotionalState: "Assess Your Emotional State",

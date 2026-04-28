@@ -1,8 +1,6 @@
 namespace Application.Messages.Dtos;
 
-/// <summary>
 /// DTO for tracking batch upload progress in real-time (e.g., via SignalR)
-/// </summary>
 public class BatchUploadProgressDto
 {
     public Guid BatchId { get; set; }

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Send, Activity, Pencil, Trash2, X, Check } from "lucide-react";
+import { Send, Activity, Pencil, Trash2, X, Check, CheckCheck, MailWarning } from "lucide-react";
+import { ImCheckmark, ImCheckmark2 } from "react-icons/im";
 import Button from "../components/Common/Button";
 import FilePickerPopover from "../components/Common/FilePickerPopover";
 import { useLanguage, usePresence, useSecurity } from "../App";
@@ -14,8 +15,10 @@ import {
 import {
   joinConsultationRoom,
   leaveConsultationRoom,
+  markMessageAsRead,
   subscribeToConsultationKeys,
   subscribeToIncomingMessages,
+  subscribeToMessageReadUpdates,
   subscribeToMessageUpdates,
 } from "../services/signalrChat";
 import { decryptMessage, encryptMessage } from "../services/encryptionService";
@@ -146,9 +149,23 @@ const getFileNameFromUrl = (url) => {
   }
 };
 
+const isDeletedMessagePlaceholder = (value) => {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  return normalizedValue === "message was deleted by user" || normalizedValue === "attachment was deleted by user";
+};
+
 const MessageAttachment = ({ url, isMine }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+
+  if (isDeletedMessagePlaceholder(url)) {
+    return null;
+  }
+
   const fileName = getFileNameFromUrl(url);
 
   if (!url || typeof url !== "string") {
@@ -286,6 +303,10 @@ const normalizeMessage = (item) => {
     attachments.push(item.FileUrl);
   }
 
+  const filteredAttachments = attachments.filter(
+    (entry) => typeof entry === "string" && entry.trim() && !isDeletedMessagePlaceholder(entry)
+  );
+
   const fallbackMessageId = [
     readFirstDefined(item?.createdAt, item?.CreatedAt, Date.now()),
     readFirstDefined(item?.senderId, item?.SenderId, "sender"),
@@ -295,8 +316,13 @@ const normalizeMessage = (item) => {
   return {
     id: normalizeId(readFirstDefined(item?.id, item?.Id)) || fallbackMessageId,
     senderId: normalizeId(readFirstDefined(item?.senderId, item?.SenderId)),
+    receiverId: normalizeId(readFirstDefined(item?.receiverId, item?.ReceiverId)),
     consultationId: normalizeId(readFirstDefined(item?.consultationId, item?.ConsultationId)),
-    content: readFirstDefined(item?.content, item?.Content, item?.text, item?.Text, item?.message, item?.Message) || "",
+    content: (() => {
+      const rawContent = readFirstDefined(item?.content, item?.Content, item?.text, item?.Text, item?.message, item?.Message) || "";
+
+      return isDeletedMessagePlaceholder(rawContent) ? "" : rawContent;
+    })(),
     isDeleted: Boolean(
       readFirstDefined(
         item?.is_deleted,
@@ -309,8 +335,9 @@ const normalizeMessage = (item) => {
     encryptedContent: readFirstDefined(item?.encryptedContent, item?.EncryptedContent) || null,
     iv: readFirstDefined(item?.iv, item?.Iv) || null,
     authTag: readFirstDefined(item?.authTag, item?.AuthTag) || null,
+    isRead: Boolean(readFirstDefined(item?.isRead, item?.IsRead)),
     createdAt: readFirstDefined(item?.sentAt, item?.SentAt, item?.createdAt, item?.CreatedAt) || null,
-    attachments: [...new Set(attachments.filter((entry) => typeof entry === "string" && entry.trim()))],
+    attachments: [...new Set(filteredAttachments)],
   };
 };
 
@@ -379,6 +406,7 @@ export default function ConsultationsPage() {
   const { isUserOnline } = usePresence();
   const [msg, setMsg] = useState("");
   const [consultations, setConsultations] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [selectedConsultationId, setSelectedConsultationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [decryptedMessages, setDecryptedMessages] = useState([]);
@@ -390,6 +418,7 @@ export default function ConsultationsPage() {
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [keyVersion, setKeyVersion] = useState(0);
+  const pendingReadMarksRef = useRef(new Set());
   
   const [error, setError] = useState("");
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -448,6 +477,10 @@ export default function ConsultationsPage() {
 
   const selectedPeer = resolvePeer(selectedConsultation);
   const isSelectedPeerOnline = Boolean(selectedPeer.id && isUserOnline(selectedPeer.id));
+  const isCurrentUserRecipient = useCallback(
+    (messageItem) => idsEqual(messageItem?.receiverId, normalizedCurrentUserId),
+    [normalizedCurrentUserId]
+  );
 
   const formatMessageTime = (value) => {
     if (!value) {
@@ -560,6 +593,30 @@ export default function ConsultationsPage() {
     });
   };
 
+  const markMessageLocallyAsRead = useCallback((messageId) => {
+    const normalizedMessageId = normalizeId(messageId);
+    if (!normalizedMessageId) {
+      return;
+    }
+
+    setMessages((prevMessages) =>
+      prevMessages.map((messageItem) => {
+        if (!idsEqual(messageItem.id, normalizedMessageId)) {
+          return messageItem;
+        }
+
+        if (messageItem.isRead) {
+          return messageItem;
+        }
+
+        return {
+          ...messageItem,
+          isRead: true,
+        };
+      })
+    );
+  }, []);
+
   useEffect(() => {
     const loadConsultations = async () => {
       if (!currentUser?.id) {
@@ -575,6 +632,15 @@ export default function ConsultationsPage() {
           .filter((item) => item.id);
 
         setConsultations(normalizedConsultations);
+        setUnreadCounts((prev) => {
+          const next = { ...prev };
+          for (const c of normalizedConsultations) {
+            if (!next[c.id]) {
+              next[c.id] = 0;
+            }
+          }
+          return next;
+        });
         if (normalizedConsultations.length > 0) {
           setSelectedConsultationId((prevId) => prevId || normalizedConsultations[0].id);
         }
@@ -600,7 +666,10 @@ export default function ConsultationsPage() {
       setError("");
       try {
         const response = await getConsultationMessages(selectedConsultationId);
-        setMessages(sortMessagesOldToNew((response || []).map(normalizeMessage)));
+        const normalized = sortMessagesOldToNew((response || []).map(normalizeMessage));
+        setMessages(normalized);
+        // resetting unread counter for opened consultation immediately
+        setUnreadCounts((prev) => ({ ...prev, [selectedConsultationId]: 0 }));
       } catch {
         setError("Не вдалося завантажити повідомлення.");
       } finally {
@@ -653,6 +722,13 @@ export default function ConsultationsPage() {
       );
 
       if (String(incomingConsultationId || "") !== String(selectedConsultationId)) {
+        // increment unread count for other consultations
+        if (incomingConsultationId) {
+          setUnreadCounts((prev) => {
+            const current = prev?.[incomingConsultationId] || 0;
+            return { ...prev, [incomingConsultationId]: current + 1 };
+          });
+        }
         return;
       }
 
@@ -663,6 +739,76 @@ export default function ConsultationsPage() {
       unsubscribe();
     };
   }, [selectedConsultationId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMessageReadUpdates((payload) => {
+        const messageId = normalizeId(
+          readFirstDefined(payload?.messageId, payload?.MessageId, payload?.id, payload?.Id)
+        );
+
+        const consultationId = normalizeId(
+          readFirstDefined(payload?.consultationId, payload?.ConsultationId, payload?.conversationId)
+        );
+
+        if (!messageId) {
+          return;
+        }
+
+        markMessageLocallyAsRead(messageId);
+        pendingReadMarksRef.current.delete(messageId);
+
+        // decrement unread counter for the consultation if present
+        const targetConsultation =
+          consultationId ||
+          (messages.find((m) => idsEqual(m.id, messageId)) || decryptedMessages.find((m) => idsEqual(m.id, messageId)))?.consultationId ||
+          null;
+
+        if (targetConsultation) {
+          setUnreadCounts((prev) => {
+            const current = prev?.[targetConsultation] || 0;
+            const next = Math.max(0, current - 1);
+            if (next === current) return prev;
+            return { ...prev, [targetConsultation]: next };
+          });
+        }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [markMessageLocallyAsRead, messages, decryptedMessages]);
+
+  useEffect(() => {
+    if (!selectedConsultationId || !normalizedCurrentUserId || decryptedMessages.length === 0) {
+      return;
+    }
+
+    const unreadIncomingMessages = decryptedMessages.filter(
+      (messageItem) =>
+        messageItem?.id &&
+        !messageItem.isDeleted &&
+        !messageItem.isRead &&
+        isCurrentUserRecipient(messageItem)
+    );
+
+    if (unreadIncomingMessages.length === 0) {
+      return;
+    }
+
+    unreadIncomingMessages.forEach((messageItem) => {
+      const messageId = normalizeId(messageItem.id);
+      if (!messageId || pendingReadMarksRef.current.has(messageId)) {
+        return;
+      }
+
+      pendingReadMarksRef.current.add(messageId);
+      markMessageAsRead(messageId, selectedConsultationId).catch(() => {
+        pendingReadMarksRef.current.delete(messageId);
+      });
+    });
+    // reset unread count locally for the opened consultation
+    setUnreadCounts((prev) => ({ ...prev, [selectedConsultationId]: 0 }));
+  }, [decryptedMessages, normalizedCurrentUserId, selectedConsultationId, isCurrentUserRecipient]);
 
   useEffect(() => {
     let isMounted = true;
@@ -811,7 +957,8 @@ export default function ConsultationsPage() {
     setIsSending(true);
     setError("");
     try {
-      const encryptedPayload = await encryptMessage(text || "attachment", consultationKey);
+      //send before upload to ensure messageId for file attachments, then update message with file links in next step
+      const encryptedPayload = await encryptMessage(text || "⠀", consultationKey);
 
       if (isEditMode) {
         const updatedMessage = await editConsultationMessage({
@@ -1009,7 +1156,15 @@ export default function ConsultationsPage() {
                 <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between items-center mb-0.5">
                     <h4 className="font-medium text-slate-900 dark:text-white truncate">{peer.name}</h4>
-                    <span className="text-xs text-slate-500">{formatMessageTime(consultation.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      {((unreadCounts && unreadCounts[consultation.id]) || 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-200">
+                          <MailWarning size={11} />
+                          {unreadCounts[consultation.id]}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-500">{formatMessageTime(consultation.createdAt)}</span>
+                    </div>
                   </div>
                   <p className="text-sm text-slate-500 truncate">{consultation.statusName || "Активний чат"}</p>
                 </div>
@@ -1089,10 +1244,10 @@ export default function ConsultationsPage() {
 
                 <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] rounded-2xl px-5 py-3 ${
+                    className={`max-w-[75%] relative rounded-2xl px-5 py-3 ${
                       isMine
                         ? "bg-blue-600 text-white rounded-br-sm shadow-sm"
-                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-bl-sm shadow-sm"
+                        : "bg-[#a4a6a7] dark:bg-slate-800 text-white dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-bl-sm shadow-sm"
                     }`}
                   >
                     {isEditingThisMessage && isMine ? (
@@ -1106,7 +1261,13 @@ export default function ConsultationsPage() {
                       />
                     ) : (
                       <>
-                        {m.content && <p>{m.content}</p>}
+                        {m.isDeleted ? (
+                          <p className={`text-sm italic ${isMine ? "text-blue-100" : "text-slate-400"}`}>
+                            {t("messageDeleted")}
+                          </p>
+                        ) : (
+                          m.content && <p>{m.content}</p>
+                        )}
 
                         {Array.isArray(m.attachments) && m.attachments.length > 0 && (
                           <div className="mt-2 space-y-2">
@@ -1131,7 +1292,7 @@ export default function ConsultationsPage() {
                               </button>
                               <button
                                 type="button"
-                                className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                                className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-white"}`}
                                 onClick={() => handleDeleteMessage(m)}
                                 disabled={isSending || isDeletingMessage}
                               >
@@ -1139,7 +1300,20 @@ export default function ConsultationsPage() {
                               </button>
                             </span>
                           )}
-                          <span className="block">{formatMessageTime(m.createdAt)}</span>
+
+                          <div className={`inline-flex items-center gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                            <span className={`${isMine ? "text-white/90" : "text-white"} flex items-center`}>
+                              {m.isRead ? <ImCheckmark size={14} /> : <ImCheckmark2 size={14} />}
+                            </span>
+                            <span className={`${isMine ? "text-blue-100" : "text-white"} text-[11px]`}>{formatMessageTime(m.createdAt)}</span>
+                          </div>
+
+                          {isMine && !m.isDeleted && m.isRead && (
+                            <span className="inline-flex items-center gap-1 block mt-0.5 text-[10px] opacity-80">
+                              <CheckCheck size={11} />
+                              {t("messageRead")}
+                            </span>
+                          )}
                         </div>
                       </>
                     )}

@@ -727,40 +727,49 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 5️⃣ PUT /mark-as-read
-**🔐 АВТОРИЗОВАНИЙ (тільки одержувач) | ⚠️ RATE LIMITED | 🔴 SECURED**
+## 5️⃣ SignalR MarkAsRead
+**🔐 АВТОРИЗОВАНИЙ (тільки одержувач)**
 
-**Описание:** Позначення повідомлення як прочитаного
+**Описание:** Позначення повідомлення як прочитаного через SignalR для миттєвого оновлення UI
+
+**Why SignalR:**
+- Оновлення йде одразу в обидва клієнти без окремого REST-запиту
+- Сервер все одно оновлює `IsRead` у БД
+- Другий учасник отримує event `MessageRead` без polling
 
 **Flow:**
 ```
-1. Клієнт надсилає messageId
+1. Клієнт викликає Hub method MarkAsRead(messageId, consultationId)
 
 2. Сервер перевіряє JWT
 
-3. Знаходить повідомлення
+3. Знаходить повідомлення та перевіряє:
+  if (msg.ReceiverId != JWT.UserId) return unauthorized
 
-4. ПЕРЕВІРЯЄ ОДЕРЖУВАЧА:
-   if (msg.ReceiverId != JWT.UserId) return 403 Forbidden
+4. Встановлює:
+  msg.IsRead = true
 
-5. Встановлює:
-   msg.IsRead = true
+5. Зберігає зміни в БД
 
-6. Зберігає в БД
-
-7. ЛОГУЄ в audit_logs: Action="MessageRead"
-
-8. Повертає 204 No Content
+6. BROADCAST у групу консультації:
+  event = "MessageRead"
 ```
 
-**Request:**
+**Hub Method:**
 ```json
 {
-  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9"
+  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
 
-**Response:** `204 No Content`
+**Broadcast (MessageRead):**
+```json
+{
+  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "timestamp": "2026-04-18T14:31:30Z"
+}
+```
 
 ---
 
@@ -2064,7 +2073,7 @@ OUTPUT: 256-bit AES-GCM ключ (Base64 encoded)
 | MessageDeleted | DELETE /Delete | Messages | {MessageId} |
 | AttachmentUploaded | POST /BatchUpload | MessageAttachments | {FileName, FileSize, Count} |
 | AttachmentDeleted | DELETE /Attachment/{id} | MessageAttachments | {AttachmentId} |
-| MessageRead | PUT /mark-as-read | Messages | {MessageId, IsRead} |
+| MessageRead | SignalR `MarkAsRead` | Messages | {MessageId, IsRead} |
 | ConsultationCreated | POST /Accept-Questionnaire | Consultations | {QuestionaryId, StudentId, PsychologistId} |
 | ConsultationUpdated | PUT /Update-Consultation | Consultations | {StatusId, ScheduledTime} |
 | UserRoleUpdated | PUT /User-Role-Update | Users | {UserId, OldRole, NewRole} |
@@ -2096,7 +2105,7 @@ CREATE TABLE audit_logs (
 |----------|-------|-------|-------|-----|
 | /api/Message/Send | POST | Configurable | Per user | За користувачем |
 | /api/Message/BatchUpload | POST | Configurable | Per user | За користувачем |
-| /api/Message/mark-as-read | PUT | Configurable | Per user | За користувачем |
+| /api/Message/mark-as-read | PUT | Removed | N/A | Use SignalR MarkAsRead |
 | /api/Message/Delete | DELETE | Configurable | Per user | За користувачем |
 | /api/Message/Attachment/{id} | DELETE | Configurable | Per user | За користувачем |
 
@@ -2146,7 +2155,7 @@ X-RateLimit-Reset: 1681234567
 | **Message** | /Send | POST | 🔐 JWT | ✅ |
 | **Message** | /Delete | DELETE | 🔐 JWT + Владелец | ✅ |
 | **Message** | /Attachment/{id} | DELETE | 🔐 JWT + Владелец | ✅ |
-| **Message** | /mark-as-read | PUT | 🔐 JWT + Одержувач | ✅ |
+| **Message** | /mark-as-read | REST removed | - | Use SignalR `MarkAsRead` |
 | **Consultation** | /Accept-Questionnaire | POST | 🔐 JWT + Role | ✅ |
 | **Consultation** | /{id} | GET | 🔐 JWT | ❌ |
 | **Consultation** | /all | GET | 🔐 JWT + Role | ❌ |

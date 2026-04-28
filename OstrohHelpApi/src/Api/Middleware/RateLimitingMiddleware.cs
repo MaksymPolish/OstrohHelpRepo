@@ -3,10 +3,8 @@ using System.Security.Claims;
 
 namespace Api.Middleware;
 
-/// <summary>
 /// Middleware for enforcing rate limiting
 /// Returns 429 Too Many Requests when user exceeds rate limit
-/// </summary>
 public class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -18,7 +16,6 @@ public class RateLimitingMiddleware
     {
         { "post/api/message/send", "SendMessage" },
         { "post/api/message/batchupload", "BatchUpload" },
-        { "put/api/message/mark-as-read", "MarkAsRead" },
         { "delete/api/message/delete", "DeleteMessage" },
         { "delete/api/message/attachment", "DeleteAttachment" },
     };
@@ -110,9 +107,7 @@ public class RateLimitingMiddleware
     }
 }
 
-/// <summary>
 /// Extension method for easy middleware registration
-/// </summary>
 public static class RateLimitingMiddlewareExtensions
 {
     public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder builder)
