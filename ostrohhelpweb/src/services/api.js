@@ -3,16 +3,10 @@ import { API_BASE_URL, ENABLE_TOKEN_REFRESH, TOKEN_REFRESH_ENDPOINT } from '../c
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 const refreshClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 let refreshRequestPromise = null;

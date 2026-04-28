@@ -148,14 +148,19 @@ export const uploadMessageFiles = async (files, options = {}) => {
       const formData = buildBatchUploadFormData(fileList, strategy);
       const response = await api.post("/Message/BatchUpload", formData, {
         params: messageId ? { messageId } : undefined,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
       });
 
       return normalizeUploadedItems(response.data);
     } catch (error) {
       lastError = error;
+      if (!error?.response) {
+        const networkError = new Error(
+          "Не вдалося завантажити файл. Сервер, ймовірно, блокує великий запит або не повертає CORS-заголовки для помилок."
+        );
+        networkError.cause = error;
+        throw networkError;
+      }
+
       if (!shouldRetryWithAnotherFieldStrategy(error)) {
         throw error;
       }

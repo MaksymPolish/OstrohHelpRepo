@@ -34,6 +34,15 @@ Authorization: Bearer <JWT_TOKEN>
 
 **Token Lifetime:** 7 днів  
 **Refresh Token:** Видається при входу
+**Request size / limits:**
+
+- The `BatchUpload` endpoint accepts multipart/form-data requests up to ~600 MB (server-side request cap set to 600 MB to allow large video uploads plus multipart overhead).
+- Application-level per-file limits still apply and are enforced after the request body is parsed:
+  - Images: 50 MB
+  - Documents: 100 MB
+  - Videos: 500 MB
+- Note: raising the request cap is applied only to this endpoint (server attribute), other endpoints keep default protections. Large uploads increase memory and network usage while the server parses the multipart body.
+
 
 ### Автентифікація Процес
 

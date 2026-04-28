@@ -66,6 +66,8 @@ public class MessageController : ControllerBase
     /// </remarks>
     [HttpPost("BatchUpload")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(629_145_600)] // 600 MB request cap to allow large video uploads plus multipart overhead
+    [RequestFormLimits(MultipartBodyLengthLimit = 629_145_600)]
     [ProducesResponseType(typeof(AddMultipleAttachmentsResponse), 200)]
     [ProducesResponseType(typeof(object), 400)]
     [ProducesResponseType(typeof(object), 401)]

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Paperclip, Send, Activity, Pencil, Trash2, X, Check } from "lucide-react";
+import { Send, Activity, Pencil, Trash2, X, Check } from "lucide-react";
 import Button from "../components/Common/Button";
+import FilePickerPopover from "../components/Common/FilePickerPopover";
 import { useLanguage, usePresence, useSecurity } from "../App";
 import {
   getConsultationMessages,
@@ -296,6 +297,15 @@ const normalizeMessage = (item) => {
     senderId: normalizeId(readFirstDefined(item?.senderId, item?.SenderId)),
     consultationId: normalizeId(readFirstDefined(item?.consultationId, item?.ConsultationId)),
     content: readFirstDefined(item?.content, item?.Content, item?.text, item?.Text, item?.message, item?.Message) || "",
+    isDeleted: Boolean(
+      readFirstDefined(
+        item?.is_deleted,
+        item?.IsDeleted,
+        item?.isDeleted,
+        item?.deleted,
+        item?.Deleted
+      )
+    ),
     encryptedContent: readFirstDefined(item?.encryptedContent, item?.EncryptedContent) || null,
     iv: readFirstDefined(item?.iv, item?.Iv) || null,
     authTag: readFirstDefined(item?.authTag, item?.AuthTag) || null,
@@ -380,12 +390,33 @@ export default function ConsultationsPage() {
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [keyVersion, setKeyVersion] = useState(0);
+  
   const [error, setError] = useState("");
   const [editingMessageId, setEditingMessageId] = useState(null);
-  const fileInputRef = useRef(null);
   const messageInputRef = useRef(null);
   const consultationKeysRef = useRef({});
 
+  const addSelectedFiles = (selectedFiles) => {
+    if (!Array.isArray(selectedFiles) || selectedFiles.length === 0) {
+      return;
+    }
+
+    setPendingFiles((prev) => {
+      const availableSlots = Math.max(0, MAX_PENDING_FILES - prev.length);
+      const nextFiles = selectedFiles.slice(0, availableSlots);
+
+      if (availableSlots <= 0) {
+        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
+        return prev;
+      }
+
+      if (selectedFiles.length > nextFiles.length) {
+        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
+      }
+
+      return [...prev, ...nextFiles];
+    });
+  };
   const normalizedCurrentUserId = useMemo(() => normalizeId(currentUser?.id), [currentUser?.id]);
 
   const selectedConsultation = useMemo(
@@ -705,34 +736,9 @@ export default function ConsultationsPage() {
     };
   }, [selectedConsultationId]);
 
-  const handlePickFiles = () => {
-    fileInputRef.current?.click();
-  };
+  
 
-  const handleFileChange = (event) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    if (selectedFiles.length === 0) {
-      return;
-    }
-
-    setPendingFiles((prev) => {
-      const availableSlots = Math.max(0, MAX_PENDING_FILES - prev.length);
-      const nextFiles = selectedFiles.slice(0, availableSlots);
-
-      if (availableSlots <= 0) {
-        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
-        return prev;
-      }
-
-      if (selectedFiles.length > nextFiles.length) {
-        setError(`Можна додати максимум ${MAX_PENDING_FILES} файлів за раз.`);
-      }
-
-      return [...prev, ...nextFiles];
-    });
-
-    event.target.value = "";
-  };
+  
 
   const removePendingFile = (fileIndex) => {
     setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndex));
@@ -1113,7 +1119,7 @@ export default function ConsultationsPage() {
                         )}
 
                         <div className={`text-[10px] mt-1 ${isMine ? "text-blue-100 text-right" : "text-slate-400"}`}>
-                          {isMine && (
+                          {isMine && !m.isDeleted && (
                             <span className="block text-[11px] mb-1">
                               <button
                                 type="button"
@@ -1180,21 +1186,7 @@ export default function ConsultationsPage() {
           )}
 
           <div className="flex items-center space-x-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
-
-            <button
-              type="button"
-              onClick={handlePickFiles}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-            >
-              <Paperclip size={20} />
-            </button>
+            <FilePickerPopover onFilesSelected={addSelectedFiles} />
 
             <textarea
               ref={messageInputRef}
