@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ostrohhelpapp/features/message/data/models/message.dart';
+import 'package:ostrohhelpapp/features/message/data/services/message_api_service.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/chat_service.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_state.dart';
@@ -26,12 +29,15 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ChatService _chatService = ChatService();
+  final MessageApiService _messageApiService = MessageApiService();
+  final ImagePicker _imagePicker = ImagePicker();
   final OnlineUsersNotifier _onlineUsersNotifier = OnlineUsersNotifier.instance;
   final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
   
   // REST API базовий URL для завантаження історії
   static const String _apiBaseUrl = 'http://10.0.2.2:5000/api';
+  static const int _maxAttachmentsPerMessage = 6;
   
   // SignalR hub URL для real-time обновлень
   final String _hubBaseUrl = 'http://10.0.2.2:5000';
@@ -49,6 +55,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   bool _otherUserTyping = false;
   bool _otherUserOnline = false;
   bool _isUploading = false;
+  final Set<String> _readMarkedMessageIds = <String>{};
   Timer? _typingTimer;
   Timer? _typingIndicatorTimer;
   bool _didInitChat = false;
@@ -248,9 +255,55 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
             _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
           });
+
+          _markAllIncomingMessagesAsRead();
           _scrollToBottom();
         }, onError: (error) {
           print('Error in messages listener: $error');
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messageRead.listen((messageId) {
+          if (!mounted) return;
+
+          final index = _messages.indexWhere((m) => m.id == messageId);
+          if (index == -1 || _messages[index].isRead) return;
+
+          setState(() {
+            _messages[index] = _messages[index].copyWith(isRead: true);
+          });
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messageUpdated.listen((message) {
+          if (!mounted) return;
+
+          final index = _messages.indexWhere((m) => m.id == message.id);
+          if (index == -1) return;
+
+          setState(() {
+            _messages[index] = message;
+          });
+          _decryptMessage(message);
+        }),
+      );
+
+      _subscriptions.add(
+        _chatService.messageDeleted.listen((messageId) {
+          if (!mounted) return;
+
+          final index = _messages.indexWhere((m) => m.id == messageId);
+          if (index == -1) return;
+
+          setState(() {
+            _messages[index] = _messages[index].copyWith(
+              isDeleted: true,
+              attachments: const [],
+            );
+            _decryptedMessages[messageId] = 'Message was deleted by user';
+          });
         }),
       );
 
@@ -315,6 +368,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       
       // КРОК 3: Приєднатись до консультації (отримати ключ)
       await _chatService.joinConsultation(widget.consultationId);
+      _markAllIncomingMessagesAsRead();
+      _scrollToBottom();
       
     } catch (e) {
       print('FATAL ERROR in _initializeChat: $e');
@@ -326,8 +381,52 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _reloadHistoryAndDecrypt() async {
+    final historyMessages = await _loadMessageHistory(widget.consultationId);
+    if (!mounted) return;
+
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(historyMessages);
+      _messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+    });
+
+    _markAllIncomingMessagesAsRead();
+    _decryptHistoricalMessages();
+    _scrollToBottom();
+  }
+
+  void _markMessageAsReadIfNeeded(Message message) {
+    if (_userId == null) return;
+
+    final isIncoming = message.senderId != _userId;
+    final canBeRead = message.receiverId == _userId;
+    if (!isIncoming || !canBeRead || message.isRead || _readMarkedMessageIds.contains(message.id)) return;
+
+    _readMarkedMessageIds.add(message.id);
+
+    _chatService.markAsRead(
+      messageId: message.id,
+      consultationId: widget.consultationId,
+    );
+  }
+
+  void _markAllIncomingMessagesAsRead() {
+    if (_userId == null) return;
+
+    for (final msg in _messages) {
+      _markMessageAsReadIfNeeded(msg);
+    }
+  }
+
   /// Дешифрувати одне повідомлення
   void _decryptMessage(Message message) {
+    if (message.isDeleted) {
+      _decryptedMessages[message.id] = 'Message was deleted by user';
+      return;
+    }
+
     if (message.encryptedContent == null || 
         message.iv == null || 
         message.authTag == null ||
@@ -368,6 +467,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     int errorCount = 0;
 
     for (final msg in _messages) {
+      if (msg.isDeleted) {
+        _decryptedMessages[msg.id] = 'Message was deleted by user';
+        continue;
+      }
+
       if (msg.encryptedContent != null && 
           msg.iv != null && 
           msg.authTag != null) {
@@ -396,6 +500,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       setState(() {});
     }
 
+    _markAllIncomingMessagesAsRead();
     print('📊 Decryption results: $successCount success, $errorCount errors');
   }
 
@@ -404,41 +509,133 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     required String filePath,
     String? caption,
   }) async {
-    // 📌 FILE UPLOAD DISABLED - Фокусуємось на SignalR текстові повідомлення
-    // Для майбутнього: реалізувати завантаження файлів через SignalR
-    if (mounted) {
+    await _uploadAndSendFiles(
+      userId: userId,
+      filePaths: [filePath],
+      caption: caption,
+    );
+  }
+
+  Future<void> _uploadAndSendFiles({
+    required String userId,
+    required List<String> filePaths,
+    String? caption,
+  }) async {
+    if (_isUploading) return;
+
+    if (filePaths.isEmpty) return;
+    if (filePaths.length > _maxAttachmentsPerMessage) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+        SnackBar(content: Text('Можна відправити максимум $_maxAttachmentsPerMessage файлів за раз')),
       );
+      return;
+    }
+
+    if (!_isConnected || _receiverId == null || _encryptionKey == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Немає з\'єднання або ключа шифрування')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final encryptedData = EncryptionService.encryptMessage(
+        plaintext: '⠀',
+        secretKey: _encryptionKey!,
+      );
+
+      final createdMessage = await _messageApiService.sendMessage(
+        consultationId: widget.consultationId,
+        receiverId: _receiverId!,
+        encryptedContent: encryptedData['encryptedContent']!,
+        iv: encryptedData['iv']!,
+        authTag: encryptedData['authTag']!,
+      );
+
+      final messageId = createdMessage['id']?.toString();
+      if (messageId == null || messageId.isEmpty) {
+        throw Exception('Не вдалося отримати id повідомлення для аттачментів');
+      }
+
+      await _messageApiService.batchUpload(
+        filePaths: filePaths,
+        messageId: messageId,
+      );
+
+      _controller.clear();
+      await _reloadHistoryAndDecrypt();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Помилка відправки файлів: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
   Future<void> _pickImageFromGallery(String userId) async {
-    // 📌 FILE PICKER DISABLED
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+    final files = await _imagePicker.pickMultiImage(imageQuality: 85);
+    if (files.isEmpty) return;
+
+    await _uploadAndSendFiles(
+      userId: userId,
+      filePaths: files.map((f) => f.path).toList(),
     );
   }
 
   Future<void> _pickImageFromCamera(String userId) async {
-    // 📌 FILE PICKER DISABLED
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+    final file = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (file == null) return;
+
+    await _uploadAndSendFile(
+      userId: userId,
+      filePath: file.path,
     );
   }
 
   Future<void> _pickFile(String userId) async {
-    // 📌 FILE PICKER DISABLED
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Завантаження файлів буде реалізовано незабаром')),
+    const mediaGroup = XTypeGroup(
+      label: 'Media',
+      extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mov', 'webm'],
+    );
+    const documentGroup = XTypeGroup(
+      label: 'Documents',
+      extensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'],
+    );
+
+    final files = await openFiles(acceptedTypeGroups: [mediaGroup, documentGroup]);
+    if (files.isEmpty) return;
+
+    await _uploadAndSendFiles(
+      userId: userId,
+      filePaths: files.map((f) => f.path).toList(),
     );
   }
 
   Future<void> _deleteMessage(String messageId) async {
     try {
-      await _chatService.deleteMessage(
-        messageId: messageId,
-      );
+      final deletedPayload = await _messageApiService.deleteMessage(messageId);
+      if (!mounted) return;
+
+      final index = _messages.indexWhere((m) => m.id == messageId);
+      if (index != -1) {
+        final serverDeletedMessage = deletedPayload != null ? Message.fromJson(deletedPayload) : null;
+        setState(() {
+          _messages[index] = serverDeletedMessage ?? _messages[index].copyWith(
+            isDeleted: true,
+            attachments: const [],
+          );
+          _decryptedMessages[messageId] = 'Message was deleted by user';
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Помилка видалення: $e')),
@@ -446,17 +643,113 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
-  void _showDeleteMenu(BuildContext context, String messageId) {
+  Future<void> _editMessage(Message message) async {
+    if (message.isDeleted || message.senderId != _userId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Можна редагувати лише власні активні повідомлення')),
+      );
+      return;
+    }
+
+    final currentText = (_decryptedMessages[message.id] ?? message.text ?? '').trim();
+    final controller = TextEditingController(text: currentText);
+
+    final editedText = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Редагувати повідомлення'),
+          content: TextField(
+            controller: controller,
+            minLines: 1,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: 'Новий текст повідомлення',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Скасувати'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('Зберегти'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) return;
+
+    if (editedText == null || editedText.isEmpty || editedText == currentText) {
+      return;
+    }
+
+    if (_encryptionKey == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ключ шифрування не отриманий')),
+      );
+      return;
+    }
+
+    try {
+      final encryptedData = EncryptionService.encryptMessage(
+        plaintext: editedText,
+        secretKey: _encryptionKey!,
+      );
+
+      final updatedMessage = await _messageApiService.editMessage(
+        messageId: message.id,
+        encryptedContent: encryptedData['encryptedContent']!,
+        iv: encryptedData['iv']!,
+        authTag: encryptedData['authTag']!,
+      );
+
+      final parsed = Message.fromJson(updatedMessage);
+      if (!mounted) return;
+
+      final index = _messages.indexWhere((m) => m.id == parsed.id);
+      if (index != -1) {
+        setState(() {
+          _messages[index] = parsed;
+          _decryptedMessages[parsed.id] = editedText;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Помилка редагування: $e')),
+      );
+    }
+  }
+
+  void _showMessageActions(BuildContext context, Message message) {
+    if (message.senderId != _userId || message.isDeleted) return;
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
-        child: ListTile(
-          leading: const Icon(Icons.delete, color: Colors.red),
-          title: const Text('Видалити'),
-          onTap: () {
-            Navigator.pop(ctx);
-            _deleteMessage(messageId);
-          },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Редагувати'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _editMessage(message);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Видалити'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteMessage(message.id);
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -572,6 +865,32 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   String _formatTime(DateTime value) {
     return DateFormat('HH:mm').format(value.toLocal());
+  }
+
+  String _formatDaySeparator(DateTime value) {
+    final local = value.toLocal();
+    try {
+      return DateFormat("d MMMM yyyy 'р.'", 'uk_UA').format(local);
+    } catch (_) {
+      return DateFormat('dd.MM.yyyy').format(local);
+    }
+  }
+
+  List<Object> _buildChatItemsWithSeparators() {
+    final items = <Object>[];
+    DateTime? lastDay;
+
+    for (final msg in _messages) {
+      final local = msg.sentAt.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
+      if (lastDay == null || lastDay != day) {
+        items.add(day);
+        lastDay = day;
+      }
+      items.add(msg);
+    }
+
+    return items;
   }
 
   bool _isImageUrl(String url) {
@@ -760,6 +1079,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               _initializeChat(userId);
             });
           }
+          final chatItems = _buildChatItemsWithSeparators();
           return Column(
             children: [
               Expanded(
@@ -773,25 +1093,49 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         controller: _scrollController,
                         reverse: false,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                        itemCount: _messages.length,
+                        itemCount: chatItems.length,
                         itemBuilder: (context, index) {
-                          final msg = _messages[index];
+                          final item = chatItems[index];
+                          if (item is DateTime) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Divider(thickness: 0.8)),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text(
+                                      _formatDaySeparator(item),
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurface.withOpacity(0.55),
+                                      ),
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider(thickness: 0.8)),
+                                ],
+                              ),
+                            );
+                          }
+
+                          final msg = item as Message;
                           final isMe = msg.senderId == _userId;
                           final bubbleColor = isMe
                               ? colorScheme.primary.withOpacity(0.18)
                               : colorScheme.surface;
                           final textColor = colorScheme.onSurface;
-                          final attachments = msg.getMediaPaths();
+                            final attachments = msg.isDeleted ? const <String>[] : msg.getMediaPaths();
 
                           // Text selection for display:
                           // 1. Якщо є дешифрований текст в _decryptedMessages - показуємо його
                           // 2. Якщо є старий text поле (для сумісності) - показуємо його
                           // 3. Інакше - текст недоступний
-                          final displayText = _decryptedMessages[msg.id] ?? 
-                                              (msg.text?.isNotEmpty ?? false ? msg.text : null);
+                          final displayText = msg.isDeleted
+                              ? 'Message was deleted by user'
+                              : (_decryptedMessages[msg.id] ??
+                                  (msg.text?.isNotEmpty ?? false ? msg.text : null));
 
                           return GestureDetector(
-                            onLongPress: () => _showDeleteMenu(context, msg.id),
+                            onLongPress: isMe && !msg.isDeleted ? () => _showMessageActions(context, msg) : null,
                             child: Align(
                               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                               child: ConstrainedBox(
@@ -819,7 +1163,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                                           displayText ?? '',
                                           style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
                                         ),
-                                      if (attachments.isNotEmpty) ...[
+                                      if (!msg.isDeleted && attachments.isNotEmpty) ...[
                                         if ((displayText?.trim() ?? '').isNotEmpty) const SizedBox(height: 10),
                                         ...attachments.map((url) => Padding(
                                               padding: const EdgeInsets.only(bottom: 8),
@@ -827,11 +1171,26 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                                             )),
                                       ],
                                       const SizedBox(height: 6),
-                                      Text(
-                                        _formatTime(msg.sentAt),
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: textColor.withOpacity(0.6),
-                                        ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _formatTime(msg.sentAt),
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: textColor.withOpacity(0.6),
+                                            ),
+                                          ),
+                                          if (isMe) ...[
+                                            const SizedBox(width: 6),
+                                            Icon(
+                                              msg.isRead ? Icons.done_all : Icons.done,
+                                              size: 16,
+                                              color: msg.isRead
+                                                  ? Colors.lightBlueAccent
+                                                  : textColor.withOpacity(0.5),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -940,6 +1299,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     _onlineUsersNotifier.removeListener(_onlineUsersListener);
     _typingTimer?.cancel();
     _typingIndicatorTimer?.cancel();
+    _readMarkedMessageIds.clear();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }

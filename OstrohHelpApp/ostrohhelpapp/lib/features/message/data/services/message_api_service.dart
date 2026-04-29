@@ -205,7 +205,7 @@ class MessageApiService {
     throw Exception('Unexpected add attachment response');
   }
 
-  Future<void> deleteMessage(String messageId) async {
+  Future<Map<String, dynamic>?> deleteMessage(String messageId) async {
     final headers = await _getHeaders();
     
     final response = await http.delete(
@@ -219,11 +219,65 @@ class MessageApiService {
       throw Exception('Rate limit exceeded. Please try again later.');
     }
 
-    if (response.statusCode != 204 && response.statusCode != 200) {
+    if (response.statusCode != 204 && response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(
         'Failed to delete message (status: ${response.statusCode}): ${response.body}',
       );
     }
+
+    if (response.body.isEmpty) {
+      return null;
+    }
+
+    try {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> editMessage({
+    required String messageId,
+    required String encryptedContent,
+    required String iv,
+    required String authTag,
+  }) async {
+    final headers = await _getHeaders();
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/Message/EditMessage'),
+      headers: headers,
+      body: json.encode({
+        'id': messageId,
+        'encrypted_content': encryptedContent,
+        'iv': iv,
+        'auth_tag': authTag,
+      }),
+    );
+
+    if (response.statusCode == 429) {
+      throw Exception('Rate limit exceeded. Please try again later.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Failed to edit message (status: ${response.statusCode}): ${response.body}',
+      );
+    }
+
+    if (response.body.isEmpty) {
+      throw Exception('Edit message returned empty body');
+    }
+
+    final data = json.decode(response.body);
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    throw Exception('Unexpected edit message response');
   }
 
   Future<void> markAsRead(String messageId) async {

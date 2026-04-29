@@ -40,6 +40,7 @@ class ChatService {
   final _typingController = StreamController<String>.broadcast();
   final _messageReadController = StreamController<String>.broadcast();
   final _messageDeletedController = StreamController<String>.broadcast();
+  final _messageUpdatedController = StreamController<Message>.broadcast();
   final _userOnlineController = StreamController<UserOnlineEvent>.broadcast();
   final _messagesLoadedController = StreamController<List<Message>>.broadcast();
   final _connectionStateController = StreamController<HubConnectionState>.broadcast();
@@ -50,6 +51,7 @@ class ChatService {
   Stream<String> get typingUsers => _typingController.stream;
   Stream<String> get messageRead => _messageReadController.stream;
   Stream<String> get messageDeleted => _messageDeletedController.stream;
+  Stream<Message> get messageUpdated => _messageUpdatedController.stream;
   Stream<UserOnlineEvent> get userOnline => _userOnlineController.stream;
   Stream<List<Message>> get messagesLoaded => _messagesLoadedController.stream;
   Stream<HubConnectionState> get connectionState => _connectionStateController.stream;
@@ -189,6 +191,31 @@ class ChatService {
     _hubConnection!.on('ReceiveNewMessage', handleReceiveMessage);
     _hubConnection!.on('MessageReceived', handleReceiveMessage);
 
+    void handleMessageUpdated(List<Object?>? arguments) {
+      print('📨 [MessageUpdated] evento received');
+      if (arguments == null || arguments.isEmpty) return;
+      try {
+        final raw = arguments[0];
+        if (raw is! Map) {
+          print('   ❌ Invalid updated message payload type: ${raw.runtimeType}');
+          return;
+        }
+
+        final messageJson = raw.map((key, value) => MapEntry(key.toString(), value));
+        final message = Message.fromJson(messageJson);
+        if (message.id.isEmpty) return;
+        _messageUpdatedController.add(message);
+        print('   ✅ Updated message added');
+      } catch (e) {
+        print('   ❌ Error parsing MessageUpdated: $e');
+        _errorController.add('Error parsing MessageUpdated: $e');
+      }
+    }
+
+    _hubConnection!.on('MessageUpdated', handleMessageUpdated);
+    _hubConnection!.on('ReceiveUpdatedMessage', handleMessageUpdated);
+    _hubConnection!.on('MessageEdited', handleMessageUpdated);
+
     // Keep old event for compatibility (legacy)
     _hubConnection!.on('LoadMessagesResult', (arguments) {
       print('📨 [LoadMessagesResult] evento received');
@@ -283,23 +310,35 @@ class ChatService {
       }
     });
 
-    _hubConnection!.on('MessageRead', (arguments) {
+    void handleMessageRead(List<Object?>? arguments) {
       print('📨 [MessageRead] evento received');
-      if (arguments != null && arguments.isNotEmpty) {
-        try {
-          final data = arguments[0] as Map<String, dynamic>;
-          final messageId = data['MessageId']?.toString();
-          print('   messageId: $messageId');
-          if (messageId != null) {
-            _messageReadController.add(messageId);
-            print('   ✅ Message read event added');
+      if (arguments == null || arguments.isEmpty) return;
+      try {
+        String messageId = '';
+
+        if (arguments[0] is String) {
+          messageId = arguments[0]?.toString() ?? '';
+        } else {
+          final raw = arguments[0];
+          if (raw is Map) {
+            final data = raw.map((k, v) => MapEntry(k.toString(), v));
+            messageId = data['messageId']?.toString() ?? data['MessageId']?.toString() ?? '';
           }
-        } catch (e) {
-          print('   ❌ Error parsing MessageRead: $e');
-          _errorController.add('Error parsing MessageRead: $e');
         }
+
+        print('   messageId: $messageId');
+        if (messageId.isNotEmpty) {
+          _messageReadController.add(messageId);
+          print('   ✅ Message read event added');
+        }
+      } catch (e) {
+        print('   ❌ Error parsing MessageRead: $e');
+        _errorController.add('Error parsing MessageRead: $e');
       }
-    });
+    }
+
+    _hubConnection!.on('MessageRead', handleMessageRead);
+    _hubConnection!.on('ReceiveMarkedAsRead', handleMessageRead);
 
     _hubConnection!.on('UserTyping', (arguments) {
       print('📨 [UserTyping] evento received');
@@ -322,8 +361,16 @@ class ChatService {
       print('📨 [MessageDeleted] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
-          final data = arguments[0] as Map<String, dynamic>;
-          final messageId = data['MessageId']?.toString();
+          final raw = arguments[0];
+          String messageId = '';
+
+          if (raw is String) {
+            messageId = raw;
+          } else if (raw is Map) {
+            final data = raw.map((k, v) => MapEntry(k.toString(), v));
+            messageId = data['messageId']?.toString() ?? data['MessageId']?.toString() ?? '';
+          }
+
           print('   messageId: $messageId');
           if (messageId != null) {
             _messageDeletedController.add(messageId);
@@ -509,12 +556,29 @@ class ChatService {
     }
   }
 
+  Future<void> markAsRead({
+    required String messageId,
+    required String consultationId,
+  }) async {
+    if (!isConnected) return;
+
+    try {
+      await _hubConnection!.invoke(
+        'MarkAsRead',
+        args: [messageId, consultationId],
+      );
+    } catch (e) {
+      _errorController.add('Failed to mark message as read: $e');
+    }
+  }
+
   Future<void> dispose() async {
     await _hubConnection?.stop();
     await _messageController.close();
     await _typingController.close();
     await _messageReadController.close();
     await _messageDeletedController.close();
+    await _messageUpdatedController.close();
     await _userOnlineController.close();
     await _messagesLoadedController.close();
     await _connectionStateController.close();

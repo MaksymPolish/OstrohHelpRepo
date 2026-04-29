@@ -33,8 +33,8 @@ class EncryptionService {
   /// 256-бітний ключ = 32 байти
   static const int keyLengthBytes = 32;
 
-  /// 128-бітний IV = 16 байт (для простоти, замість 96 для GCM)
-  static const int ivLengthBytes = 16;
+  /// 96-бітний IV = 12 байт (вимога AES-GCM та серверної валідації)
+  static const int ivLengthBytes = 12;
 
   /// Генерує випадковий 256-бітний ключ
   static String generateRandomKey() {
@@ -43,7 +43,7 @@ class EncryptionService {
     return base64Encode(keyBytes);
   }
 
-  /// Генерує випадковий 128-бітний IV
+  /// Генерує випадковий 96-бітний IV
   static String _generateRandomIv() {
     final random = Random.secure();
     final ivBytes = List<int>.generate(ivLengthBytes, (i) => random.nextInt(256));

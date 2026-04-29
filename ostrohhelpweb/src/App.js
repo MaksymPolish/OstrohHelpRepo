@@ -21,6 +21,9 @@ import ConsultationsPage from "./pages/ConsultationsPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import CookiePolicy from "./pages/CookiePolicy";
 import { hasAdminPanelAccess } from "./utils/access";
 
 // Create Language Context
@@ -396,6 +399,12 @@ function AppContent() {
                       case "/":
                       case "/homepage":
                         return <HomePageClean />;
+                      case "/privacy":
+                        return <PrivacyPolicy />;
+                      case "/terms":
+                        return <TermsOfUse />;
+                      case "/cookies":
+                        return <CookiePolicy />;
                       case "/questionnaires":
                         return <QuestionnairesPage />;
                       case "/my-questionnaires":

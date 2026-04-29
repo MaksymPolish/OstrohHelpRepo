@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'core/di/injection_container.dart' as di;
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -35,6 +36,9 @@ void main() async {
 
   // Initialize dependency injection
   await di.init();
+
+  // Initialize locale symbols for formatted chat date separators (uk_UA)
+  await initializeDateFormatting('uk_UA', null);
 
   await AppThemeController.instance.loadTheme();
 

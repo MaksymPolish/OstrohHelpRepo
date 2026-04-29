@@ -14,15 +14,15 @@ export default function Footer() {
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 text-slate-400">
-            <a href="/" className="hover:text-blue-400 transition-colors">
+            <a href="/privacy" className="hover:text-blue-400 transition-colors">
               {t("footerLegalPrivacy")}
             </a>
             <span className="text-slate-600">•</span>
-            <a href="/" className="hover:text-blue-400 transition-colors">
+            <a href="/terms" className="hover:text-blue-400 transition-colors">
               {t("footerLegalTerms")}
             </a>
             <span className="text-slate-600">•</span>
-            <a href="/" className="hover:text-blue-400 transition-colors">
+            <a href="/cookies" className="hover:text-blue-400 transition-colors">
               {t("footerLegalCookies")}
             </a>
             <span className="text-slate-600">•</span>
@@ -33,7 +33,7 @@ export default function Footer() {
 
           <div className="flex gap-3">
             <a
-              href="https://www.facebook.com"
+              href="https://www.facebook.com/oa.edu.ua/"
               className="text-slate-400 hover:text-blue-400 transition-colors"
               title="Facebook"
               target="_blank"
@@ -44,9 +44,9 @@ export default function Footer() {
               </svg>
             </a>
             <a
-              href="https://x.com"
+              href="https://www.instagram.com/ostrohacademy1576/"
               className="text-slate-400 hover:text-blue-400 transition-colors"
-              title="Twitter"
+              title="Instagram"
               target="_blank"
               rel="noreferrer"
             >

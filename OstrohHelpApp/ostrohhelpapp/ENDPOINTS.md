@@ -34,6 +34,12 @@ Authorization: Bearer <JWT_TOKEN>
 
 **Token Lifetime:** 7 днів  
 **Refresh Token:** Видається при входу
+**Request size / limits:**
+
+- The `BatchUpload` endpoint accepts multipart/form-data requests up to ~600 MB (server-side request cap set to 600 MB to allow large video uploads plus multipart overhead).
+- Application-level per-file limits still apply and are enforced after the request body is parsed:
+  - Images: 50 MB
+
 
 ### Автентифікація Процес
 
@@ -605,7 +611,63 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 4️⃣ DELETE /Delete
+## 4️⃣ PUT /EditMessage
+**🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
+
+**Описание:** Оновлення повідомлення з повторним клієнтським шифруванням.
+
+**Flow (Workflow):**
+```
+1. Клієнт змінює текст локально і шифрує його тим самим consultation key
+2. Надсилає message id + нові encrypted bytes (encrypted_content, iv, auth_tag)
+3. Сервер перевіряє JWT та власність повідомлення
+4. Оновлює поля Message.EncryptedContent / Message.Iv / Message.AuthTag
+5. Зберігає в БД та логує audit Action="EditMessage"
+6. Відправляє в SignalR групу подію MessageUpdated з актуальним MessageDto
+7. Повертає оновлене повідомлення
+```
+
+**Request:**
+```json
+{
+  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "encrypted_content": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
+  "iv": "MTIzNDU2Nzg5MDEy",
+  "auth_tag": "QUJDREVGR0hJSktMTU5PUA=="
+}
+```
+
+**Important:**
+- `encrypted_content` is a base64-encoded `byte[]` payload
+- `iv` must be 12 bytes after base64 decoding
+- `auth_tag` must be 16 bytes after base64 decoding
+
+**Response (200 OK):**
+```json
+{
+  "id": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "senderId": "1fa85f64-5717-4562-b3fc-2c963f66afa0",
+  "receiverId": "2fa85f64-5717-4562-b3fc-2c963f66afa1",
+  "text": null,
+  "encryptedContent": "UkUtRU5DUllQVEVEX0JBU0U2NF9DSVBIRVJURVhU",
+  "iv": "MTIzNDU2Nzg5MDEy",
+  "authTag": "QUJDREVGR0hJSktMTU5PUA==",
+  "isRead": false,
+  "sentAt": "2026-04-18T14:30:00Z",
+  "isDeleted": false
+}
+```
+
+**Помилки:**
+- `400 Bad Request` - Невалідний payload (`encrypted_content`/`iv`/`auth_tag`)
+- `401 Unauthorized` - Невалідний JWT
+- `403 Forbidden` - Не власник повідомлення
+- `404 Not Found` - Повідомлення не існує
+
+---
+
+## 5️⃣ DELETE /Delete
 **🔐 АВТОРИЗОВАНИЙ (тільки власник) | ⚠️ RATE LIMITED | 🔴 SECURED**
 
 **Описание:** Soft Delete повідомлення (видалення логічне, дані очищуються)
@@ -662,40 +724,49 @@ file[1]: <binary data - document.pdf>
 
 ---
 
-## 5️⃣ PUT /mark-as-read
-**🔐 АВТОРИЗОВАНИЙ (тільки одержувач) | ⚠️ RATE LIMITED | 🔴 SECURED**
+## 5️⃣ SignalR MarkAsRead
+**🔐 АВТОРИЗОВАНИЙ (тільки одержувач)**
 
-**Описание:** Позначення повідомлення як прочитаного
+**Описание:** Позначення повідомлення як прочитаного через SignalR для миттєвого оновлення UI
+
+**Why SignalR:**
+- Оновлення йде одразу в обидва клієнти без окремого REST-запиту
+- Сервер все одно оновлює `IsRead` у БД
+- Другий учасник отримує event `MessageRead` без polling
 
 **Flow:**
 ```
-1. Клієнт надсилає messageId
+1. Клієнт викликає Hub method MarkAsRead(messageId, consultationId)
 
 2. Сервер перевіряє JWT
 
-3. Знаходить повідомлення
+3. Знаходить повідомлення та перевіряє:
+  if (msg.ReceiverId != JWT.UserId) return unauthorized
 
-4. ПЕРЕВІРЯЄ ОДЕРЖУВАЧА:
-   if (msg.ReceiverId != JWT.UserId) return 403 Forbidden
+4. Встановлює:
+  msg.IsRead = true
 
-5. Встановлює:
-   msg.IsRead = true
+5. Зберігає зміни в БД
 
-6. Зберігає в БД
-
-7. ЛОГУЄ в audit_logs: Action="MessageRead"
-
-8. Повертає 204 No Content
+6. BROADCAST у групу консультації:
+  event = "MessageRead"
 ```
 
-**Request:**
+**Hub Method:**
 ```json
 {
-  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9"
+  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "consultationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
 
-**Response:** `204 No Content`
+**Broadcast (MessageRead):**
+```json
+{
+  "messageId": "6fa85f64-5717-4562-b3fc-2c963f66afa9",
+  "timestamp": "2026-04-18T14:31:30Z"
+}
+```
 
 ---
 
@@ -793,6 +864,11 @@ connection.on("ReceiveMessage", (message) => {
   console.log("ReceiveMessage", message);
 });
 
+connection.on("MessageUpdated", (message) => {
+  console.log("MessageUpdated", message);
+  // replace message in UI store by message.id
+});
+
 await connection.start();
 await connection.invoke("JoinConsultation", "4bf57625-929f-4e12-9451-c53a40862943");
 ```
@@ -826,18 +902,14 @@ connection.on('ReceiveMessage', (args) {
   print('ReceiveMessage: ${args?[0]}');
 });
 
+connection.on('MessageUpdated', (args) {
+  print('MessageUpdated: ${args?[0]}');
+  // replace message in state by id
+});
+
 await connection.start();
 await connection.invoke('JoinConsultation', args: ['4bf57625-929f-4e12-9451-c53a40862943']);
 ```
-
-### Flutter lifecycle рекомендація
-
-- Використовуй `ChangeNotifier` або `Bloc`, який зберігає `Set<String> onlineUserIds`.
-- Підпишися на `UserStatusChanged` і оновлюй state тільки коли статус реально змінився.
-- Реалізуй `WidgetsBindingObserver`:
-  - `paused` / `inactive` → `connection.stop()` для економії батареї.
-  - `resumed` → повторний `connection.start()` і повторний `JoinConsultation(...)`, якщо чат активний.
-- Для reconnection залишай `withAutomaticReconnect()`, але додай власний retry/try-catch на старті, щоб UI не падав на тимчасовій втраті мережі.
 
 ---
 
@@ -1998,7 +2070,7 @@ OUTPUT: 256-bit AES-GCM ключ (Base64 encoded)
 | MessageDeleted | DELETE /Delete | Messages | {MessageId} |
 | AttachmentUploaded | POST /BatchUpload | MessageAttachments | {FileName, FileSize, Count} |
 | AttachmentDeleted | DELETE /Attachment/{id} | MessageAttachments | {AttachmentId} |
-| MessageRead | PUT /mark-as-read | Messages | {MessageId, IsRead} |
+| MessageRead | SignalR `MarkAsRead` | Messages | {MessageId, IsRead} |
 | ConsultationCreated | POST /Accept-Questionnaire | Consultations | {QuestionaryId, StudentId, PsychologistId} |
 | ConsultationUpdated | PUT /Update-Consultation | Consultations | {StatusId, ScheduledTime} |
 | UserRoleUpdated | PUT /User-Role-Update | Users | {UserId, OldRole, NewRole} |
@@ -2030,7 +2102,7 @@ CREATE TABLE audit_logs (
 |----------|-------|-------|-------|-----|
 | /api/Message/Send | POST | Configurable | Per user | За користувачем |
 | /api/Message/BatchUpload | POST | Configurable | Per user | За користувачем |
-| /api/Message/mark-as-read | PUT | Configurable | Per user | За користувачем |
+| /api/Message/mark-as-read | PUT | Removed | N/A | Use SignalR MarkAsRead |
 | /api/Message/Delete | DELETE | Configurable | Per user | За користувачем |
 | /api/Message/Attachment/{id} | DELETE | Configurable | Per user | За користувачем |
 
@@ -2080,7 +2152,7 @@ X-RateLimit-Reset: 1681234567
 | **Message** | /Send | POST | 🔐 JWT | ✅ |
 | **Message** | /Delete | DELETE | 🔐 JWT + Владелец | ✅ |
 | **Message** | /Attachment/{id} | DELETE | 🔐 JWT + Владелец | ✅ |
-| **Message** | /mark-as-read | PUT | 🔐 JWT + Одержувач | ✅ |
+| **Message** | /mark-as-read | REST removed | - | Use SignalR `MarkAsRead` |
 | **Consultation** | /Accept-Questionnaire | POST | 🔐 JWT + Role | ✅ |
 | **Consultation** | /{id} | GET | 🔐 JWT | ❌ |
 | **Consultation** | /all | GET | 🔐 JWT + Role | ❌ |

@@ -19,8 +19,9 @@ export default function ProfilePage() {
 
   const resolvedFullName = currentUser?.fullName || "";
   const fullNameParts = resolvedFullName.trim().split(/\s+/).filter(Boolean);
+  // Use first token as first name and last token as surname. Any middle names/patronymics are ignored here.
   const firstNameFromSession = fullNameParts[0] || "Користувач";
-  const lastNameFromSession = fullNameParts.slice(1).join(" ") || "-";
+  const lastNameFromSession = fullNameParts.length > 1 ? fullNameParts[fullNameParts.length - 1] : "-";
   const roleId = normalizeRoleToken(currentUser?.roleId || currentUser?.RoleId || currentUser?.role_id || currentUser?.Role_ID);
   const roleLabel = currentUser?.roleName || currentUser?.RoleName || currentUser?.role_name || currentUser?.Role_Name || (roleId === "000000000002" ? t("clinicalPsychologist") : roleId === "000000000003" ? (language === "uk" ? "Керівник служби" : "Service head") : t("student"));
   const departmentLabel = currentUser?.department || currentUser?.faculty || (language === "uk" ? "Не вказано" : "Not specified");

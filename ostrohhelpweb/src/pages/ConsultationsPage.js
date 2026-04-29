@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Send, Activity, Pencil, Trash2, X, Check, CheckCheck, MailWarning } from "lucide-react";
-import { ImCheckmark, ImCheckmark2 } from "react-icons/im";
+import { Send, Activity, Pencil, Trash2, X, Check, MailWarning } from "lucide-react";
+import { IoCheckmarkDone, IoCheckmark } from "react-icons/io5";
 import Button from "../components/Common/Button";
 import FilePickerPopover from "../components/Common/FilePickerPopover";
 import { useLanguage, usePresence, useSecurity } from "../App";
@@ -30,6 +30,22 @@ const readFirstDefined = (...values) => {
     }
   }
   return null;
+};
+
+const parseBooleanLike = (value) => {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+
+    if (["true", "1", "yes", "y"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "n", ""].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return Boolean(value);
 };
 
 const normalizeId = (value) => {
@@ -335,7 +351,7 @@ const normalizeMessage = (item) => {
     encryptedContent: readFirstDefined(item?.encryptedContent, item?.EncryptedContent) || null,
     iv: readFirstDefined(item?.iv, item?.Iv) || null,
     authTag: readFirstDefined(item?.authTag, item?.AuthTag) || null,
-    isRead: Boolean(readFirstDefined(item?.isRead, item?.IsRead)),
+    isRead: parseBooleanLike(readFirstDefined(item?.isRead, item?.IsRead, item?.read, item?.Read, item?.is_read)),
     createdAt: readFirstDefined(item?.sentAt, item?.SentAt, item?.createdAt, item?.CreatedAt) || null,
     attachments: [...new Set(filteredAttachments)],
   };
@@ -1262,7 +1278,7 @@ export default function ConsultationsPage() {
                     ) : (
                       <>
                         {m.isDeleted ? (
-                          <p className={`text-sm italic ${isMine ? "text-blue-100" : "text-slate-400"}`}>
+                          <p className={`text-sm italic ${isMine ? "text-blue-100" : "text-white dark:text-slate-200"}`}>
                             {t("messageDeleted")}
                           </p>
                         ) : (
@@ -1301,18 +1317,15 @@ export default function ConsultationsPage() {
                             </span>
                           )}
 
-                          <div className={`inline-flex items-center gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                            <span className={`${isMine ? "text-white/90" : "text-white"} flex items-center`}>
-                              {m.isRead ? <ImCheckmark size={14} /> : <ImCheckmark2 size={14} />}
-                            </span>
-                            <span className={`${isMine ? "text-blue-100" : "text-white"} text-[11px]`}>{formatMessageTime(m.createdAt)}</span>
-                          </div>
-
-                          {isMine && !m.isDeleted && m.isRead && (
-                            <span className="inline-flex items-center gap-1 block mt-0.5 text-[10px] opacity-80">
-                              <CheckCheck size={11} />
-                              {t("messageRead")}
-                            </span>
+                          {isMine ? (
+                            <div className="inline-flex items-center gap-1 justify-end">
+                              <span className="text-blue-100 text-[11px]">{formatMessageTime(m.createdAt)}</span>
+                              <span className={`${m.isRead ? "text-white/90" : "text-white/80"} inline-flex items-center`}>
+                                {m.isRead ? <IoCheckmarkDone size={17} /> : <IoCheckmark size={17} />}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-white text-[11px]">{formatMessageTime(m.createdAt)}</div>
                           )}
                         </div>
                       </>
