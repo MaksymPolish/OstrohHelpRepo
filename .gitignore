@@ -54,15 +54,12 @@ OstrohHelpApp/ostrohhelpapp/ROLE_CHECKS_LIST.md
 ostrohhelpweb/ENDPOINTS.md
 
 # Web client ignores
-**/src/ostrohhelpweb/node_modules/
-**/src/ostrohhelpweb/build/
-**/src/ostrohhelpweb/dist/
-**/src/ostrohhelpweb/.env
-/ostrohhelpweb/node_modules
-/ostrohhelpweb/build
-ostrohhelpweb/docker-compose.yml
-OstrohHelpApi/docker-compose.yml
-OstrohHelpApi/docker-compose.yml
+ostrohhelpweb/node_modules/
+ostrohhelpweb/build/
+ostrohhelpweb/dist/
+ostrohhelpweb/.env
 ostrohhelpweb/DOCKER_SETUP.md
 ostrohhelpweb/QUICKSTART.md
-OstrohHelpApi/docker-compose.yml
+
+# Local compose files (often contain secrets; keep out of git)
+**/docker-compose.yml
