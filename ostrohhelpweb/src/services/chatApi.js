@@ -31,7 +31,7 @@ const unwrapCollection = (payload) => {
 };
 
 export const getUserConsultations = async (userId) => {
-  const response = await api.get(`/Consultations/Get-All-Consultations-By-UserId/${userId}`);
+  const response = await api.get(`/consultations/get-all-consultations-by-userid/${userId}`);
   return unwrapCollection(response.data);
 };
 

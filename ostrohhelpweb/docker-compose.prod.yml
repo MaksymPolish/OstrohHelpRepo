@@ -1,0 +1,28 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ostrohhelpweb-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Connect to the existing backend running on the same network
+      - REACT_APP_API_URL=http://ostrohelpapi-app:8080
+      - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
+      - REACT_APP_USE_MOCK_AUTH=false
+    networks:
+      - ostrohelpapi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  # Join the existing network where backend is running
+  ostrohelpapi-network:
+    driver: bridge
+    external: false  # Set to true if network already exists on EC2

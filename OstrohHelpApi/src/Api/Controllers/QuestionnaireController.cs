@@ -7,6 +7,7 @@ using Domain.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Api.Controllers;
 
@@ -17,7 +18,8 @@ namespace Api.Controllers;
 public class QuestionnaireController(
     IMediator _mediator, 
     IQuestionnaireQuery _questionnaireQuery,
-    IMapper _mapper) : ControllerBase
+    IMapper _mapper,
+    ILogger<QuestionnaireController> _logger) : ControllerBase
 {
     [HttpPost("Create-Questionnaire")]
     public async Task<IActionResult> Create([FromBody] CreateQuestionnaireCommand command, CancellationToken ct)
@@ -106,14 +108,30 @@ public class QuestionnaireController(
     
     [Authorize(Policy = "RequireHeadOfService")] // Тільки керівник служби
     [HttpDelete("Delete-Questionnaire")]
-    public async Task<IActionResult> Delete([FromBody]Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete([FromBody] Guid id, CancellationToken ct)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("ModelState validation failed in Delete method");
+            return BadRequest(ModelState);
+        }
+
+        _logger.LogInformation("Delete questionnaire request for ID: {Id}", id);
+        
         var command = new DeleteQuestionnaireCommand(id);
         var result = await _mediator.Send(command, ct);
 
         return result.Match<IActionResult>(
-            _ => NoContent(),
-            ex => BadRequest(new { Error = ex.Message })
+            _ => 
+            {
+                _logger.LogInformation("Questionnaire {Id} deleted successfully", id);
+                return NoContent();
+            },
+            ex => 
+            {
+                _logger.LogError(ex, "Failed to delete questionnaire {Id}", id);
+                return BadRequest(new { Error = ex.Message });
+            }
         );
     }
     
@@ -132,13 +150,56 @@ public class QuestionnaireController(
     
     [Authorize(Policy = "RequirePsychologist")] // Тільки психологи та керівники
     [HttpPut("Update-StatusQuestionnaire")]
+    [HttpPut("UpdateStatus")] // Alternative route for frontend
+    [HttpPut("Update-Status")] // Alternative route for frontend
     public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusCommand command, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
-        return result.Match<IActionResult>(
-            _ => NoContent(),
-            ex => BadRequest(new { Error = ex.Message })
-        );
+        _logger.LogInformation("Received UpdateStatus request for QuestionnaireId: {Id} with StatusId: {StatusId}", 
+            command.Id, command.StatusId);
+        // Логування валідації ModelState
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors);
+            _logger.LogWarning("ModelState validation failed. Errors: {Errors}", 
+                string.Join("; ", errors.Select(e => e.ErrorMessage)));
+            
+            return BadRequest(new 
+            { 
+                Error = "Validation failed", 
+                Details = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => new { Message = e.ErrorMessage })
+                    .ToList()
+            });
+        }
+
+        // Логування запиту
+        _logger.LogInformation("UpdateStatus request: QuestionnaireId={Id}, StatusId={StatusId}", 
+            command.Id, command.StatusId);
+
+        try
+        {
+            var result = await _mediator.Send(command, ct);
+            
+            return result.Match<IActionResult>(
+                q => 
+                {
+                    _logger.LogInformation("Questionnaire {Id} status updated to {StatusId}", 
+                        command.Id, command.StatusId);
+                    return NoContent();
+                },
+                ex => 
+                {
+                    _logger.LogError(ex, "Failed to update questionnaire {Id} status", command.Id);
+                    return BadRequest(new { Error = ex.Message });
+                }
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception in UpdateStatus: {Message}", ex.Message);
+            return BadRequest(new { Error = ex.Message, Details = ex.InnerException?.Message });
+        }
     }
 
 }

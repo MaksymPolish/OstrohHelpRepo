@@ -129,6 +129,16 @@ const translations = {
     adminPanelDeleteConfirm: "Ви впевнені, що хочете видалити цю заявку?",
     adminPanelDeleteRestricted: "Видаляти заявки може лише керівник служби.",
     adminPanelStatusMissing: "Не вдалося знайти статус Accepted.",
+    adminPanelReject: "Відхилити",
+    adminPanelRejectedSuccess: "Заявку відхилено.",
+    adminPanelRejectError: "Не вдалося відхилити заявку.",
+    adminPanelScheduleConsultation: "Планування консультації",
+    adminPanelDate: "Дата консультації",
+    adminPanelTime: "Час консультації",
+    adminPanelSelectDateTime: "Виберіть дату та час",
+    adminPanelConfirm: "Підтвердити",
+    adminPanelCancel: "Скасувати",
+    adminPanelPsychologistIdMissing: "Не знайдено ID психолога",
     adminPanelUnknownUser: "Невідомий користувач",
     
     // Profile Page
@@ -351,6 +361,16 @@ const translations = {
     adminPanelDeleteConfirm: "Are you sure you want to delete this request?",
     adminPanelDeleteRestricted: "Only the service head can delete requests.",
     adminPanelStatusMissing: "Unable to resolve the Accepted status.",
+    adminPanelReject: "Reject",
+    adminPanelRejectedSuccess: "Request rejected.",
+    adminPanelRejectError: "Failed to reject the request.",
+    adminPanelScheduleConsultation: "Schedule Consultation",
+    adminPanelDate: "Consultation Date",
+    adminPanelTime: "Consultation Time",
+    adminPanelSelectDateTime: "Please select date and time",
+    adminPanelConfirm: "Confirm",
+    adminPanelCancel: "Cancel",
+    adminPanelPsychologistIdMissing: "Psychologist ID not found",
     adminPanelUnknownUser: "Unknown user",
     
     // Profile Page

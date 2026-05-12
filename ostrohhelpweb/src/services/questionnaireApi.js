@@ -1,24 +1,5 @@
 import api from "./api";
 
-const CANDIDATE_ENDPOINTS = [
-  "/Questionnaire/Create-Questionnaire",
-  "/Create-Questionnaire",
-];
-
-const ADMIN_CANDIDATE_ENDPOINTS = {
-  list: ["/Questionnaire/all", "/Questionnaire/Get-All", "/all"],
-  statuses: [
-    "/QuestiStatController/Get-All-Statuses",
-    "/QuestionaryStatus/Get-All-Statuses",
-    "/Get-All-Statuses",
-  ],
-  updateStatus: [
-    "/Questionnaire/Update-Status",
-    "/Questionnaire/UpdateStatus",
-    "/Update-Status",
-  ],
-  delete: ["/Questionnaire/Delete", "/Delete"],
-};
 
 const unwrapCollection = (payload) => {
   if (Array.isArray(payload)) {
@@ -44,81 +25,51 @@ const unwrapCollection = (payload) => {
   return [];
 };
 
-const requestWithCandidates = async ({ endpoints, method, data, params }) => {
-  let lastError = null;
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await api.request({
-        url: endpoint,
-        method,
-        data,
-        params,
-      });
-
-      return response.data ?? null;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError || new Error("Request failed");
-};
-
 export const createQuestionnaire = async (payload) => {
-  return requestWithCandidates({
-    endpoints: CANDIDATE_ENDPOINTS,
-    method: "post",
-    data: payload,
-  });
+  const response = await api.post("/Questionnaire/Create-Questionnaire", payload);
+  return response.data || null;
 };
 
 export const getUserQuestionnaires = async (userId) => {
-  const candidateEndpoints = [
-    `/Questionnaire/get-by-user-id/${userId}`,
-    `/Questionnaire/Get-By-User-Id/${userId}`,
-    `/Questionnaire/Get-By-UserId/${userId}`,
-  ];
-
-  const responseData = await requestWithCandidates({
-    endpoints: candidateEndpoints,
-    method: "get",
-  });
-
-  return unwrapCollection(responseData);
+  const response = await api.get(`/Questionnaire/get-by-user-id/${userId}`);
+  return unwrapCollection(response.data);
 };
 
 export const getAllQuestionnaires = async () => {
-  const responseData = await requestWithCandidates({
-    endpoints: ADMIN_CANDIDATE_ENDPOINTS.list,
-    method: "get",
-  });
-
-  return unwrapCollection(responseData);
+  const response = await api.get("/Questionnaire/all");
+  return unwrapCollection(response.data);
 };
 
 export const getQuestionaryStatuses = async () => {
-  const responseData = await requestWithCandidates({
-    endpoints: ADMIN_CANDIDATE_ENDPOINTS.statuses,
-    method: "get",
-  });
-
-  return unwrapCollection(responseData);
+  const response = await api.get("/QuestiStatController/Get-All-Statuses");
+  return unwrapCollection(response.data);
 };
 
-export const updateQuestionnaireStatus = async ({ questionnaireId, statusId }) => {
-  return requestWithCandidates({
-    endpoints: ADMIN_CANDIDATE_ENDPOINTS.updateStatus,
-    method: "put",
-    data: { questionnaireId, statusId },
+export const updateQuestionnaireStatus = async ({ id, statusId }) => {
+  const response = await api.put("/questionnaire/UpdateStatus", {
+    id,
+    statusId,
   });
+  return response.data || null;
 };
 
 export const deleteQuestionnaire = async (questionnaireId) => {
-  return requestWithCandidates({
-    endpoints: ADMIN_CANDIDATE_ENDPOINTS.delete,
-    method: "delete",
-    data: { questionnaireId },
+  // Pass the ID as the data, and explicitly set the Content-Type header
+  const response = await api.delete("/questionnaire/Delete-Questionnaire", {
+    data: JSON.stringify(questionnaireId), // Ensure it's a JSON string
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
+  return response.data || null;
+};
+
+export const acceptQuestionnaire = async ({ questionaryId, psychologistId, scheduledTime }) => {
+  const response = await api.post("/Consultations/Accept-Questionnaire", {
+    questionaryId,
+    psychologistId,
+    scheduledTime,
+  });
+  return response.data || null;
 };
 

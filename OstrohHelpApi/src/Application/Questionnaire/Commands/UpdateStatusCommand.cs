@@ -17,6 +17,7 @@ public class UpdateStatusCommandHandler(
 {
     public async Task<Result<Questionary, QuestionnairesException>> Handle(UpdateStatusCommand command, CancellationToken ct)
     {
+        
         var questionnaireOption = await _query.GetByIdAsync(command.Id, ct);
 
         return await questionnaireOption.Match(

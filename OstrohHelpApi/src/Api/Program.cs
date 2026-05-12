@@ -123,43 +123,61 @@ builder.Services.AddSignalR(options =>
     options.PayloadSerializerOptions.Converters.Add(new Infrastructure.Serialization.ByteArrayToBase64Converter());
 });
 
+// CORS: localhost defaults + Cors:AllowedOrigins (appsettings) + CORS_ALLOWED_ORIGINS (comma-separated, e.g. Docker)
+var defaultLocalCorsOrigins = new[]
+{
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5500",
+    "http://localhost:5173",
+    "http://localhost:4200",
+    "http://localhost:7000",
+    "https://localhost:7000",
+    "http://localhost:7001",
+    "https://localhost:7001"
+};
+var configuredCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var corsOriginsFromEnv = builder.Configuration["CORS_ALLOWED_ORIGINS"]
+    ?? Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+var envCorsOrigins = string.IsNullOrWhiteSpace(corsOriginsFromEnv)
+    ? Array.Empty<string>()
+    : corsOriginsFromEnv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+var corsAllowedOrigins = defaultLocalCorsOrigins
+    .Concat(configuredCorsOrigins)
+    .Concat(envCorsOrigins)
+    .Where(static o => !string.IsNullOrWhiteSpace(o))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
+Console.WriteLine($"✓ CORS allowed origins ({corsAllowedOrigins.Length}): {string.Join(", ", corsAllowedOrigins)}");
+
 // Add CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:3000",      // React
-            "http://localhost:5000",      // Test HTML
-            "http://127.0.0.1:5500",      // Local static server (e.g., Live Server)
-            "http://localhost:5173",      // Vite
-            "http://localhost:4200",      // Angular
-            "http://localhost:7000",      // Self (for testing)
-            "https://localhost:7000",
-            "http://localhost:7001",
-            "https://localhost:7001"
-        )
-        .AllowAnyMethod()          // GET, POST, PUT, DELETE, OPTIONS, etc.
-        .AllowAnyHeader()          // Any headers
-        .AllowCredentials()        // Important for SignalR and auth
-        .WithExposedHeaders("Content-Disposition", "X-Pagination"); // Expose custom headers if needed
+        policy.WithOrigins(corsAllowedOrigins)
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+        .WithExposedHeaders("Content-Disposition", "X-Pagination");
     });
 });
 
 // JWT Bearer Authentication configuration
-// Read from .env first (priority), then fallback to appsettings.json
-var jwtSecret = DotNetEnv.Env.GetString("JWT_SECRET") ?? builder.Configuration["Jwt:Secret"];
-var jwtIssuer = DotNetEnv.Env.GetString("JWT_ISSUER") ?? builder.Configuration["Jwt:Issuer"];
-var jwtAudience = DotNetEnv.Env.GetString("JWT_AUDIENCE") ?? builder.Configuration["Jwt:Audience"];
+// Read from environment variables (Docker) or appsettings.json
+var jwtSecret = builder.Configuration["JWT_SECRET"] ?? builder.Configuration["Jwt:Secret"];
+var jwtIssuer = builder.Configuration["JWT_ISSUER"] ?? builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["JWT_AUDIENCE"] ?? builder.Configuration["Jwt:Audience"];
 
-if (!string.IsNullOrEmpty(DotNetEnv.Env.GetString("JWT_SECRET")))
-{
-    Console.WriteLine("✓ JWT credentials loaded from .env file");
-}
-else
-{
-    Console.WriteLine("ℹ JWT credentials loaded from appsettings.json (or appsettings.Development.json)");
-}
+if (string.IsNullOrEmpty(jwtSecret))
+    throw new InvalidOperationException("JWT_SECRET environment variable or Jwt:Secret configuration is required");
+if (string.IsNullOrEmpty(jwtIssuer))
+    throw new InvalidOperationException("JWT_ISSUER environment variable or Jwt:Issuer configuration is required");
+if (string.IsNullOrEmpty(jwtAudience))
+    throw new InvalidOperationException("JWT_AUDIENCE environment variable or Jwt:Audience configuration is required");
+
+Console.WriteLine("✓ JWT credentials loaded successfully");
 
 // Важливо: Вимкнути автоматичне перейменування claims
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -325,28 +343,13 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-// Enable CORS (MUST be before Authentication and Authorization)
+// Enable CORS (MUST be before Authentication and Authorization). Preflight is handled by CORS middleware.
 app.UseCors("AllowAll");
-
-// Handle preflight OPTIONS requests for CORS
-app.Use(async (context, next) =>
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.StatusCode = 200;
-        await context.Response.CompleteAsync();
-        return;
-    }
-    await next.Invoke();
-});
 
 app.UseAuthentication(); 
 app.UseAuthorization();
@@ -384,6 +387,22 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(mediaPath),
     RequestPath = "/media"
 });
+
+// Initialize database and run migrations
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var initialiser = scope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.ApplicationDbContextInitialiser>();
+        await initialiser.InitializeAsync();
+        Console.WriteLine("✓ Database migrations completed successfully");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠ Database initialization failed: {ex.Message}");
+    throw;
+}
 
 app.Run();
 

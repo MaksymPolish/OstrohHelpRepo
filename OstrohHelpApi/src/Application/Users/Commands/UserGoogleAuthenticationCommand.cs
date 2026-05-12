@@ -44,9 +44,9 @@ public class UserGoogleAuthenticationHandler(
             var firebaseUser = await ValidateFirebaseTokenAsync(request.IdToken, ct);
             userInfo = (
                 googleId: firebaseUser.Uid,
-                email: firebaseUser.Claims.GetValueOrDefault("email")?.ToString(),
-                fullName: firebaseUser.Claims.GetValueOrDefault("name")?.ToString() ?? firebaseUser.Claims.GetValueOrDefault("name")?.ToString(),
-                photoUrl: firebaseUser.Claims.GetValueOrDefault("picture")?.ToString() // URL фото з Firebase
+                email: firebaseUser.Claims?.GetValueOrDefault("email")?.ToString(),
+                fullName: firebaseUser.Claims?.GetValueOrDefault("name")?.ToString() ?? firebaseUser.Claims?.GetValueOrDefault("name")?.ToString(),
+                photoUrl: firebaseUser.Claims?.GetValueOrDefault("picture")?.ToString() // URL фото з Firebase
             );
         }
 
@@ -60,9 +60,11 @@ public class UserGoogleAuthenticationHandler(
 
         if (user == null)
         {
-            // Використовуємо enum для ролі Студент
-            var studentRoleGuid = Domain.Users.Roles.Role.GetGuidByEnum(Domain.Users.Roles.RoleEnum.Student);
-            var studentRoleId = studentRoleGuid;
+            // Визначаємо роль на основі email - HeadOfService для максима, інші - Student
+            var roleEnum = userInfo.email == "maksym.polishchuk@oa.edu.ua"
+                ? Domain.Users.Roles.RoleEnum.HeadOfService
+                : Domain.Users.Roles.RoleEnum.Student;
+            var roleGuid = Domain.Users.Roles.Role.GetGuidByEnum(roleEnum);
 
             user = new User
             {
@@ -71,7 +73,7 @@ public class UserGoogleAuthenticationHandler(
                 Email = userInfo.email!,
                 FullName = userInfo.fullName ?? "User", // Мінімальне значення якщо немає імені
                 PhotoUrl = userInfo.photoUrl, // Реальна URL фото з Google/Firebase
-                RoleId = studentRoleId,
+                RoleId = roleGuid,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -87,6 +89,12 @@ public class UserGoogleAuthenticationHandler(
             var newFullName = userInfo.fullName ?? user.FullName; // Зберігаємо старе якщо нема нового
             var newPhotoUrl = userInfo.photoUrl ?? user.PhotoUrl; // Зберігаємо старе якщо нема нового
             
+            // Визначаємо очікувану роль на основі email
+            var expectedRoleEnum = userInfo.email == "maksym.polishchuk@oa.edu.ua"
+                ? Domain.Users.Roles.RoleEnum.HeadOfService
+                : Domain.Users.Roles.RoleEnum.Student;
+            var expectedRoleGuid = Domain.Users.Roles.Role.GetGuidByEnum(expectedRoleEnum);
+            
             // Перевіряємо, чи змінилось щось
             bool hasChanges = false;
             if (user.FullName != newFullName)
@@ -99,6 +107,14 @@ public class UserGoogleAuthenticationHandler(
             {
                 user.PhotoUrl = newPhotoUrl;
                 hasChanges = true;
+            }
+            
+            // Перевіряємо, чи потрібно оновити роль
+            if (user.RoleId != expectedRoleGuid)
+            {
+                user.RoleId = expectedRoleGuid;
+                hasChanges = true;
+                _logger.LogInformation("Updated user {Email} role to {Role}", userInfo.email, expectedRoleEnum);
             }
             
             // Оновлюємо ТІЛЬКИ якщо є зміни

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, RefreshCw, ShieldAlert, Trash2, UserRound } from "lucide-react";
+import { CheckCircle2, RefreshCw, ShieldAlert, Trash2, UserRound, XCircle } from "lucide-react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import { useLanguage, useSecurity } from "../App";
-import { deleteQuestionnaire, getAllQuestionnaires, getQuestionaryStatuses, updateQuestionnaireStatus } from "../services/questionnaireApi";
+import { deleteQuestionnaire, getAllQuestionnaires, getQuestionaryStatuses, updateQuestionnaireStatus, acceptQuestionnaire } from "../services/questionnaireApi";
 import { hasAdminPanelAccess, isHeadOfServiceUser } from "../utils/access";
+import Modal from "../components/Common/Modal";
 
 const pickFirst = (...values) => {
   for (const value of values) {
@@ -25,6 +26,7 @@ const normalizeQuestionnaire = (item) => {
     description: pickFirst(item?.description, item?.Description) || "",
     isAnonymous: Boolean(pickFirst(item?.isAnonymous, item?.IsAnonymous, false)),
     statusName: pickFirst(item?.statusName, item?.StatusName, item?.status, item?.Status) || "Pending",
+    statusId: pickFirst(item?.statusId, item?.StatusId),
     submittedAt: pickFirst(item?.submittedAt, item?.SubmittedAt, item?.createdAt, item?.CreatedAt),
   };
 };
@@ -91,14 +93,29 @@ export default function AdminPanelPage() {
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState(null);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
 
   const canAccess = useMemo(() => hasAdminPanelAccess(currentUser), [currentUser]);
   const canDelete = useMemo(() => isHeadOfServiceUser(currentUser), [currentUser]);
 
   const acceptedStatusId = useMemo(() => {
     const status = statuses.find((entry) => String(entry.name || "").toLowerCase() === "accepted");
-    return status?.id || "13fa85f64-5717-4562-b3fc-2c963f66afa0";
+    return status?.id || "00000000-0000-0000-0000-000000000011";
   }, [statuses]);
+
+  const rejectedStatusId = useMemo(() => {
+    const status = statuses.find((entry) => String(entry.name || "").toLowerCase() === "rejected");
+    return status?.id || "00000000-0000-0000-0000-000000000012";
+  }, [statuses]);
+
+  const isFinishedStatus = (statusId) => {
+    // ID 00000000-0000-0000-0000-000000000011 (Accepted) і 00000000-0000-0000-0000-000000000012 (Rejected)
+    return statusId === "00000000-0000-0000-0000-000000000011" || 
+           statusId === "00000000-0000-0000-0000-000000000012";
+  };
 
   const loadData = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
@@ -149,7 +166,53 @@ export default function AdminPanelPage() {
   }, [canAccess, loadData]);
 
   const handleAccept = async (questionnaireId) => {
-    if (!acceptedStatusId) {
+    // Відкриваємо модаль для вибору часу
+    setSelectedQuestionnaireId(questionnaireId);
+    setIsScheduleModalOpen(true);
+    setError("");
+    setInfoMessage("");
+    
+    // Встановлюємо значення за замовчуванням - сьогодні + 1 година
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setScheduledDate(tomorrow.toISOString().split("T")[0]);
+    setScheduledTime("10:00");
+  };
+
+  const handleScheduleConfirm = async () => {
+    if (!scheduledDate || !scheduledTime) {
+      setError(t("adminPanelSelectDateTime") || "Виберіть дату та час");
+      return;
+    }
+
+    const psychologistId = currentUser?.id || currentUser?.userId;
+    if (!psychologistId) {
+      setError(t("adminPanelPsychologistIdMissing") || "Не знайдено ID психолога");
+      return;
+    }
+
+    setProcessingId(selectedQuestionnaireId);
+    setError("");
+
+    try {
+      const dateTime = new Date(`${scheduledDate}T${scheduledTime}:00.000Z`);
+      await acceptQuestionnaire({
+        questionaryId: selectedQuestionnaireId,
+        psychologistId,
+        scheduledTime: dateTime.toISOString(),
+      });
+      setItems((currentItems) => currentItems.filter((item) => item.id !== selectedQuestionnaireId));
+      setInfoMessage(t("adminPanelAcceptedSuccess"));
+      setIsScheduleModalOpen(false);
+    } catch (acceptError) {
+      setError(extractServerErrorMessage(acceptError) || t("adminPanelAcceptError"));
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (questionnaireId) => {
+    if (!rejectedStatusId) {
       setError(t("adminPanelStatusMissing"));
       return;
     }
@@ -159,11 +222,11 @@ export default function AdminPanelPage() {
     setInfoMessage("");
 
     try {
-      await updateQuestionnaireStatus({ questionnaireId, statusId: acceptedStatusId });
+      await updateQuestionnaireStatus({ id: questionnaireId, statusId: rejectedStatusId });
       setItems((currentItems) => currentItems.filter((item) => item.id !== questionnaireId));
-      setInfoMessage(t("adminPanelAcceptedSuccess"));
-    } catch (acceptError) {
-      setError(extractServerErrorMessage(acceptError) || t("adminPanelAcceptError"));
+      setInfoMessage(t("adminPanelRejectedSuccess"));
+    } catch (rejectError) {
+      setError(extractServerErrorMessage(rejectError) || t("adminPanelRejectError"));
     } finally {
       setProcessingId(null);
     }
@@ -214,6 +277,52 @@ export default function AdminPanelPage() {
 
   return (
     <div className="max-w-6xl mx-auto animate-in slide-in-from-right-8 duration-300">
+      <Modal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        title={t("adminPanelScheduleConsultation") || "Планування консультації"}
+        actions={[
+          <Button
+            key="cancel"
+            variant="outline"
+            onClick={() => setIsScheduleModalOpen(false)}
+          >
+            {t("adminPanelCancel") || "Скасувати"}
+          </Button>,
+          <Button
+            key="confirm"
+            onClick={handleScheduleConfirm}
+            disabled={processingId === selectedQuestionnaireId}
+          >
+            {processingId === selectedQuestionnaireId ? t("adminPanelProcessing") : t("adminPanelConfirm") || "Підтвердити"}
+          </Button>,
+        ]}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t("adminPanelDate") || "Дата консультації"}
+            </label>
+            <input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t("adminPanelTime") || "Час консультації"}
+            </label>
+            <input
+              type="time"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+            />
+          </div>
+        </div>
+      </Modal>
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{t("adminPanelTitle")}</h1>
@@ -286,17 +395,33 @@ export default function AdminPanelPage() {
                 </div>
 
                 <div className="flex flex-col gap-2 shrink-0 lg:w-44">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAccept(item.id)}
-                    disabled={processingId === item.id}
-                    fullWidth
-                  >
-                    <CheckCircle2 size={16} />
-                    <span className="ml-2">
-                      {processingId === item.id ? t("adminPanelProcessing") : t("adminPanelAccept")}
-                    </span>
-                  </Button>
+                  {!isFinishedStatus(item.statusId) && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleAccept(item.id)}
+                      disabled={processingId === item.id}
+                      fullWidth
+                    >
+                      <CheckCircle2 size={16} />
+                      <span className="ml-2">
+                        {processingId === item.id ? t("adminPanelProcessing") : t("adminPanelAccept")}
+                      </span>
+                    </Button>
+                  )}
+
+                  {!isFinishedStatus(item.statusId) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleReject(item.id)}
+                      disabled={processingId === item.id}
+                      fullWidth
+                    >
+                      <XCircle size={16} />
+                      <span className="ml-2">
+                        {processingId === item.id ? t("adminPanelProcessing") : t("adminPanelReject")}
+                      </span>
+                    </Button>
+                  )}
 
                   {canDelete && (
                     <Button

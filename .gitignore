@@ -60,3 +60,9 @@ ostrohhelpweb/ENDPOINTS.md
 **/src/ostrohhelpweb/.env
 /ostrohhelpweb/node_modules
 /ostrohhelpweb/build
+ostrohhelpweb/docker-compose.yml
+OstrohHelpApi/docker-compose.yml
+OstrohHelpApi/docker-compose.yml
+ostrohhelpweb/DOCKER_SETUP.md
+ostrohhelpweb/QUICKSTART.md
+OstrohHelpApi/docker-compose.yml

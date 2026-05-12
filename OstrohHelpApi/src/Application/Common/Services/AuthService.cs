@@ -16,7 +16,11 @@ public class AuthService : IAuthService
 
     public string GenerateJwtToken(User user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]!));
+        var jwtSecret = _configuration["JWT_SECRET"] ?? _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(jwtSecret))
+            throw new InvalidOperationException("JWT_SECRET environment variable or Jwt:Secret configuration is required");
+            
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         // Отримуємо назву ролі за roleId з enum mapping
@@ -33,8 +37,8 @@ public class AuthService : IAuthService
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: _configuration["JWT_ISSUER"] ?? _configuration["Jwt:Issuer"],
+            audience: _configuration["JWT_AUDIENCE"] ?? _configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddDays(7), // Термін дії токена — 7 днів
             signingCredentials: credentials
