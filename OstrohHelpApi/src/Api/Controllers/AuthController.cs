@@ -4,6 +4,7 @@ using Application.Services.Interface;
 using Application.Users.Commands;
 using AutoMapper;
 using Domain.Users;
+using Domain.Users.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -70,7 +71,8 @@ public class AuthController(
             user =>
             {
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = "Student"; // Default role name
+                // Отримуємо реальну назву ролі на основі RoleId
+                dto.RoleName = Role.GetEnumByGuid(user.RoleId).ToString();
                 return Ok(dto);
             },
             () => NotFound(new { Message = $"User with ID '{id}' was not found" })
@@ -87,7 +89,8 @@ public class AuthController(
             user =>
             {
                 var dto = _mapper.Map<UserDto>(user);
-                dto.RoleName = "Student"; // Default role name
+                // Отримуємо реальну назву ролі на основі RoleId
+                dto.RoleName = Role.GetEnumByGuid(user.RoleId).ToString();
                 return Ok(dto);
             },
             () => NotFound(new { Message = $"User with email '{email}' was not found" })
@@ -104,7 +107,8 @@ public class AuthController(
         var dtos = users.Select(user =>
         {
             var dto = _mapper.Map<UserDto>(user);
-            dto.RoleName = "Student"; // Default role name
+            // Отримуємо реальну назву ролі на основі RoleId
+            dto.RoleName = Role.GetEnumByGuid(user.RoleId).ToString();
             return dto;
         }).ToList();
 

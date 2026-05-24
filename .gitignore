@@ -63,3 +63,4 @@ ostrohhelpweb/QUICKSTART.md
 
 # Local compose files (often contain secrets; keep out of git)
 **/docker-compose.yml
+OstrohHelpApi/docker-compose.yml

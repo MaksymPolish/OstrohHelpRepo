@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, RefreshCw, ShieldAlert, Trash2, UserRound, XCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, ShieldAlert, Trash2, UserRound, XCircle, Shield, FileText } from "lucide-react";
 import Button from "../components/Common/Button";
 import Card from "../components/Common/Card";
 import { useLanguage, useSecurity } from "../App";
 import { deleteQuestionnaire, getAllQuestionnaires, getQuestionaryStatuses, updateQuestionnaireStatus, acceptQuestionnaire } from "../services/questionnaireApi";
+import { getAllUsers, updateUserRole } from "../services/userApi";
 import { hasAdminPanelAccess, isHeadOfServiceUser } from "../utils/access";
 import Modal from "../components/Common/Modal";
 
@@ -97,14 +98,15 @@ export default function AdminPanelPage() {
   const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState(null);
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
+  const [viewMode, setViewMode] = useState("questionnaires"); // "questionnaires" або "users"
+  const [users, setUsers] = useState([]);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserName, setSelectedUserName] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
 
   const canAccess = useMemo(() => hasAdminPanelAccess(currentUser), [currentUser]);
   const canDelete = useMemo(() => isHeadOfServiceUser(currentUser), [currentUser]);
-
-  const acceptedStatusId = useMemo(() => {
-    const status = statuses.find((entry) => String(entry.name || "").toLowerCase() === "accepted");
-    return status?.id || "00000000-0000-0000-0000-000000000011";
-  }, [statuses]);
 
   const rejectedStatusId = useMemo(() => {
     const status = statuses.find((entry) => String(entry.name || "").toLowerCase() === "rejected");
@@ -128,25 +130,40 @@ export default function AdminPanelPage() {
     setInfoMessage("");
 
     try {
-      const [statusResult, questionnaireResult] = await Promise.all([
-        getQuestionaryStatuses(),
-        getAllQuestionnaires(),
-      ]);
+      if (viewMode === "questionnaires") {
+        const [statusResult, questionnaireResult] = await Promise.all([
+          getQuestionaryStatuses(),
+          getAllQuestionnaires(),
+        ]);
 
-      const normalizedStatuses = (statusResult || []).map(normalizeStatus);
-      const normalizedItems = (questionnaireResult || []).map(normalizeQuestionnaire);
+        const normalizedStatuses = (statusResult || []).map(normalizeStatus);
+        const normalizedItems = (questionnaireResult || []).map(normalizeQuestionnaire);
 
-      normalizedItems.sort((left, right) => {
-        const leftTime = left.submittedAt ? new Date(left.submittedAt).getTime() : 0;
-        const rightTime = right.submittedAt ? new Date(right.submittedAt).getTime() : 0;
-        return rightTime - leftTime;
-      });
+        normalizedItems.sort((left, right) => {
+          const leftTime = left.submittedAt ? new Date(left.submittedAt).getTime() : 0;
+          const rightTime = right.submittedAt ? new Date(right.submittedAt).getTime() : 0;
+          return rightTime - leftTime;
+        });
 
-      setStatuses(normalizedStatuses);
-      setItems(normalizedItems);
+        setStatuses(normalizedStatuses);
+        setItems(normalizedItems);
 
-      if (normalizedItems.length === 0) {
-        setInfoMessage(t("adminPanelEmpty"));
+        if (normalizedItems.length === 0) {
+          setInfoMessage(t("adminPanelEmpty"));
+        }
+      } else if (viewMode === "users") {
+        const usersResult = await getAllUsers();
+        const normalizedUsers = (usersResult || []).map((user) => ({
+          id: user?.id || user?.Id,
+          fullName: user?.fullName || user?.FullName || "",
+          email: user?.email || user?.Email || "",
+          role: user?.role || user?.Role || "Student",
+        }));
+        setUsers(normalizedUsers);
+
+        if (normalizedUsers.length === 0) {
+          setInfoMessage(t("adminPanelUsersEmpty"));
+        }
       }
     } catch (loadError) {
       setError(extractServerErrorMessage(loadError) || t("adminPanelLoadError"));
@@ -154,7 +171,7 @@ export default function AdminPanelPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [t]);
+  }, [t, viewMode]);
 
   useEffect(() => {
     if (!canAccess) {
@@ -257,6 +274,41 @@ export default function AdminPanelPage() {
     }
   };
 
+  const handleOpenRoleModal = (userId, userName, currentRole) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+    setSelectedRole(currentRole || "");
+    setIsRoleModalOpen(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!selectedRole) {
+      setError(t("adminPanelSelectRole"));
+      return;
+    }
+
+    setProcessingId(selectedUserId);
+    setError("");
+
+    try {
+      await updateUserRole({
+        userId: selectedUserId,
+        role: selectedRole,
+      });
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user.id === selectedUserId ? { ...user, role: selectedRole } : user
+        )
+      );
+      setInfoMessage(t("adminPanelRoleUpdatedSuccess"));
+      setIsRoleModalOpen(false);
+    } catch (updateError) {
+      setError(extractServerErrorMessage(updateError) || t("adminPanelRoleUpdateError"));
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (!canAccess) {
     return (
       <div className="max-w-3xl mx-auto">
@@ -323,21 +375,104 @@ export default function AdminPanelPage() {
           </div>
         </div>
       </Modal>
+
+      <Modal
+        isOpen={isRoleModalOpen}
+        onClose={() => {
+          setIsRoleModalOpen(false);
+          setSelectedRole("");
+        }}
+        title={t("adminPanelChangeRole") || "Зміна ролі"}
+        actions={[
+          <Button
+            key="cancel"
+            variant="outline"
+            onClick={() => {
+              setIsRoleModalOpen(false);
+              setSelectedRole("");
+            }}
+          >
+            {t("adminPanelCancel") || "Скасувати"}
+          </Button>,
+          <Button
+            key="confirm"
+            onClick={handleUpdateRole}
+            disabled={!selectedRole || processingId === selectedUserId}
+          >
+            {processingId === selectedUserId ? t("adminPanelProcessing") : t("adminPanelUpdate") || "Обновити"}
+          </Button>,
+        ]}
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              {t("adminPanelUserInfo")}: <strong>{selectedUserName}</strong>
+            </p>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t("adminPanelNewRole") || "Нова роль"}
+            </label>
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+            >
+              <option value="">-- {t("adminPanelSelectRole")} --</option>
+              <option value="Student">{t("adminPanelRoleStudent")}</option>
+              <option value="Psychologist">{t("adminPanelRolePsychologist")}</option>
+              <option value="HeadOfService">{t("adminPanelRoleHeadOfService")}</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">{t("adminPanelTitle")}</h1>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl">{t("adminPanelDescription")}</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+            {viewMode === "questionnaires" ? t("adminPanelTitle") : t("adminPanelUsersTitle")}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl">
+            {viewMode === "questionnaires" ? t("adminPanelDescription") : t("adminPanelUsersDescription")}
+          </p>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={() => loadData({ silent: true })}
-          disabled={isRefreshing || isLoading}
-          className="md:self-start"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          <span className="ml-2">{t("adminPanelRefresh")}</span>
-        </Button>
+        <div className="flex flex-col gap-3 md:flex-row">
+          {canDelete && (
+            <Button
+              variant={viewMode === "users" ? "secondary" : "outline"}
+              onClick={() => {
+                setViewMode("users");
+                setError("");
+                setInfoMessage("");
+              }}
+              className="md:self-start"
+            >
+              <UserRound size={16} />
+              <span className="ml-2">{t("adminPanelViewUsers") || "Користувачі"}</span>
+            </Button>
+          )}
+
+          <Button
+            variant={viewMode === "questionnaires" ? "secondary" : "outline"}
+            onClick={() => {
+              setViewMode("questionnaires");
+              setError("");
+              setInfoMessage("");
+            }}
+            className="md:self-start"
+          >
+            <FileText size={16} />
+            <span className="ml-2">{t("adminPanelViewQuestionnaires") || "Анкети"}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => loadData({ silent: true })}
+            disabled={isRefreshing || isLoading}
+            className="md:self-start"
+          >
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            <span className="ml-2">{t("adminPanelRefresh")}</span>
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -354,11 +489,15 @@ export default function AdminPanelPage() {
 
       {isLoading ? (
         <p className="text-slate-500 dark:text-slate-400">{t("adminPanelLoading")}</p>
-      ) : items.length === 0 ? (
+      ) : viewMode === "questionnaires" && items.length === 0 ? (
         <Card className="p-6">
           <p className="text-slate-600 dark:text-slate-300">{t("adminPanelEmpty")}</p>
         </Card>
-      ) : (
+      ) : viewMode === "users" && users.length === 0 ? (
+        <Card className="p-6">
+          <p className="text-slate-600 dark:text-slate-300">{t("adminPanelUsersEmpty")}</p>
+        </Card>
+      ) : viewMode === "questionnaires" ? (
         <div className="space-y-4">
           {items.map((item, index) => (
             <Card key={item.id || `admin-questionnaire-${index}`} className="p-5 md:p-6">
@@ -434,6 +573,42 @@ export default function AdminPanelPage() {
                       <span className="ml-2">{t("adminPanelDelete")}</span>
                     </Button>
                   )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {users.map((user, index) => (
+            <Card key={user.id || `admin-user-${index}`} className="p-5 md:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div className="space-y-3 flex-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-3 py-1 text-xs font-semibold">
+                      <Shield size={14} />
+                      <span>{user.role}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                      {user.fullName || t("adminPanelUnknownUser")}
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 shrink-0 lg:w-44">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOpenRoleModal(user.id, user.fullName, user.role)}
+                    disabled={processingId === user.id}
+                    fullWidth
+                  >
+                    <Shield size={16} />
+                    <span className="ml-2">{t("adminPanelChangeRole") || "Змінити роль"}</span>
+                  </Button>
                 </div>
               </div>
             </Card>
