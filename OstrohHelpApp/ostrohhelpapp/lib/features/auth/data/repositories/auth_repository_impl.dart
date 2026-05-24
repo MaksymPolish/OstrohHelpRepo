@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -13,7 +14,9 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     GoogleSignIn? googleSignIn,
     firebase_auth.FirebaseAuth? firebaseAuth,
-  })  : _googleSignIn = googleSignIn ?? GoogleSignIn(),
+  })  : _googleSignIn = googleSignIn ?? GoogleSignIn(
+          serverClientId: AppConfig.googleServerClientId,
+        ),
         _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance;
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'admin_users_page.dart';
@@ -12,7 +13,7 @@ class AdminPanelPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        title: const Text('Адмін панель'),
+        title: Text('admin.panel.title'.tr()),
         backgroundColor: const Color(0xFF2C3E50),
         elevation: 0,
       ),
@@ -27,7 +28,7 @@ class AdminPanelPage extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Панель адміністратора',
+                    'admin.panel.heading'.tr(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: const Color(0xFF2C3E50),
                           fontWeight: FontWeight.bold,
@@ -58,12 +59,12 @@ class AdminPanelPage extends StatelessWidget {
                         child: const Icon(Icons.assignment, color: Colors.white, size: 32),
                       ),
                       const SizedBox(width: 24),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Анкети',
+                              'admin.panel.questionnaires.title'.tr(),
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -72,7 +73,7 @@ class AdminPanelPage extends StatelessWidget {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Перегляд та прийняття анкет',
+                              'admin.panel.questionnaires.subtitle'.tr(),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey,
@@ -99,13 +100,12 @@ class AdminPanelPage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) {
-                      // Use BlocBuilder to get Authenticated user
                       return BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
                           if (state is Authenticated) {
                             return AdminUsersPage(currentUserId: state.user.id ?? '');
                           }
-                          return const Scaffold(body: Center(child: Text('Не авторизовано')));
+                          return Scaffold(body: Center(child: Text('common.notAuthorized'.tr())));
                         },
                       );
                     },
@@ -129,12 +129,12 @@ class AdminPanelPage extends StatelessWidget {
                         child: const Icon(Icons.people, color: Colors.white, size: 32),
                       ),
                       const SizedBox(width: 24),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Користувачі',
+                              'admin.panel.users.title'.tr(),
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -143,7 +143,7 @@ class AdminPanelPage extends StatelessWidget {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Управління користувачами',
+                              'admin.panel.users.subtitle'.tr(),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey,

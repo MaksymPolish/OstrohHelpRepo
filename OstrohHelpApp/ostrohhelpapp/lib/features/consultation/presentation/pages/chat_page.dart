@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,11 +36,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
   
-  // REST API базовий URL для завантаження історії
   static const String _apiBaseUrl = 'http://10.0.2.2:5000/api';
   static const int _maxAttachmentsPerMessage = 6;
   
-  // SignalR hub URL для real-time обновлень
   final String _hubBaseUrl = 'http://10.0.2.2:5000';
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -95,8 +94,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
-  /// Завантажити історію повідомлень через REST API
-  /// (як на веб: GET /Message/Recive?idConsultation={id})
   Future<List<Message>> _loadMessageHistory(String consultationId) async {
     try {
       final token = await _tokenStorage.getToken();
@@ -105,7 +102,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
 
       final url = Uri.parse('$_apiBaseUrl/Message/Recive?idConsultation=$consultationId');
-      print('📥 Loading message history from REST: $url');
 
       final response = await http.get(
         url,
@@ -120,56 +116,43 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         final messages = data
             .map((m) => Message.fromJson(m as Map<String, dynamic>))
             .toList();
-        print('✅ Loaded ${messages.length} messages from history');
         return messages;
       } else {
-        print('⚠️ Failed to load messages: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('❌ Error loading message history: $e');
       return [];
     }
   }
 
   Future<void> _initializeChat(String userId) async {
     try {
-      print('\n═══════════════════════════════════════════════════════════════');
-      print('INITIALIZING CHAT - Web-compatible flow');
-      print('═══════════════════════════════════════════════════════════════');
       
       _userId = userId;
-      print('userId: $userId');
       
       try {
         final consultationData = await _consultationFuture;
         _receiverId = consultationData['studentId'] == userId
             ? consultationData['psychologistId']
             : consultationData['studentId'];
-        print('receiverId: $_receiverId');
 
         if (_receiverId != null) {
           _otherUserOnline = _onlineUsersNotifier.isOnline(_receiverId!);
         }
       } catch (e) {
-        print('Error loading consultation data: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не вдалося завантажити дані консультації: $e')),
+          SnackBar(content: Text('chat.loadConsultationError'.tr(args: [e.toString()]))),
         );
       }
 
       final token = await _tokenStorage.getToken();
       if (token == null || token.isEmpty) {
-        print('Error: Token is null or empty');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не вдалося отримати токен доступу.')),
+          SnackBar(content: Text('chat.tokenUnavailable'.tr())),
         );
         return;
       }
-      print('Token obtained: ${token.substring(0, 20)}...');
 
-      // КРОК 1: Завантажити історію через REST API
-      print('\n1️⃣  Loading message history via REST...');
       final historyMessages = await _loadMessageHistory(widget.consultationId);
       if (mounted) {
         setState(() {
@@ -179,31 +162,21 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
       _scrollToBottom();
 
-      // КРОК 2: Ініціалізувати SignalR для нових повідомлень
-      print('2️⃣  Initializing SignalR...');
       await _chatService.initialize(
         serverUrl: _hubBaseUrl,
         accessToken: token,
         currentUserId: userId,
       );
-      print('ChatService initialized');
 
       if (mounted) {
         setState(() {
           _isConnected = _chatService.isConnected;
         });
-        print('📊 Connection state: $_isConnected');
       }
 
-      print('\n3️⃣  Setting up stream listeners...\n');
       
-      // Consultation key listener
-      print('Setting up consultationKey listener...');
       _subscriptions.add(
         _chatService.consultationKey.listen((key) {
-          print('Encryption key received');
-          print('   key length: ${key.length}');
-          print('   key preview: ${key.substring(0, 20)}...');
           
           if (!mounted) return;
           
@@ -211,16 +184,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             _encryptionKey = key;
           });
           
-          // Дешифруємо всю історію однієї разу
           _decryptHistoricalMessages();
         }, onError: (error) {
-          print('Error in consultationKey listener: $error');
         }),
       );
-      print('consultationKey listener set up\n');
 
-      // Messages listener - ТІЛЬКИ для нових повідомлень (з SignalR)
-      print('Setting up messages listener...');
       _subscriptions.add(
         _chatService.messages.listen((message) {
           if (!mounted) return;
@@ -235,7 +203,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             return;
           }
 
-          // Дешифруємо нове повідомлення при отриманні
           _decryptMessage(message);
 
           setState(() {
@@ -259,7 +226,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           _markAllIncomingMessagesAsRead();
           _scrollToBottom();
         }, onError: (error) {
-          print('Error in messages listener: $error');
         }),
       );
 
@@ -307,7 +273,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         }),
       );
 
-      // Connection state listener
       _subscriptions.add(
         _chatService.connectionState.listen((state) {
           if (!mounted) return;
@@ -315,11 +280,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             _isConnected = state == HubConnectionState.Connected;
           });
         }, onError: (error) {
-          print('Error in connectionState listener: $error');
         }),
       );
 
-      // User online listener
       _subscriptions.add(
         _chatService.userOnline.listen((event) {
           _onlineUsersNotifier.setUserStatus(
@@ -327,11 +290,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             isOnline: event.isOnline,
           );
         }, onError: (error) {
-          print('Error in userOnline listener: $error');
         }),
       );
 
-      // Typing users listener
       _subscriptions.add(
         _chatService.typingUsers.listen((typingUserId) {
           if (!mounted || typingUserId == _userId) return;
@@ -347,35 +308,27 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             }
           });
         }, onError: (error) {
-          print('Error in typingUsers listener: $error');
         }),
       );
 
-      // Errors listener
       _subscriptions.add(
         _chatService.errors.listen((error) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Помилка чату: $error')),
+            SnackBar(content: Text('chat.error'.tr(args: [error.toString()]))),
           );
         }),
       );
-      print('errors listener set up\n');
       
-      print('═══════════════════════════════════════════════════════════════');
-      print('CHAT INITIALIZATION COMPLETED');
-      print('═══════════════════════════════════════════════════════════════\n');
       
-      // КРОК 3: Приєднатись до консультації (отримати ключ)
       await _chatService.joinConsultation(widget.consultationId);
       _markAllIncomingMessagesAsRead();
       _scrollToBottom();
       
     } catch (e) {
-      print('FATAL ERROR in _initializeChat: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Помилка ініціалізації чату: $e')),
+          SnackBar(content: Text('chat.initializationError'.tr(args: [e.toString()]))),
         );
       }
     }
@@ -420,7 +373,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
-  /// Дешифрувати одне повідомлення
   void _decryptMessage(Message message) {
     if (message.isDeleted) {
       _decryptedMessages[message.id] = 'Message was deleted by user';
@@ -449,17 +401,13 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         secretKey: _encryptionKey!,
       );
       _decryptedMessages[message.id] = plaintext;
-      print('✅ Message decrypted: ${plaintext.substring(0, math.min(30, plaintext.length))}');
     } catch (e) {
       _decryptedMessages[message.id] = '[Помилка дешифрування]';
-      print('❌ Decryption error for message ${message.id}: $e');
     }
   }
 
-  /// Дешифрувати всю історію повідомлень одного разу
   void _decryptHistoricalMessages() {
     if (_encryptionKey == null) {
-      print('⚠️ Encryption key not available yet');
       return;
     }
 
@@ -490,7 +438,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           } catch (e) {
             _decryptedMessages[msg.id] = '[Помилка дешифрування]';
             errorCount++;
-            print('⚠️ Decryption error for message ${msg.id}: $e');
           }
         }
       }
@@ -501,7 +448,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
 
     _markAllIncomingMessagesAsRead();
-    print('📊 Decryption results: $successCount success, $errorCount errors');
   }
 
   Future<void> _uploadAndSendFile({
@@ -526,14 +472,14 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (filePaths.isEmpty) return;
     if (filePaths.length > _maxAttachmentsPerMessage) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Можна відправити максимум $_maxAttachmentsPerMessage файлів за раз')),
+        SnackBar(content: Text('chat.maxAttachments'.tr(args: [_maxAttachmentsPerMessage.toString()]))),
       );
       return;
     }
 
     if (!_isConnected || _receiverId == null || _encryptionKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Немає з\'єднання або ключа шифрування')),
+        SnackBar(content: Text('chat.noConnectionOrKey'.tr())),
       );
       return;
     }
@@ -558,7 +504,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
       final messageId = createdMessage['id']?.toString();
       if (messageId == null || messageId.isEmpty) {
-        throw Exception('Не вдалося отримати id повідомлення для аттачментів');
+        throw Exception('chat.messageIdMissing'.tr());
       }
 
       await _messageApiService.batchUpload(
@@ -570,7 +516,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       await _reloadHistoryAndDecrypt();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Помилка відправки файлів: $e')),
+        SnackBar(content: Text('chat.uploadFilesError'.tr(args: [e.toString()]))),
       );
     } finally {
       if (mounted) {
@@ -633,12 +579,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             isDeleted: true,
             attachments: const [],
           );
-          _decryptedMessages[messageId] = 'Message was deleted by user';
+          _decryptedMessages[messageId] = 'chat.messageDeleted'.tr();
         });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Помилка видалення: $e')),
+        SnackBar(content: Text('chat.deleteError'.tr(args: [e.toString()]))),
       );
     }
   }
@@ -646,7 +592,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   Future<void> _editMessage(Message message) async {
     if (message.isDeleted || message.senderId != _userId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Можна редагувати лише власні активні повідомлення')),
+        SnackBar(content: Text('chat.editOnlyOwnActive'.tr())),
       );
       return;
     }
@@ -658,23 +604,23 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Редагувати повідомлення'),
+          title: Text('chat.editTitle'.tr()),
           content: TextField(
             controller: controller,
             minLines: 1,
             maxLines: 5,
-            decoration: const InputDecoration(
-              hintText: 'Новий текст повідомлення',
+            decoration: InputDecoration(
+              hintText: 'chat.editHint'.tr(),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Скасувати'),
+              child: Text('common.cancel'.tr()),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-              child: const Text('Зберегти'),
+              child: Text('chat.save'.tr()),
             ),
           ],
         );
@@ -689,7 +635,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
     if (_encryptionKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ключ шифрування не отриманий')),
+        SnackBar(content: Text('chat.keyNotReceived'.tr())),
       );
       return;
     }
@@ -719,7 +665,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Помилка редагування: $e')),
+        SnackBar(content: Text('chat.editError'.tr(args: [e.toString()]))),
       );
     }
   }
@@ -735,7 +681,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Редагувати'),
+              title: Text('chat.editAction'.tr()),
               onTap: () {
                 Navigator.pop(ctx);
                 _editMessage(message);
@@ -743,7 +689,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Видалити'),
+              title: Text('chat.deleteAction'.tr()),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteMessage(message.id);
@@ -794,13 +740,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (content.isEmpty) return;
 
     try {
-      // Encrypt message on client
       final encryptedData = EncryptionService.encryptMessage(
         plaintext: content,
         secretKey: _encryptionKey!,
       );
 
-      // Show optimistic message with temp ID
       final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
       _decryptedMessages[tempMessageId] = content;
       
@@ -828,7 +772,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       });
       _scrollToBottom();
 
-      // Send via SignalR
       await _chatService.sendMessage(
         consultationId: widget.consultationId,
         encryptedContent: encryptedData['encryptedContent']!,
@@ -846,7 +789,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       await _chatService.stopTyping(widget.consultationId);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не вдалося відправити повідомлення: $e')),
+        SnackBar(content: Text('chat.sendError'.tr(args: [e.toString()]))),
       );
     }
   }
@@ -1069,7 +1012,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is! Authenticated) {
-            return const Center(child: Text('Будь ласка, увійдіть в систему'));
+            return Center(child: Text('chat.signInPrompt'.tr()));
           }
 
           final userId = state.user.id ?? '';
@@ -1125,10 +1068,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           final textColor = colorScheme.onSurface;
                             final attachments = msg.isDeleted ? const <String>[] : msg.getMediaPaths();
 
-                          // Text selection for display:
-                          // 1. Якщо є дешифрований текст в _decryptedMessages - показуємо його
-                          // 2. Якщо є старий text поле (для сумісності) - показуємо його
-                          // 3. Інакше - текст недоступний
                           final displayText = msg.isDeleted
                               ? 'Message was deleted by user'
                               : (_decryptedMessages[msg.id] ??
@@ -1235,17 +1174,17 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       IconButton(
                         onPressed: _isUploading ? null : () => _pickImageFromGallery(userId),
                         icon: const Icon(Icons.image_outlined),
-                        tooltip: 'Зображення',
+                        tooltip: 'chat.imageTooltip'.tr(),
                       ),
                       IconButton(
                         onPressed: _isUploading ? null : () => _pickImageFromCamera(userId),
                         icon: const Icon(Icons.photo_camera_outlined),
-                        tooltip: 'Фото',
+                        tooltip: 'chat.photoTooltip'.tr(),
                       ),
                       IconButton(
                         onPressed: _isUploading ? null : () => _pickFile(userId),
                         icon: const Icon(Icons.attach_file),
-                        tooltip: 'Файл',
+                        tooltip: 'chat.fileTooltip'.tr(),
                       ),
                       Expanded(
                         child: TextField(
@@ -1254,9 +1193,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           maxLines: 4,
                           enabled: _isConnected && !_isUploading,
                           decoration: InputDecoration(
-                            hintText: 'Введіть повідомлення...',
+                            hintText: 'chat.messageHint'.tr(),
                             filled: true,
-                            fillColor: colorScheme.background,
+                            fillColor: colorScheme.surface,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 12,

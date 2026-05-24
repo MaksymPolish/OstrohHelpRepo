@@ -41,7 +41,6 @@ class ConsultationPage extends StatelessWidget {
               ),
               trailing: ElevatedButton(
                 onPressed: () {
-                  // TODO: Implement booking functionality
                 },
                 child: const Text('Book Now'),
               ),

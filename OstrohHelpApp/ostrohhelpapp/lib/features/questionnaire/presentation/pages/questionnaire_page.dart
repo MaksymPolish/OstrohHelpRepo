@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../data/services/questionnaire_api_service.dart';
@@ -34,7 +35,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     try {
       final state = context.read<AuthBloc>().state;
       if (state is! Authenticated) {
-        throw Exception('User not authenticated');
+        throw Exception('questionnaire.error.notAuthenticated'.tr());
       }
 
       final questionnaire = {
@@ -49,8 +50,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Questionnaire submitted successfully'),
+          SnackBar(
+            content: Text('questionnaire.success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -59,7 +60,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('common.errorWithDetails'.tr(args: [e.toString()])),
             backgroundColor: Colors.red,
           ),
         );
@@ -80,7 +81,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Нова анкета'),
+        title: Text('questionnaire.newTitle'.tr()),
       ),
       body: Form(
         key: _formKey,
@@ -88,12 +89,12 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
           padding: const EdgeInsets.all(24),
           children: [
             Text(
-              'Опишіть, що вас турбує',
+              'questionnaire.prompt'.tr(),
               style: theme.textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              'Ваше звернення буде доступне психологу ОА. Ми цінуємо конфіденційність.',
+              'questionnaire.privacyNote'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface.withOpacity(0.7),
               ),
@@ -108,24 +109,24 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 6,
-                      decoration: const InputDecoration(
-                        labelText: 'Опис ситуації',
-                        hintText: 'Напишіть, що саме турбує і як ми можемо допомогти...',
+                      decoration: InputDecoration(
+                        labelText: 'questionnaire.descriptionLabel'.tr(),
+                        hintText: 'questionnaire.descriptionHint'.tr(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Будь ласка, опишіть ситуацію';
+                          return 'questionnaire.validators.descriptionRequired'.tr();
                         }
                         if (value.trim().length < 10) {
-                          return 'Опис має бути не менше 10 символів';
+                          return 'questionnaire.validators.descriptionTooShort'.tr();
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 12),
                     SwitchListTile.adaptive(
-                      title: const Text('Подати анонімно'),
-                      subtitle: const Text('Ваше ім\'я не буде показано психологу'),
+                      title: Text('questionnaire.anonymous'.tr()),
+                      subtitle: Text('questionnaire.anonymousSubtitle'.tr()),
                       value: _isAnonymous,
                       onChanged: (value) {
                         setState(() {
@@ -148,7 +149,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                         : () {
                             Navigator.pop(context);
                           },
-                    child: const Text('Скасувати'),
+                    child: Text('common.cancel'.tr()),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -164,7 +165,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Надіслати'),
+                        : Text('common.submit'.tr()),
                   ),
                 ),
               ],

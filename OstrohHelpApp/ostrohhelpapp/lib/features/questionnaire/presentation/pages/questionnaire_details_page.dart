@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/questionnaire_api_service.dart';
 
@@ -12,19 +13,19 @@ class QuestionnaireDetailsPage extends StatelessWidget {
   });
 
   String _formatDate(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return 'Невідома дата';
+    if (raw == null || raw.trim().isEmpty) return 'common.unknownDate'.tr();
     try {
       final parsed = DateTime.parse(raw).toLocal();
       return DateFormat('dd.MM.yyyy, HH:mm').format(parsed);
     } catch (_) {
-      return 'Невідома дата';
+      return 'common.unknownDate'.tr();
     }
   }
 
   Color _statusColor(BuildContext context, String? status) {
     final colorScheme = Theme.of(context).colorScheme;
     if (status == null) return colorScheme.secondary;
-    if (status == 'Обробляється') return Colors.orange;
+    if (status == 'questionnaires.status.processing'.tr()) return Colors.orange;
     return Colors.green;
   }
 
@@ -32,7 +33,7 @@ class QuestionnaireDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Деталі анкети'),
+        title: Text('questionnaires.detailsTitle'.tr()),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _apiService.getQuestionnaireById(questionnaireId),
@@ -42,11 +43,11 @@ class QuestionnaireDetailsPage extends StatelessWidget {
           }
           if (snapshot.hasError) {
             return Center(
-              child: Text('Помилка: ${snapshot.error}'),
+              child: Text('common.errorWithDetails'.tr(args: [snapshot.error.toString()])),
             );
           }
           if (!snapshot.hasData) {
-            return const Center(child: Text('Дані відсутні'));
+            return Center(child: Text('common.noData'.tr()));
           }
 
           final questionnaire = snapshot.data!;
@@ -71,12 +72,12 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                'Анкета #${questionnaire['id']}',
+                                'questionnaires.itemPrefix'.tr(args: [questionnaire['id'].toString()]),
                                 style: theme.textTheme.headlineSmall,
                               ),
                             ),
                             Chip(
-                              label: Text(statusName ?? 'Невідомо'),
+                              label: Text(statusName ?? 'РќРµРІС–РґРѕРјРѕ'),
                               labelStyle: theme.textTheme.bodyMedium?.copyWith(
                                 color: statusColor,
                                 fontWeight: FontWeight.w600,
@@ -88,12 +89,12 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Опис звернення',
+                          'questionnaires.descriptionTitle'.tr(),
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          questionnaire['description'] ?? 'Опис відсутній',
+                          questionnaire['description'] ?? 'questionnaires.descriptionMissing'.tr(),
                           style: theme.textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 16),
@@ -111,8 +112,8 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                         ),
                         if (questionnaire['isAnonymous'] == true) ...[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Подано анонімно',
+                          Text(
+                            'questionnaires.submittedAnonymous'.tr(),
                             style: TextStyle(
                               fontStyle: FontStyle.italic,
                               color: Colors.grey,

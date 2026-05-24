@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:intl/intl.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
@@ -14,19 +15,19 @@ class QuestionnairesListPage extends StatelessWidget {
   const QuestionnairesListPage({super.key});
 
   String _formatDate(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return 'Невідома дата';
+    if (raw == null || raw.trim().isEmpty) return 'common.unknownDate'.tr();
     try {
       final parsed = DateTime.parse(raw).toLocal();
       return DateFormat('dd.MM.yyyy, HH:mm').format(parsed);
     } catch (_) {
-      return 'Невідома дата';
+      return 'common.unknownDate'.tr();
     }
   }
 
   Color _statusColor(BuildContext context, String? status) {
     final colorScheme = Theme.of(context).colorScheme;
     if (status == null) return colorScheme.secondary;
-    if (status == 'Обробляється') return Colors.orange;
+    if (status == 'questionnaires.status.processing'.tr()) return Colors.orange;
     return Colors.green;
   }
 
@@ -37,12 +38,12 @@ class QuestionnairesListPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Мої анкети'),
+        title: Text('questionnaires.title'.tr()),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is! Authenticated) {
-            return const Center(child: Text('Увійдіть, щоб переглянути анкети'));
+            return Center(child: Text('questionnaires.signInPrompt'.tr()));
           }
 
           return FutureBuilder<List<Map<String, dynamic>>>(
@@ -53,7 +54,7 @@ class QuestionnairesListPage extends StatelessWidget {
               }
               if (snapshot.hasError) {
                 return Center(
-                  child: Text('Помилка: ${snapshot.error}'),
+                  child: Text('common.errorWithDetails'.tr(args: [snapshot.error.toString()])),
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -66,13 +67,13 @@ class QuestionnairesListPage extends StatelessWidget {
                         Icon(Icons.inbox_outlined, size: 56, color: colorScheme.primary),
                         const SizedBox(height: 16),
                         Text(
-                          'Поки що немає анкет',
+                          'questionnaires.empty.title'.tr(),
                           style: theme.textTheme.headlineSmall,
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Створіть першу анкету для звернення до психолога',
+                          'questionnaires.empty.subtitle'.tr(),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.7),
                           ),
@@ -89,7 +90,7 @@ class QuestionnairesListPage extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.add),
-                          label: const Text('Створити анкету'),
+                          label: Text('questionnaires.create'.tr()),
                         ),
                       ],
                     ),
@@ -129,12 +130,12 @@ class QuestionnairesListPage extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'Анкета #${questionnaire['id']}',
+                                    'questionnaires.itemPrefix'.tr(args: [questionnaire['id'].toString()]),
                                     style: theme.textTheme.headlineSmall,
                                   ),
                                 ),
                                 Chip(
-                                  label: Text(statusName ?? 'Невідомо'),
+                                  label: Text(statusName ?? 'common.unknown'.tr()),
                                   labelStyle: theme.textTheme.bodyMedium?.copyWith(
                                     color: statusColor,
                                     fontWeight: FontWeight.w600,
@@ -161,7 +162,7 @@ class QuestionnairesListPage extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  'Переглянути деталі',
+                                  'questionnaires.viewDetails'.tr(),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -184,11 +185,11 @@ class QuestionnairesListPage extends StatelessWidget {
       ),
       floatingActionButton: Stack(
         children: [
-          // Кнопка "Своя анкета" - внизу справа
           Positioned(
             bottom: 16,
             right: 16,
             child: FloatingActionButton.extended(
+              heroTag: 'questionnairesCustomFormFab',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -198,15 +199,15 @@ class QuestionnairesListPage extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.create),
-              label: const Text('Своя анкета'),
+              label: Text('questionnaires.customForm'.tr()),
               backgroundColor: Colors.brown,
             ),
           ),
-          // Кнопка "Заповнити анкету" - вище
           Positioned(
             bottom: 88,
             right: 16,
             child: FloatingActionButton.extended(
+              heroTag: 'questionnairesHealthFab',
               onPressed: () async {
                 final tokenStorage = TokenStorage();
                 final token = await tokenStorage.getToken();
@@ -219,7 +220,7 @@ class QuestionnairesListPage extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.assignment),
-              label: const Text('Заповнити анкету'),
+              label: Text('questionnaires.fillHealth'.tr()),
             ),
           ),
         ],
@@ -270,7 +271,6 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Формуємо опис у потрібному форматі
       final description = '''Тема: ${_themeController.text}
 Терміновість: $_urgency
 Опис: ${_descriptionController.text}''';
@@ -284,8 +284,8 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Анкета успішно відправлена'),
+          SnackBar(
+            content: Text('questionnaire.success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -294,7 +294,7 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Помилка: $e'),
+          content: Text('common.errorWithDetails'.tr(args: [e.toString()])),
           backgroundColor: Colors.red,
         ),
       );
@@ -307,7 +307,7 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Своя анкета'),
+        title: Text('questionnaires.customForm'.tr()),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -316,48 +316,46 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Форма заявки',
+              Text(
+                'questionnaires.formTitle'.tr(),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Опишіть вашу проблему, і ми передамо її спеціалісту.',
+              Text(
+                'questionnaires.formSubtitle'.tr(),
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
 
-              // Тема звернення
-              const Text(
-                'Тема звернення',
+              Text(
+                'questionnaires.themeLabel'.tr(),
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _themeController,
                 decoration: InputDecoration(
-                  hintText: 'Тривожність, вигорання, конфлікти у групі',
+                  hintText: 'questionnaires.themeHintCustom'.tr(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Будь ласка, введіть тему';
+                    return 'questionnaires.validators.themeRequired'.tr();
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
 
-              // Терміновість
-              const Text(
-                'Терміновість',
+              Text(
+                'questionnaires.urgencyLabel'.tr(),
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _urgency,
+                initialValue: _urgency,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -375,16 +373,15 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
               ),
               const SizedBox(height: 20),
 
-              // Детальний опис
-              const Text(
-                'Детальний опис',
+              Text(
+                'questionnaires.descriptionLabel'.tr(),
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
-                  hintText: 'Опишіть ситуацію детальніше',
+                  hintText: 'questionnaires.descriptionHintCustom'.tr(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -392,14 +389,13 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
                 maxLines: 6,
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Будь ласка, введіть опис';
+                    return 'questionnaires.validators.descriptionRequired'.tr();
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 32),
 
-              // Кнопка відправки
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -417,8 +413,8 @@ class _CustomQuestionnaireFormState extends State<_CustomQuestionnaireForm> {
                             valueColor: AlwaysStoppedAnimation(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'Відправити заявку',
+                      : Text(
+                          'questionnaires.submitApplication'.tr(),
                           style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
                 ),

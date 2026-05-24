@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../../../../core/auth/token_storage.dart';
 
 class MessageApiService {
-  final String baseUrl = 'http://10.0.2.2:5000/api';
+  String get baseUrl => AppConfig.apiBaseUrl;
   final TokenStorage _tokenStorage = TokenStorage();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -59,7 +60,6 @@ class MessageApiService {
       body: json.encode(body),
     );
 
-    // Обробка rate limiting (429)
     if (response.statusCode == 429) {
       final retryAfter = response.headers['retry-after'] ?? '60';
       throw Exception(
@@ -84,13 +84,6 @@ class MessageApiService {
     throw Exception('Unexpected send message response');
   }
 
-  /// Завантажує кілька файлів відразу до консультації (BatchUpload)
-  /// 
-  /// Параметри:
-  ///   - [filePaths]: Список шляхів до файлів для завантаження
-  ///   - [messageId]: Опціонально ID повідомлення для прив'язки файлів
-  ///
-  /// Returns: Map з результатами завантаження включая URLs, thumbnails, posterів
   Future<Map<String, dynamic>> batchUpload({
     required List<String> filePaths,
     String? messageId,
@@ -111,7 +104,6 @@ class MessageApiService {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
-    // Додаємо файли до запиту
     for (var filePath in filePaths) {
       request.files.add(
         await http.MultipartFile.fromPath('file', filePath),
@@ -121,7 +113,6 @@ class MessageApiService {
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();
 
-    // Обробка rate limiting (429)
     if (response.statusCode == 429) {
       throw Exception('Rate limit exceeded. Please try again later.');
     }
@@ -158,7 +149,6 @@ class MessageApiService {
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();
 
-    // Обробка rate limiting (429)
     if (response.statusCode == 429) {
       throw Exception('Rate limit exceeded. Please try again later.');
     }
@@ -214,7 +204,6 @@ class MessageApiService {
       body: json.encode({'messageId': messageId}),
     );
 
-    // Обробка rate limiting (429)
     if (response.statusCode == 429) {
       throw Exception('Rate limit exceeded. Please try again later.');
     }
@@ -289,7 +278,6 @@ class MessageApiService {
       body: json.encode({'messageId': messageId}),
     );
 
-    // Обробка rate limiting (429)
     if (response.statusCode == 429) {
       throw Exception('Rate limit exceeded. Please try again later.');
     }

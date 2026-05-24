@@ -55,3 +55,4 @@ class UserStorage {
     await prefs.remove(_lastLoginKey);
   }
 }
+

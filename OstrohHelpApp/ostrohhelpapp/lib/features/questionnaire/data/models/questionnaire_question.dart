@@ -1,4 +1,3 @@
-// Модель для питання анкети
 class QuestionnaireQuestion {
   final int id;
   final int blockId;
@@ -36,3 +35,4 @@ class QuestionnaireQuestion {
     'maxScore': maxScore,
   };
 }
+

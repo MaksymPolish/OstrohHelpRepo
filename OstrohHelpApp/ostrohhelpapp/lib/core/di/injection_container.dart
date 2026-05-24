@@ -9,22 +9,18 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // Services
   if (!sl.isRegistered<AuthApiService>()) {
     sl.registerLazySingleton(() => AuthApiService());
   }
 
-  // Blocs
   if (!sl.isRegistered<AuthBloc>()) {
     sl.registerFactoryParam<AuthBloc, BuildContext, void>(
       (context, _) => AuthBloc(context),
     );
   }
 
-  // Register FirebaseAuth as a factory so it's not accessed early
   if (!sl.isRegistered<FirebaseAuth>()) {
     sl.registerFactory<FirebaseAuth>(() {
-      // This ensures Firebase is initialized before using FirebaseAuth
       assert(Firebase.apps.isNotEmpty, 'Firebase must be initialized before accessing FirebaseAuth');
       return FirebaseAuth.instance;
     });

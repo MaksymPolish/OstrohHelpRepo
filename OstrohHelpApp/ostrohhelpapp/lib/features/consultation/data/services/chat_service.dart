@@ -85,12 +85,8 @@ class ChatService {
 
     try {
       await _connectToHub(primaryHubUrl, _accessToken!);
-      print('✅ Connected to SignalR hub: /chat');
     } catch (primaryError) {
-      print('⚠️ Failed to connect to /chat: $primaryError');
-      print('↩️ Trying fallback hub URL: /hubs/chat');
       await _connectToHub(fallbackHubUrl, _accessToken!);
-      print('✅ Connected to SignalR hub: /hubs/chat (fallback)');
     }
   }
 
@@ -122,82 +118,55 @@ class ChatService {
   void _setupEventHandlers() {
     if (_hubConnection == null) return;
 
-    print('🔌 Setting up event handlers...');
 
-    // ReceiveConsultationKey - отримання ключа для шифрування повідомлень
-    // Сервер генерує ключ за допомогою HKDF-SHA256:
-    //    Input: Master Key (з .env) + ConsultationId
-    //    Output: 256-bit Base64-encoded AES-GCM ключ
     _hubConnection!.on('ReceiveConsultationKey', (arguments) {
-      print('📨 [ReceiveConsultationKey] evento received');
-      print('   arguments: $arguments');
-      print('   arguments length: ${arguments?.length}');
       
       if (arguments != null && arguments.isNotEmpty) {
         try {
-          print('   Parsing arguments[0]...');
           final data = arguments[0] as Map<String, dynamic>;
-          print('   ✅ Parsed data: $data');
           
-          // ❗ Сервер надсилає поле 'key', не 'consultationKey'
           final consultationKey = data['key']?.toString();
-          print('   consultationKey: ${consultationKey?.substring(0, 20)}...');
           
           if (consultationKey != null && consultationKey.isNotEmpty) {
-            print('   🔐 Adding key to consultationKeyController');
             _consultationKeyController.add(consultationKey);
-            print('   ✅ Key added successfully');
           } else {
-            print('   ❌ consultationKey is null or empty');
           }
         } catch (e) {
-          print('   ❌ Error parsing ReceiveConsultationKey: $e');
           _errorController.add('Error parsing ReceiveConsultationKey: $e');
         }
       } else {
-        print('   ⚠️ arguments is null or empty');
       }
     });
 
     void handleReceiveMessage(List<Object?>? arguments) {
-      print('📨 [ReceiveMessage] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
           final raw = arguments[0];
           if (raw is! Map) {
-            print('   ❌ Invalid message payload type: ${raw.runtimeType}');
             return;
           }
 
           final messageJson = raw.map((key, value) => MapEntry(key.toString(), value));
-          print('   messageId: ${messageJson['id']}, senderId: ${messageJson['senderId']}');
           final message = Message.fromJson(messageJson);
           if (message.id.isEmpty) {
-            print('   ❌ Skipping message with empty id (likely payload shape mismatch)');
             return;
           }
           _messageController.add(message);
-          print('   ✅ Message added');
         } catch (e) {
-          print('   ❌ Error parsing message: $e');
           _errorController.add('Error parsing message: $e');
         }
       }
     }
 
-    // ReceiveMessage - основний evento
     _hubConnection!.on('ReceiveMessage', handleReceiveMessage);
-    // Додаткові aliases для сумісності з різними backend-реалізаціями
     _hubConnection!.on('ReceiveNewMessage', handleReceiveMessage);
     _hubConnection!.on('MessageReceived', handleReceiveMessage);
 
     void handleMessageUpdated(List<Object?>? arguments) {
-      print('📨 [MessageUpdated] evento received');
       if (arguments == null || arguments.isEmpty) return;
       try {
         final raw = arguments[0];
         if (raw is! Map) {
-          print('   ❌ Invalid updated message payload type: ${raw.runtimeType}');
           return;
         }
 
@@ -205,9 +174,7 @@ class ChatService {
         final message = Message.fromJson(messageJson);
         if (message.id.isEmpty) return;
         _messageUpdatedController.add(message);
-        print('   ✅ Updated message added');
       } catch (e) {
-        print('   ❌ Error parsing MessageUpdated: $e');
         _errorController.add('Error parsing MessageUpdated: $e');
       }
     }
@@ -216,46 +183,35 @@ class ChatService {
     _hubConnection!.on('ReceiveUpdatedMessage', handleMessageUpdated);
     _hubConnection!.on('MessageEdited', handleMessageUpdated);
 
-    // Keep old event for compatibility (legacy)
     _hubConnection!.on('LoadMessagesResult', (arguments) {
-      print('📨 [LoadMessagesResult] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
           final messages = (arguments[0] as List?)
                   ?.map((m) => Message.fromJson((m as Map).map((k, v) => MapEntry(k.toString(), v))))
                   .toList() ??
               [];
-          print('   Loaded ${messages.length} messages');
           _messagesLoadedController.add(messages);
-          print('   ✅ Messages loaded');
         } catch (e) {
-          print('   ❌ Error parsing LoadMessagesResult: $e');
           _errorController.add('Error parsing LoadMessagesResult: $e');
         }
       }
     });
 
-    // ReceiveJoinedConsultation - користувач приєднався до консультації
     _hubConnection!.on('ReceiveJoinedConsultation', (arguments) {
-      print('📨 [ReceiveJoinedConsultation] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
           final data = arguments[0] as Map<String, dynamic>;
-          print('   userId: ${data['userId']}');
           _userOnlineController.add(UserOnlineEvent(
             userId: data['userId']?.toString() ?? '',
             isOnline: true,
           ));
-          print('   ✅ User online event added');
         } catch (e) {
-          print('   ❌ Error parsing ReceiveJoinedConsultation: $e');
           _errorController.add('Error parsing ReceiveJoinedConsultation: $e');
         }
       }
     });
 
     _hubConnection!.on('UserOnline', (arguments) {
-      print('📨 [UserOnline] evento received');
       if (arguments == null || arguments.isEmpty) return;
       try {
         String userId = '';
@@ -273,7 +229,6 @@ class ChatService {
           }
         }
 
-        print('   UserId: $userId, IsOnline: $isOnline');
         if (userId.isNotEmpty) {
           _userOnlineController.add(UserOnlineEvent(
             userId: userId,
@@ -281,22 +236,18 @@ class ChatService {
           ));
         }
       } catch (e) {
-        print('   ❌ Error parsing UserOnline: $e');
         _errorController.add('Error parsing UserOnline: $e');
       }
     });
 
     _hubConnection!.on('UserStatusChanged', (arguments) {
-      print('📨 [UserStatusChanged] evento received');
       if (arguments == null || arguments.length < 2) {
-        print('   ⚠️ Invalid UserStatusChanged payload: $arguments');
         return;
       }
 
       try {
         final userId = arguments[0]?.toString() ?? '';
         final isOnline = arguments[1] == true;
-        print('   UserId: $userId, IsOnline: $isOnline');
 
         if (userId.isNotEmpty) {
           _userOnlineController.add(UserOnlineEvent(
@@ -305,13 +256,11 @@ class ChatService {
           ));
         }
       } catch (e) {
-        print('   ❌ Error parsing UserStatusChanged: $e');
         _errorController.add('Error parsing UserStatusChanged: $e');
       }
     });
 
     void handleMessageRead(List<Object?>? arguments) {
-      print('📨 [MessageRead] evento received');
       if (arguments == null || arguments.isEmpty) return;
       try {
         String messageId = '';
@@ -326,13 +275,10 @@ class ChatService {
           }
         }
 
-        print('   messageId: $messageId');
         if (messageId.isNotEmpty) {
           _messageReadController.add(messageId);
-          print('   ✅ Message read event added');
         }
       } catch (e) {
-        print('   ❌ Error parsing MessageRead: $e');
         _errorController.add('Error parsing MessageRead: $e');
       }
     }
@@ -341,24 +287,20 @@ class ChatService {
     _hubConnection!.on('ReceiveMarkedAsRead', handleMessageRead);
 
     _hubConnection!.on('UserTyping', (arguments) {
-      print('📨 [UserTyping] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
           final data = arguments[0] as Map<String, dynamic>;
           final userId = data['UserId']?.toString();
-          print('   userId: $userId');
           if (userId != null) {
             _typingController.add(userId);
           }
         } catch (e) {
-          print('   ❌ Error parsing UserTyping: $e');
           _errorController.add('Error parsing UserTyping: $e');
         }
       }
     });
 
     _hubConnection!.on('MessageDeleted', (arguments) {
-      print('📨 [MessageDeleted] evento received');
       if (arguments != null && arguments.isNotEmpty) {
         try {
           final raw = arguments[0];
@@ -371,62 +313,48 @@ class ChatService {
             messageId = data['messageId']?.toString() ?? data['MessageId']?.toString() ?? '';
           }
 
-          print('   messageId: $messageId');
           if (messageId != null) {
             _messageDeletedController.add(messageId);
-            print('   ✅ Message deleted event added');
           }
         } catch (e) {
-          print('   ❌ Error parsing MessageDeleted: $e');
           _errorController.add('Error parsing MessageDeleted: $e');
         }
       }
     });
 
     _hubConnection!.on('Error', (arguments) {
-      print('📨 [Error] evento received: $arguments');
       if (arguments != null && arguments.isNotEmpty) {
         _errorController.add(arguments[0].toString());
       }
     });
 
     _hubConnection!.onreconnecting(({error}) {
-      print('🔄 Reconnecting... (error: $error)');
       _connectionStateController.add(HubConnectionState.Reconnecting);
     });
 
     _hubConnection!.onreconnected(({connectionId}) {
-      print('✅ Reconnected (connectionId: $connectionId)');
       _connectionStateController.add(HubConnectionState.Connected);
       if (_currentConsultationId != null) {
-        print('   Rejoining consultation: $_currentConsultationId');
         joinConsultation(_currentConsultationId!);
       }
     });
 
     _hubConnection!.onclose(({error}) {
-      print('❌ Connection closed (error: $error)');
       _connectionStateController.add(HubConnectionState.Disconnected);
     });
   }
 
   Future<void> joinConsultation(String consultationId) async {
-    print('📍 joinConsultation called with consultationId: $consultationId');
-    print('   isConnected: $isConnected');
     
     if (!isConnected) {
-      print('   ❌ Not connected to chat hub');
       throw Exception('Not connected to chat hub');
     }
 
     _currentConsultationId = consultationId;
 
     try {
-      print('   Invoking JoinConsultation...');
       await _hubConnection!.invoke('JoinConsultation', args: [consultationId]);
-      print('   ✅ JoinConsultation invoked successfully');
     } catch (e) {
-      print('   ❌ Failed to join consultation: $e');
       _errorController.add('Failed to join consultation: $e');
       rethrow;
     }
@@ -472,19 +400,13 @@ class ChatService {
   }
 
   Future<void> loadMessages(String consultationId) async {
-    // 📌 DEPRECATED - завантаження історії тепер через REST API (chat_page.dart)
-    // Цей метод залишається для сумісності, але більше не викликається
     if (!isConnected) {
-      print('⚠️ Cannot load messages: not connected to chat hub');
       return;
     }
 
     try {
-      print('📨 Invoking LoadMessages for consultation: $consultationId (deprecated)');
       await _hubConnection!.invoke('LoadMessages', args: [consultationId]);
-      print('✅ LoadMessages invoked successfully (but use REST API instead)');
     } catch (e) {
-      print('❌ Error invoking LoadMessages: $e');
       _errorController.add('Failed to load messages: $e');
     }
   }
@@ -506,9 +428,6 @@ class ChatService {
     }
 
     try {
-      // 🔐 Сервер вычисляет receiverId сам из консультации
-      // Отправляем: consultationId, encryptedContent, iv, authTag, attachments ([])
-      // 5 параметров (последний - optional List<AttachmentData>)
       await _hubConnection!.invoke('SendMessage',
         args: [consultationId, encryptedContent, iv, authTag, []],
       );
@@ -586,3 +505,4 @@ class ChatService {
     await _consultationKeyController.close();
   }
 }
+

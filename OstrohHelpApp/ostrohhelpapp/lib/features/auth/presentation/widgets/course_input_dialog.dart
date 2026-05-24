@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class CourseInputDialog extends StatefulWidget {
   final String userId;
@@ -41,15 +42,15 @@ class _CourseInputDialogState extends State<CourseInputDialog> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // Забороняємо закриття по кнопці "назад"
+      onWillPop: () async => false,
       child: AlertDialog(
-        title: const Text('Введіть ваш курс'),
+        title: Text('auth.courseDialog.title'.tr()),
         content: TextField(
           controller: _courseController,
-          decoration: const InputDecoration(
-            hintText: 'Наприклад: КН-33, АБС-3',
+          decoration: InputDecoration(
+            hintText: 'auth.courseDialog.hint'.tr(),
             border: OutlineInputBorder(),
-            helperText: 'Формат: Літери-цифра (наприклад, КН-33)',
+            helperText: 'auth.courseDialog.helper'.tr(),
           ),
           autofocus: true,
         ),
@@ -61,7 +62,7 @@ class _CourseInputDialogState extends State<CourseInputDialog> {
                     Navigator.of(context).pop();
                   }
                 : null,
-            child: const Text('Відправити'),
+            child: Text('common.submit'.tr()),
           ),
         ],
       ),

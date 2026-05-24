@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
 import '../bloc/auth_event.dart';
@@ -18,7 +19,7 @@ class LoginPage extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.background,
+              colorScheme.surface,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -38,7 +39,7 @@ class LoginPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Помилка: ${state.message}',
+                        'login.error'.tr(args: [state.message]),
                         style: TextStyle(color: colorScheme.error),
                         textAlign: TextAlign.center,
                       ),
@@ -47,7 +48,7 @@ class LoginPage extends StatelessWidget {
                         onPressed: () {
                           context.read<AuthBloc>().add(SignInWithGoogleRequested());
                         },
-                        child: const Text('Спробувати ще раз'),
+                        child: Text('login.retry'.tr()),
                       ),
                     ],
                   ),
@@ -71,13 +72,13 @@ class LoginPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'OA Mind Care',
+                              'app.title'.tr(),
                               style: theme.textTheme.headlineLarge,
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Спокійний простір для підтримки студентів',
+                              'login.subtitle'.tr(),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurface.withOpacity(0.75),
                               ),
@@ -89,14 +90,14 @@ class LoginPage extends StatelessWidget {
                                 context.read<AuthBloc>().add(SignInWithGoogleRequested());
                               },
                               icon: const Icon(Icons.g_mobiledata),
-                              label: const Text('Увійти через Google'),
+                              label: Text('login.signInWithGoogle'.tr()),
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(52),
                               ),
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Конфіденційно. Психологи ОА відповідають на анкети.',
+                              'login.confidentialNote'.tr(),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurface.withOpacity(0.65),
                               ),

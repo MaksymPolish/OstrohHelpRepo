@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../../domain/entities/user.dart' as app_user;
 import '../../data/services/auth_api_service.dart';
+import '../../../../core/config/app_config.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../../../core/di/injection_container.dart';
@@ -11,9 +11,9 @@ import '../../../../core/auth/user_storage.dart';
 import 'package:flutter/material.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     signInOption: SignInOption.standard,
+    serverClientId: AppConfig.googleServerClientId,
   );
   final AuthApiService _apiService = sl<AuthApiService>();
     final TokenStorage _tokenStorage = TokenStorage();
@@ -36,13 +36,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final isTokenExpired = await _tokenStorage.isTokenExpired();
     final isSessionExpired = await _userStorage.isSessionExpired();
 
-    // Перевіряємо, чи токен і сесія валідні
     if (token != null && cachedUser != null && !isTokenExpired && !isSessionExpired) {
       emit(Authenticated(cachedUser));
       return;
     }
 
-    // Якщо щось застаріло - очищаємо все
     if (isTokenExpired || isSessionExpired) {
       await _tokenStorage.clearTokens();
       await _userStorage.clearUser();
@@ -65,18 +63,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = firebase_auth.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Try to sign in with Firebase, but don't fail if there's a Pigeon error
-      try {
-        await _auth.signInWithCredential(credential);
-      } catch (firebaseError) {
-        // Continue anyway - we don't really need Firebase, just the API
-        debugPrint('Firebase Sign In warning (continuing with API): $firebaseError');
-      }
 
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(googleAuth.idToken!);
@@ -98,7 +84,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(AuthLoading());
       await Future.wait([
-        _auth.signOut(),
         _googleSignIn.signOut(),
         _tokenStorage.clearTokens(),
         _userStorage.clearUser(),

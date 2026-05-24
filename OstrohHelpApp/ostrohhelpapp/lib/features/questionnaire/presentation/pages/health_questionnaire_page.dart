@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../data/models/questionnaire_question.dart';
 import '../../data/models/questionnaire_result.dart';
 import '../../data/services/questionnaire_data.dart';
@@ -55,14 +56,13 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
   }
 
   void _scrollToTop() {
-    // Прокрутити вверх
   }
 
   Future<void> _submitQuestionnaire() async {
     if (answers.length != 15) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Будь ласка, відповідьте на всі питання'),
+        SnackBar(
+          content: Text('health.validators.answerAll'.tr()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -77,7 +77,6 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
       final calculatedResult =
           QuestionnaireCalculationService.calculateResult(answers);
 
-      // Відправити на сервер
       final apiService = QuestionnaireApiService();
       await apiService.submitQuestionnaireResult(result: calculatedResult);
 
@@ -90,7 +89,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Помилка: $e'),
+          content: Text('common.errorWithDetails'.tr(args: [e.toString()])),
           backgroundColor: Colors.red,
         ),
       );
@@ -105,21 +104,21 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Результати анкети'),
+        title: Text('health.result.title'.tr()),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildResultSection(
-                'Загальний емоційний стан',
+                'health.result.emotionalState'.tr(),
                 result.depressionLevel,
                 result.depressionScore,
                 27,
               ),
               const SizedBox(height: 16),
               _buildResultSection(
-                'Академічне вигорання',
+                'health.result.burnout'.tr(),
                 result.burnoutLevel,
                 result.burnoutScore,
                 24,
@@ -127,8 +126,8 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 8),
-              const Text(
-                'Рекомендації:',
+              Text(
+                'health.result.recommendations'.tr(),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -139,7 +138,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Закрити'),
+            child: Text('common.close'.tr()),
           ),
         ],
       ),
@@ -166,7 +165,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Рівень: $level'),
+            Text('health.result.level'.tr(args: [level])),
             Text('$score/$maxScore'),
           ],
         ),
@@ -211,7 +210,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
     if (result != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Результати'),
+          title: Text('health.summaryTitle'.tr()),
           actions: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -223,7 +222,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                       MaterialPageRoute(builder: (context) => const QuestionnairePage()),
                     );
                   },
-                  child: const Text('Заповнити форму заявки'),
+                  child: Text('health.goToApplication'.tr()),
                 ),
               ),
             ),
@@ -236,8 +235,8 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Дякуємо за проходження анкети!',
+                  Text(
+                    'health.thanks'.tr(),
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
@@ -257,8 +256,8 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Рекомендації:',
+                  Text(
+                    'health.result.recommendations'.tr(),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -276,8 +275,8 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                           MaterialPageRoute(builder: (context) => const QuestionnairePage()),
                         );
                       },
-                      child: const Text(
-                        'Заповнити форму заявки',
+                        child: Text(
+                        'health.goToApplication'.tr(),
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -287,7 +286,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Повернутися'),
+                      child: Text('common.back'.tr()),
                     ),
                   ),
                 ],
@@ -300,7 +299,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Анкета психічного здоров\'я - Блок $currentBlock з 2'),
+        title: Text('health.blockTitle'.tr(args: [currentBlock.toString()])),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -308,7 +307,6 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
       ),
       body: Column(
         children: [
-          // Progress bar
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -317,7 +315,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Прогрес: $answeredCount/${blockQuestions.length}'),
+                    Text('health.progress'.tr(args: [answeredCount.toString(), blockQuestions.length.toString()])),
                     Text('${(progress * 100).toStringAsFixed(0)}%'),
                   ],
                 ),
@@ -332,15 +330,12 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
               ],
             ),
           ),
-          // Questions
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: blockQuestions.length,
               itemBuilder: (context, index) {
                 final question = blockQuestions[index];
-                final isAnswered = answers.containsKey(question.id);
-
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
@@ -349,7 +344,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Питання ${question.id}',
+                          'health.questionPrefix'.tr(args: [question.id.toString()]),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -395,7 +390,6 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
               },
             ),
           ),
-          // Navigation buttons
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -404,7 +398,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _previousBlock,
-                      child: const Text('Назад'),
+                      child: Text('common.back'.tr()),
                     ),
                   ),
                 if (currentBlock > 1) const SizedBox(width: 12),
@@ -419,7 +413,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
                               strokeWidth: 2,
                             ),
                           )
-                        : Text(currentBlock < 2 ? 'Далі' : 'Готово'),
+                        : Text(currentBlock < 2 ? 'health.next'.tr() : 'health.done'.tr()),
                   ),
                 ),
               ],
@@ -430,3 +424,4 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
     );
   }
 }
+

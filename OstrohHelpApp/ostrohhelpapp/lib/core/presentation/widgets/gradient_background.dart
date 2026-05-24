@@ -23,7 +23,6 @@ class GradientBackground extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Diagonal lines pattern
           CustomPaint(
             size: Size.infinite,
             painter: DiagonalLinesPainter(),

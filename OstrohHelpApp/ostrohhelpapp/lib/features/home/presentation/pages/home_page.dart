@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../../../questionnaire/presentation/pages/questionnaires_list_page.dart';
 
@@ -17,7 +18,7 @@ class HomePage extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 colorScheme.surface,
-                colorScheme.background,
+                colorScheme.surface,
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -37,14 +38,14 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'OA Mind Care',
+                      'app.title'.tr(),
                       style: theme.textTheme.headlineLarge,
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Простір турботи та підтримки для студентів ОА',
+                  'home.subtitle'.tr(),
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -52,7 +53,7 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Швидкі дії',
+                  'home.quickActions'.tr(),
                   style: theme.textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -69,8 +70,8 @@ class HomePage extends StatelessWidget {
                           width: isWide ? (constraints.maxWidth - 16) / 2 : double.infinity,
                           child: _HomeActionCard(
                             icon: Icons.assignment_turned_in,
-                            title: 'Мої анкети',
-                            subtitle: 'Подайте або перегляньте анкети',
+                            title: 'home.myQuestionnaires.title'.tr(),
+                            subtitle: 'home.myQuestionnaires.subtitle'.tr(),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -85,8 +86,8 @@ class HomePage extends StatelessWidget {
                           width: isWide ? (constraints.maxWidth - 16) / 2 : double.infinity,
                           child: _HomeActionCard(
                             icon: Icons.forum,
-                            title: 'Мої консультації',
-                            subtitle: 'Зверніться до психолога',
+                            title: 'home.myConsultations.title'.tr(),
+                            subtitle: 'home.myConsultations.subtitle'.tr(),
                             onTap: () {
                               Navigator.pushNamed(context, '/consultations');
                             },

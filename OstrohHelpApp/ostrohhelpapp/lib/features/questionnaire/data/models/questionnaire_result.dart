@@ -1,4 +1,3 @@
-// Результат анкети
 class QuestionnaireResult {
   final int depressionScore; // Блок 1: 0-15+
   final int burnoutScore; // Блок 2: 0-24
@@ -16,7 +15,6 @@ class QuestionnaireResult {
     required this.answers,
   });
 
-  // Визначає рівень депресії
   static String getDepressionLevel(int score) {
     if (score <= 4) return 'Норма';
     if (score <= 9) return 'Легкий';
@@ -24,14 +22,12 @@ class QuestionnaireResult {
     return 'Високий';
   }
 
-  // Визначає рівень вигорання
   static String getBurnoutLevel(int score) {
     if (score <= 8) return 'Низький';
     if (score <= 16) return 'Середній';
     return 'Високий';
   }
 
-  // Генерує рекомендацію
   static String generateRecommendation(String depression, String burnout) {
     final recommendations = <String>[];
 
@@ -74,3 +70,4 @@ class QuestionnaireResult {
     'answers': answers,
   };
 }
+

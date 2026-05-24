@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:intl/intl.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
@@ -60,12 +61,12 @@ class ConsultationListPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Консультації'),
+        title: Text('consultations.title'.tr()),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is! Authenticated) {
-            return const Center(child: Text('Будь ласка, увійдіть в систему'));
+            return Center(child: Text('consultations.signInPrompt'.tr()));
           }
 
           return FutureBuilder<List<Map<String, dynamic>>>(
@@ -76,7 +77,7 @@ class ConsultationListPage extends StatelessWidget {
               }
 
               if (snapshot.hasError) {
-                return Center(child: Text('Помилка: ${snapshot.error}'));
+                return Center(child: Text('common.errorWithDetails'.tr(args: [snapshot.error.toString()])));
               }
 
               final consultations = snapshot.data ?? [];
@@ -91,13 +92,13 @@ class ConsultationListPage extends StatelessWidget {
                         Icon(Icons.forum_outlined, size: 56, color: colorScheme.primary),
                         const SizedBox(height: 16),
                         Text(
-                          'Поки що немає консультацій',
+                          'consultations.empty.title'.tr(),
                           style: theme.textTheme.headlineSmall,
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Подайте анкету, щоб отримати підтримку психолога',
+                          'consultations.empty.subtitle'.tr(),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.7),
                           ),
@@ -187,7 +188,7 @@ class ConsultationListPage extends StatelessWidget {
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
-                                          isPeerOnline ? 'Online' : 'Offline',
+                                          isPeerOnline ? 'common.online'.tr() : 'common.offline'.tr(),
                                           style: theme.textTheme.bodyMedium?.copyWith(
                                             color: isPeerOnline
                                                 ? Colors.green
@@ -198,7 +199,7 @@ class ConsultationListPage extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'Статус: ${consultation.statusName}',
+                                      'consultations.status'.tr(args: [consultation.statusName]),
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         color: colorScheme.onSurface.withOpacity(0.7),
                                       ),
@@ -231,7 +232,7 @@ class ConsultationListPage extends StatelessWidget {
                                       }
                                     : null,
                                 icon: const Icon(Icons.chat_bubble_outline),
-                                label: const Text('Чат'),
+                                label: Text('consultations.chat'.tr()),
                               ),
                             ],
                           ),

@@ -1,4 +1,3 @@
-/// Модель вкладення повідомлення з превʼю URL
 class MessageAttachment {
   final String id;
   final String fileName;
@@ -85,7 +84,6 @@ class MessageAttachment {
   }
 }
 
-/// Модель повідомлення з підтримкою шифрування
 class Message {
   final String id;
   final String consultationId;
@@ -96,12 +94,10 @@ class Message {
   final String receiverName;
   final String? receiverPhotoUrl;
 
-  /// Зашифровані дані (Base64) - замість text
   final String? encryptedContent;
   final String? iv;
   final String? authTag;
 
-  /// Старе поле (для сумісності) - може залишатися null для новых messages
   @Deprecated('Use encryptedContent instead')
   final String? text;
 
@@ -168,7 +164,6 @@ class Message {
   }
 
   factory Message.fromJson(Map<String, dynamic> json) {
-    // Parse attachments
     final rawAttachments = json['attachments'];
     final attachments = rawAttachments is List
         ? rawAttachments
@@ -176,7 +171,6 @@ class Message {
             .toList()
         : <MessageAttachment>[];
 
-    // Fallback to mediaPaths for legacy compatibility
     final rawMedia = json['mediaPaths'];
     if (rawMedia is List && attachments.isEmpty) {
       for (var mediaUrl in rawMedia) {
@@ -204,11 +198,9 @@ class Message {
       receiverId: json['receiverId'] ?? '',
       receiverName: json['receiverName'] ?? 'Unknown',
       receiverPhotoUrl: json['receiverPhotoUrl'],
-      // Нові поля для шифрування
       encryptedContent: json['encryptedContent'],
       iv: json['iv'],
       authTag: json['authTag'],
-      // Старе поле для сумісності
       text: json['text'],
       sentAt: DateTime.tryParse(rawSentAt) ?? DateTime.now(),
       isRead: json['isRead'] ?? false,
@@ -236,7 +228,6 @@ class Message {
         'attachments': attachments.map((a) => a.toJson()).toList(),
       };
 
-  /// Отримує тип файлу з URL
   static String _getFileType(String fileUrl) {
     try {
       final uri = Uri.parse(fileUrl);
@@ -248,8 +239,6 @@ class Message {
     }
   }
 
-  /// Отримує мედіа шляхи для відображення
-  /// (підтримує як новий attachments так і старий mediaPaths формат)
   List<String> getMediaPaths() {
     if (attachments.isNotEmpty) {
       return attachments.map((a) => a.fileUrl).toList();

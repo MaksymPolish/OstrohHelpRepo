@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
@@ -46,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профіль'),
+        title: Text('profile.title'.tr()),
         centerTitle: true,
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
@@ -59,13 +60,13 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Please log in to view profile'),
+                  Text('profile.loginPrompt'.tr()),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, '/');
                     },
-                    child: const Text('Sign In'),
+                    child: Text('profile.signIn'.tr()),
                   ),
                 ],
               ),
@@ -181,9 +182,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: const Text('Тема застосунку'),
+                                title: Text('profile.theme.title'.tr()),
                                 subtitle: Text(
-                                  'Оберіть режим, який менше напружує очі',
+                                  'profile.theme.subtitle'.tr(),
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ),
@@ -195,8 +196,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     AppThemeController.instance.setTheme(value);
                                   }
                                 },
-                                title: const Text('Академічна теплота'),
-                                subtitle: const Text('М\'які світлі відтінки для денного режиму'),
+                                title: Text('profile.theme.light.title'.tr()),
+                                subtitle: Text('profile.theme.light.subtitle'.tr()),
                               ),
                               RadioListTile<ThemeMode>(
                                 value: ThemeMode.dark,
@@ -206,8 +207,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     AppThemeController.instance.setTheme(value);
                                   }
                                 },
-                                title: const Text('Нічний режим без тиску'),
-                                subtitle: const Text('М\'які темні відтінки для вечора'),
+                                title: Text('profile.theme.dark.title'.tr()),
+                                subtitle: Text('profile.theme.dark.subtitle'.tr()),
                               ),
                             ],
                           ),
@@ -216,7 +217,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  // 🔐 ПЕРЕВІРКА РОЛІ: Показати кнопку адмін панелі для Адміністратора або Психолога
                   if (RoleChecker.isAdminOrPsychologist(user.roleId))
                     ElevatedButton.icon(
                       onPressed: () {
@@ -228,7 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                       icon: const Icon(Icons.admin_panel_settings),
-                      label: const Text('Адмін панель'),
+                      label: Text('profile.adminPanel'.tr()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueGrey,
                         foregroundColor: Colors.white,
@@ -248,7 +248,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       context.read<AuthBloc>().add(SignOutRequested());
                     },
                     icon: const Icon(Icons.logout),
-                    label: const Text('Sign Out'),
+                    label: Text('profile.signOut'.tr()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,

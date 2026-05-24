@@ -22,3 +22,4 @@ class AppThemeController {
     await prefs.setString(_themeModeKey, mode == ThemeMode.dark ? 'dark' : 'light');
   }
 }
+

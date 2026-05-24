@@ -34,12 +34,8 @@ class PresenceService {
 
     try {
       await _connect(primaryUrl, _accessToken!);
-      print('✅ Presence connected: /hubs/chat');
     } catch (primaryError) {
-      print('⚠️ Presence failed /hubs/chat: $primaryError');
-      print('↩️ Presence trying fallback /chat');
       await _connect(fallbackUrl, _accessToken!);
-      print('✅ Presence connected: /chat (fallback)');
     }
   }
 
@@ -66,7 +62,6 @@ class PresenceService {
     if (_connection == null) return;
 
     _connection!.on('UserStatusChanged', (args) {
-      print('📨 [Presence.UserStatusChanged] received: $args');
       if (args == null || args.length < 2) return;
 
       final userId = args[0]?.toString() ?? '';
@@ -75,7 +70,6 @@ class PresenceService {
     });
 
     _connection!.on('UserOnline', (args) {
-      print('📨 [Presence.UserOnline] received: $args');
       if (args == null || args.isEmpty) return;
 
       String userId = '';
@@ -99,15 +93,12 @@ class PresenceService {
     });
 
     _connection!.onreconnected(({connectionId}) {
-      print('✅ Presence reconnected ($connectionId)');
     });
 
     _connection!.onreconnecting(({error}) {
-      print('🔄 Presence reconnecting: $error');
     });
 
     _connection!.onclose(({error}) {
-      print('❌ Presence connection closed: $error');
     });
   }
 
@@ -115,7 +106,6 @@ class PresenceService {
     try {
       await _connection?.stop();
     } catch (e) {
-      print('⚠️ Presence pause failed: $e');
     }
   }
 
@@ -126,7 +116,6 @@ class PresenceService {
     try {
       await _connectWithFallback();
     } catch (e) {
-      print('⚠️ Presence resume failed: $e');
     }
   }
 
@@ -141,3 +130,4 @@ class PresenceService {
     }
   }
 }
+

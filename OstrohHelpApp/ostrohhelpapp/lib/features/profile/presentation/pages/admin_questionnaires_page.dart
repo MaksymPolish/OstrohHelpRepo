@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../questionnaire/data/services/questionnaire_api_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -70,12 +71,12 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
       await _apiService.updateQuestionnaireStatus(questionnaireId, acceptedStatusId);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Анкету прийнято!')),
+        SnackBar(content: Text('admin.questionnaires.accepted'.tr())),
       );
       setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Помилка при прийнятті: $e')),
+        SnackBar(content: Text('admin.questionnaires.acceptError'.tr(args: [e.toString()]))),
       );
     }
   }
@@ -83,40 +84,32 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Всі анкети')),
+      appBar: AppBar(title: Text('admin.questionnaires.title'.tr())),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is! Authenticated) {
-            // 🔐 ПЕРЕВІРКА РОЛІ: Тільки автентифіковані користувачі
-            return const Center(child: Text('Увійдіть як адміністратор або психолог.'));
+            return Center(child: Text('admin.questionnaires.signInPrompt'.tr()));
           }
           final user = state.user;
-          print('👤 Current user: RoleId=${user.roleId}, RoleName=${user.roleName}');
-          print('🔍 isAdminOrPsychologist=${RoleChecker.isAdminOrPsychologist(user.roleId)}');
-          print('🔍 isAdminOrPsychologistByName=${RoleChecker.isAdminOrPsychologistByName(user.roleName)}');
           
           if (!RoleChecker.isAdminOrPsychologist(user.roleId) &&
               !RoleChecker.isAdminOrPsychologistByName(user.roleName)) {
-            print('❌ User does not have required role');
             return Center(
               child: Text(
-                'Недостатньо прав для перегляду анкет. RoleId: ${user.roleId ?? 'null'}, RoleName: ${user.roleName ?? 'null'}',
+                'admin.questionnaires.insufficientRole'.tr(args: [user.roleId?.toString() ?? 'null', user.roleName ?? 'null']),
               ),
             );
           }
-          print('✅ User has required role, loading questionnaires...');
           return FutureBuilder<List<Map<String, dynamic>>>(
             future: _apiService.getAllQuestionnaires(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                print('⏳ FutureBuilder: waiting...');
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                print('❌ FutureBuilder error: ${snapshot.error}');
                 return Center(
                   child: Text(
-                    'Помилка: ${snapshot.error}\nRoleId: ${user.roleId ?? 'null'}\nRoleName: ${user.roleName ?? 'null'}\nСпробуйте вийти та увійти знову.',
+                    'admin.questionnaires.loadError'.tr(args: [snapshot.error.toString(), user.roleId?.toString() ?? 'null', user.roleName ?? 'null']),
                     textAlign: TextAlign.center,
                   ),
                 );
@@ -125,7 +118,7 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                     .where((q) => q['statusId'] != QuestionnaireStatusIds.accepted)
                     .toList();
               if (questionnaires.isEmpty) {
-                return const Center(child: Text('Анкет немає.'));
+                return Center(child: Text('admin.questionnaires.empty'.tr()));
               }
               return ListView.builder(
                 itemCount: questionnaires.length,
@@ -134,21 +127,20 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                   return Card(
                     margin: const EdgeInsets.all(8),
                     child: ListTile(
-                      title: Text('Анкета #${q['id']}'),
+                      title: Text('admin.questionnaires.itemPrefix'.tr(args: [q['id'].toString()])),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Опис: ${q['description'] ?? ''}'),
-                          Text('Статус: ${q['statusName'] ?? ''}'),
+                          Text('admin.questionnaires.description'.tr(args: [q['description']?.toString() ?? ''])),
+                          Text('admin.questionnaires.status'.tr(args: [q['statusName']?.toString() ?? ''])),
                           if (q['submittedAt'] != null)
-                            Text('Дата: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(q['submittedAt']))}'),
+                            Text('admin.questionnaires.date'.tr(args: [DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(q['submittedAt']))])),
                         ],
                       ),
-                      // 🔐 ПЕРЕВІРКА РОЛІ: Показати кнопку прийняття анкети тільки для Адміністратора або Психолога
                       trailing: RoleChecker.isAdminOrPsychologist(user.roleId)
                           ? ElevatedButton(
                               onPressed: () => _acceptQuestionnaire(q['id'], user.id ?? ''),
-                              child: const Text('Прийняти'),
+                              child: Text('admin.questionnaires.accept'.tr()),
                             )
                           : null,
                     ),

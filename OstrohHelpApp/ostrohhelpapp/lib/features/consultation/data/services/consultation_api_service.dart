@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../../../../core/auth/token_storage.dart';
 
 class ConsultationApiService {
-  final String baseUrl = 'http://10.0.2.2:5000/api';
+  String get baseUrl => AppConfig.apiBaseUrl;
   final TokenStorage _tokenStorage = TokenStorage();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -60,7 +61,6 @@ class ConsultationApiService {
     }
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      print('Consultation for user $userId: $data');
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to load user consultations: ${response.statusCode} - ${response.body}');

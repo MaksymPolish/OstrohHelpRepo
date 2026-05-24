@@ -8,7 +8,6 @@ import 'questionnaire_data.dart';
 class QuestionnaireService {
   final String baseUrl = 'https://localhost:7123';
 
-  // Отримати анкету з сервера
   Future<Questionnaire> getQuestionnaire(String token) async {
     try {
       final response = await http.get(
@@ -26,12 +25,10 @@ class QuestionnaireService {
         throw Exception('Failed to load questionnaire: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading questionnaire: $e');
       rethrow;
     }
   }
 
-  // Відправити результати анкети на сервер
   Future<void> submitQuestionnaireResult({
     required String token,
     required QuestionnaireResult result,
@@ -45,7 +42,6 @@ class QuestionnaireService {
         throw Exception('User ID not found');
       }
 
-      // Формуємо красивий опис
       final questionnaire = QuestionnaireData.getQuestionnaire();
       final description = _formatQuestionnaireDescription(result, questionnaire);
 
@@ -69,32 +65,26 @@ class QuestionnaireService {
         throw Exception('Failed to submit questionnaire: ${response.statusCode}');
       }
 
-      print('Questionnaire submitted successfully');
     } catch (e) {
-      print('Error submitting questionnaire: $e');
       rethrow;
     }
   }
 
-  // Форматує опис анкети в красивий текст
   String _formatQuestionnaireDescription(
     QuestionnaireResult result,
     Questionnaire questionnaire,
   ) {
     final buffer = StringBuffer();
 
-    // Стан студента
     buffer.writeln('Стан студента: ${_getDepressionDescription(result.depressionLevel)}');
     buffer.writeln('Рівень вигорання: ${_getBurnoutDescription(result.burnoutLevel)}');
     buffer.writeln();
 
-    // Підсумок балів
     buffer.writeln('Підсумок балів:');
     buffer.writeln('- Депресія (1-9): ${result.depressionScore}');
     buffer.writeln('- Вигорання (10-15): ${result.burnoutScore}');
     buffer.writeln();
 
-    // Питання та відповіді
     buffer.writeln('Питання та відповіді:');
     final allQuestions = questionnaire.questions;
     for (var i = 0; i < allQuestions.length; i++) {
@@ -137,7 +127,6 @@ class QuestionnaireService {
     }
   }
 
-  // Отримати попередні результати анкети
   Future<List<QuestionnaireResult>> getPreviousResults(String token) async {
     try {
       final response = await http.get(
@@ -158,8 +147,8 @@ class QuestionnaireService {
         return [];
       }
     } catch (e) {
-      print('Error loading previous results: $e');
       return [];
     }
   }
 }
+

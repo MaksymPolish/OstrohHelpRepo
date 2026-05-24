@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../../../../core/auth/token_storage.dart';
 
 class AuthApiService {
-  final String baseUrl = 'http://10.0.2.2:5000/api';
+  String get baseUrl => AppConfig.apiBaseUrl;
   final TokenStorage _tokenStorage = TokenStorage();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -19,7 +19,7 @@ class AuthApiService {
     return headers;
   }
 
-  Future<Map<String, dynamic>> googleLogin(String idToken) async {
+  Future<Map<String, dynamic>> googleLogin(String googleToken) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/google-login'),
@@ -28,14 +28,12 @@ class AuthApiService {
           'Accept': 'application/json',
         },
         body: json.encode({
-          'idToken': idToken.toString(),
+          'googleToken': googleToken,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
-        // Save JWT and refresh tokens with expiration
         if (data['jwtToken'] != null) {
           await _tokenStorage.saveToken(
             data['jwtToken'],
@@ -49,7 +47,6 @@ class AuthApiService {
       }
       throw Exception('Failed to authenticate with Google: Status ${response.statusCode} - ${response.body}');
     } catch (e) {
-      debugPrint('Google Login Error: $e');
       rethrow;
     }
   }

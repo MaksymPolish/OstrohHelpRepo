@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../../../../core/auth/token_storage.dart';
 import '../../../../core/auth/user_storage.dart';
 import '../models/questionnaire_result.dart';
@@ -7,50 +8,40 @@ import '../models/questionnaire.dart';
 import 'questionnaire_data.dart';
 
 class QuestionnaireApiService {
-  final String baseUrl = 'http://10.0.2.2:5000/api';
+  String get baseUrl => AppConfig.apiBaseUrl;
   final TokenStorage _tokenStorage = TokenStorage();
 
   Future<Map<String, String>> _getHeaders() async {
     try {
       final token = await _tokenStorage.getToken();
-      print('🔐 Token fetched: ${token?.substring(0, 20)}...');
       final headers = <String, String>{
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
-      } else {
-        print('⚠️ WARNING: Token is null!');
       }
       return headers;
     } catch (e) {
-      print('❌ ERROR in _getHeaders: $e');
       rethrow;
     }
   }
 
   Future<List<Map<String, dynamic>>> getAllQuestionnaires() async {
     try {
-      print('📤 Starting getAllQuestionnaires request...');
       final headers = await _getHeaders();
-      print('✅ Headers prepared, making HTTP request...');
       
       final response = await http.get(
         Uri.parse('$baseUrl/questionnaire/all'),
         headers: headers,
       );
       
-      print('📥 Response received: ${response.statusCode}');
-      
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        print('✅ Questionnaires loaded: ${data.length} items');
         return data.cast<Map<String, dynamic>>();
       }
       throw Exception('Failed to load questionnaires: ${response.statusCode} - ${response.body}');
     } catch (e) {
-      print('❌ ERROR in getAllQuestionnaires: $e');
       throw Exception('Failed to load questionnaires: $e');
     }
   }
@@ -75,7 +66,6 @@ class QuestionnaireApiService {
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      print('Questionnaires for user $userId: $data');
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to load user questionnaires: ${response.statusCode} - ${response.body}');
@@ -83,7 +73,6 @@ class QuestionnaireApiService {
 
   Future<Map<String, dynamic>> createQuestionnaire(Map<String, dynamic> questionnaire) async {
     try {
-      // Отримуємо userId з UserStorage
       final userStorage = UserStorage();
       final user = await userStorage.getUser();
       final userId = user?.id;
@@ -92,7 +81,6 @@ class QuestionnaireApiService {
         throw Exception('User ID not found');
       }
 
-      // Додаємо userId до payload
       questionnaire['userId'] = userId;
 
       final headers = await _getHeaders();
@@ -106,7 +94,6 @@ class QuestionnaireApiService {
       }
       throw Exception('Failed to create questionnaire: ${response.statusCode} - ${response.body}');
     } catch (e) {
-      print('Error creating questionnaire: $e');
       rethrow;
     }
   }
@@ -147,7 +134,6 @@ class QuestionnaireApiService {
     }
   }
 
-  // Відправити результати анкети психічного здоров'я
   Future<void> submitQuestionnaireResult({
     required QuestionnaireResult result,
   }) async {
@@ -160,43 +146,37 @@ class QuestionnaireApiService {
         throw Exception('User ID not found');
       }
 
-      // Формуємо красивий опис
       final questionnaire = QuestionnaireData.getQuestionnaire();
       final description = _formatQuestionnaireDescription(result, questionnaire);
 
-      final questionnaire_data = {
+      final questionnaireData = {
         'userId': userId,
         'description': description,
         'isAnonymous': false,
         'submittedAt': DateTime.now().toUtc().toIso8601String(),
       };
 
-      await createQuestionnaire(questionnaire_data);
+      await createQuestionnaire(questionnaireData);
     } catch (e) {
-      print('Error submitting questionnaire: $e');
       rethrow;
     }
   }
 
-  // Форматує опис анкети в красивий текст
   String _formatQuestionnaireDescription(
     QuestionnaireResult result,
     Questionnaire questionnaire,
   ) {
     final buffer = StringBuffer();
 
-    // Стан студента
     buffer.writeln('Стан студента: ${_getDepressionDescription(result.depressionLevel)}');
     buffer.writeln('Рівень вигорання: ${_getBurnoutDescription(result.burnoutLevel)}');
     buffer.writeln();
 
-    // Підсумок балів
     buffer.writeln('Підсумок балів:');
     buffer.writeln('- Депресія (1-9): ${result.depressionScore}');
     buffer.writeln('- Вигорання (10-15): ${result.burnoutScore}');
     buffer.writeln();
 
-    // Питання та відповіді
     buffer.writeln('Питання та відповіді:');
     final allQuestions = questionnaire.questions;
     for (var i = 0; i < allQuestions.length; i++) {

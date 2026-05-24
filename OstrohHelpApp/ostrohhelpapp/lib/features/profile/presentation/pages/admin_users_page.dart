@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../auth/data/services/auth_api_service.dart';
 import '../../../../core/auth/role_checker.dart';
 
@@ -18,19 +19,18 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   String? get currentUserId => widget.currentUserId;
 
-  // 🔐 ПЕРЕВІРКА РОЛІ: Список доступних ролей для зміни (посилаються на UserRole константи)
   final List<Map<String, dynamic>> _roles = [
     {
       "id": {"value": UserRole.studentId},
-      "name": "Студент"
+      "nameKey": 'admin.users.role.student'
     },
     {
       "id": {"value": UserRole.psychologistId},
-      "name": "Психолог"
+      "nameKey": 'admin.users.role.psychologist'
     },
     {
       "id": {"value": UserRole.serviceManagerId},
-      "name": "Керівник психологічної служби"
+      "nameKey": 'admin.users.role.manager'
     }
   ];
 
@@ -51,13 +51,13 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       await _loadUsers(); // Reload the list after deletion
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Користувача видалено')),
+          SnackBar(content: Text('admin.users.deleted'.tr())),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Помилка при видаленні: $e')),
+          SnackBar(content: Text('admin.users.deleteError'.tr(args: [e.toString()]))),
         );
       }
     }
@@ -69,13 +69,13 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       await _loadUsers(); // Reload the list after role update
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Роль користувача оновлено')),
+          SnackBar(content: Text('admin.users.roleUpdated'.tr())),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Помилка при оновленні ролі: $e')),
+          SnackBar(content: Text('admin.users.roleUpdateError'.tr(args: [e.toString()]))),
         );
       }
     }
@@ -83,7 +83,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   Future<void> _loadUsers() async {
     final users = await _apiService.getAllUsers();
-    print('USERS FROM API: $users');
     setState(() {
       _allUsers = users;
       _filteredUsers = users;
@@ -102,26 +101,26 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
               if (!isSelf)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text('Видалити користувача'),
+                  title: Text('admin.users.deleteUser'.tr()),
                   onTap: () {
                     Navigator.pop(context);
                     showDialog(
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text('Підтвердження'),
-                          content: const Text('Ви впевнені, що хочете видалити цього користувача?'),
+                          title: Text('admin.users.confirmTitle'.tr()),
+                          content: Text('admin.users.confirmDelete'.tr()),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('Скасувати'),
+                              child: Text('common.cancel'.tr()),
                             ),
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(context);
                                 _deleteUser(user['id']);
                               },
-                              child: const Text('Видалити', style: TextStyle(color: Colors.red)),
+                              child: Text('admin.users.delete'.tr(), style: const TextStyle(color: Colors.red)),
                             ),
                           ],
                         );
@@ -129,18 +128,17 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                     );
                   },
                 ),
-              // 🔐 ПЕРЕВІРКА РОЛІ: Дозволити змінювати роль тільки іншим користувачам, не собі
               if (!isSelf)
                 ListTile(
                   leading: const Icon(Icons.admin_panel_settings),
-                  title: const Text('Змінити роль'),
+                  title: Text('admin.users.changeRole'.tr()),
                   onTap: () {
                     Navigator.pop(context);
                     showDialog(
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text('Виберіть роль'),
+                          title: Text('admin.users.chooseRole'.tr()),
                           content: SizedBox(
                             width: double.maxFinite,
                             child: ListView.builder(
@@ -149,7 +147,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                               itemBuilder: (context, index) {
                                 final role = _roles[index];
                                 return ListTile(
-                                  title: Text(role['name']),
+                                  title: Text((role['nameKey'] as String).tr()),
                                   onTap: () {
                                     Navigator.pop(context);
                                     _updateUserRole(user['id'], role['id']['value']);
@@ -164,10 +162,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                   },
                 ),
               if (isSelf)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
-                    'Ви не можете змінити роль або видалити самого себе.',
+                    'admin.users.selfActionBlocked'.tr(),
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),
@@ -192,10 +190,8 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('ALL USERS: $_allUsers');
-    print('FILTERED USERS: $_filteredUsers');
     return Scaffold(
-      appBar: AppBar(title: const Text('Всі користувачі')),
+      appBar: AppBar(title: Text('admin.users.title'.tr())),
       body: Column(
         children: [
           Padding(
@@ -203,7 +199,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Пошук по імені або email',
+                hintText: 'admin.users.searchHint'.tr(),
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -215,13 +211,13 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
           ),
           Expanded(
             child: _filteredUsers.isEmpty
-                ? const Center(child: Text('Користувачів не знайдено'))
+                ? Center(child: Text('admin.users.empty'.tr()))
                 : ListView.builder(
                     itemCount: _filteredUsers.length,
                     itemBuilder: (context, index) {
                       final u = _filteredUsers[index];
                       return ListTile(
-                        title: Text(u['fullName'] ?? u['email'] ?? 'No name'),
+                        title: Text(u['fullName'] ?? u['email'] ?? 'common.unknown'.tr()),
                         subtitle: Text(u['email'] ?? ''),
                         trailing: Text(u['roleName'] ?? ''),
                         onLongPress: () => _showUserOptions(u),

@@ -1,10 +1,8 @@
 import '../models/questionnaire.dart';
 import '../models/questionnaire_question.dart';
 
-// Hardcoded дані анкети (поки сервер не готовий)
 class QuestionnaireData {
   static final List<QuestionnaireQuestion> questions = [
-    // БЛОК 1: Загальний емоційний стан (Депресія) - 9 питань, 0-3 бали
     QuestionnaireQuestion(
       id: 1,
       blockId: 1,
@@ -78,7 +76,6 @@ class QuestionnaireData {
       maxScore: 3,
     ),
 
-    // БЛОК 2: Академічне вигорання - 6 питань, 0-4 бали
     QuestionnaireQuestion(
       id: 10,
       blockId: 2,
@@ -133,3 +130,4 @@ class QuestionnaireData {
     return Questionnaire(questions: questions);
   }
 }
+
