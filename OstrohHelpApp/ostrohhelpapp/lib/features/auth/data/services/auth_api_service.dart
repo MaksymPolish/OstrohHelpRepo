@@ -19,7 +19,7 @@ class AuthApiService {
     return headers;
   }
 
-  Future<Map<String, dynamic>> googleLogin(String googleToken) async {
+  Future<Map<String, dynamic>> googleLogin({required String idToken, required String googleToken}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/google-login'),
@@ -28,7 +28,11 @@ class AuthApiService {
           'Accept': 'application/json',
         },
         body: json.encode({
+          // send both variants the backend might expect
           'googleToken': googleToken,
+          'GoogleToken': googleToken,
+          'idToken': idToken,
+          'IdToken': idToken,
         }),
       );
 

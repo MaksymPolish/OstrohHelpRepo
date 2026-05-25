@@ -16,6 +16,7 @@ import 'package:ostrohhelpapp/features/auth/presentation/bloc/auth_state.dart';
 import 'package:ostrohhelpapp/features/consultation/data/services/consultation_api_service.dart';
 import 'package:ostrohhelpapp/features/consultation/presentation/notifiers/online_users_notifier.dart';
 import 'package:ostrohhelpapp/core/auth/token_storage.dart';
+import 'package:ostrohhelpapp/core/config/app_config.dart';
 import 'package:ostrohhelpapp/core/services/encryption_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:video_player/video_player.dart';
@@ -35,11 +36,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final OnlineUsersNotifier _onlineUsersNotifier = OnlineUsersNotifier.instance;
   final TokenStorage _tokenStorage = TokenStorage();
   final ConsultationApiService _consultationApiService = ConsultationApiService();
-  
-  static const String _apiBaseUrl = 'http://10.0.2.2:5000/api';
+
+  final String _apiBaseUrl = AppConfig.apiBaseUrl;
   static const int _maxAttachmentsPerMessage = 6;
-  
-  final String _hubBaseUrl = 'http://10.0.2.2:5000';
+
+  final String _hubBaseUrl = AppConfig.signalRHubBaseUrl;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Message> _messages = [];
@@ -54,6 +55,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   bool _otherUserTyping = false;
   bool _otherUserOnline = false;
   bool _isUploading = false;
+  String? _chatInitError;
   final Set<String> _readMarkedMessageIds = <String>{};
   Timer? _typingTimer;
   Timer? _typingIndicatorTimer;
@@ -127,7 +129,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   Future<void> _initializeChat(String userId) async {
     try {
-      
+      if (mounted) {
+        setState(() {
+          _chatInitError = null;
+        });
+      }
+
       _userId = userId;
       
       try {
@@ -162,11 +169,13 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
       _scrollToBottom();
 
-      await _chatService.initialize(
-        serverUrl: _hubBaseUrl,
-        accessToken: token,
-        currentUserId: userId,
-      );
+      await _chatService
+          .initialize(
+            serverUrl: _hubBaseUrl,
+            accessToken: token,
+            currentUserId: userId,
+          )
+          .timeout(const Duration(seconds: 20));
 
       if (mounted) {
         setState(() {
@@ -278,6 +287,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           if (!mounted) return;
           setState(() {
             _isConnected = state == HubConnectionState.Connected;
+            if (_isConnected) {
+              _chatInitError = null;
+            }
           });
         }, onError: (error) {
         }),
@@ -314,6 +326,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       _subscriptions.add(
         _chatService.errors.listen((error) {
           if (!mounted) return;
+          setState(() {
+            _chatInitError = error.toString();
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('chat.error'.tr(args: [error.toString()]))),
           );
@@ -327,6 +342,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _chatInitError = e.toString();
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('chat.initializationError'.tr(args: [e.toString()]))),
         );
@@ -1029,7 +1047,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 child: _messages.isEmpty
                     ? Center(
                         child: Text(
-                          _isConnected ? 'Повідомлень ще немає.' : 'Підключення до чату...',
+                          _isConnected
+                              ? 'Повідомлень ще немає.'
+                              : (_chatInitError == null || _chatInitError!.isEmpty
+                                  ? 'Підключення до чату...'
+                                  : 'chat.initializationError'.tr(args: [_chatInitError!])),
+                          textAlign: TextAlign.center,
                         ),
                       )
                     : ListView.builder(

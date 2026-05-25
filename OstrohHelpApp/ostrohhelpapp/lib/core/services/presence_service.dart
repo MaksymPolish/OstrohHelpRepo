@@ -29,14 +29,51 @@ class PresenceService {
       throw Exception('Presence connection config is missing');
     }
 
-    final primaryUrl = '$_serverUrl/hubs/chat?access_token=${Uri.encodeComponent(_accessToken!)}';
-    final fallbackUrl = '$_serverUrl/chat?access_token=${Uri.encodeComponent(_accessToken!)}';
+    final candidates = _buildHubCandidates(_serverUrl!, _accessToken!);
+    Object? lastError;
 
-    try {
-      await _connect(primaryUrl, _accessToken!);
-    } catch (primaryError) {
-      await _connect(fallbackUrl, _accessToken!);
+    for (final hubUrl in candidates) {
+      try {
+        await _connect(hubUrl, _accessToken!);
+        return;
+      } catch (e) {
+        lastError = e;
+      }
     }
+
+    throw Exception('Failed to connect to any presence hub URL. Last error: $lastError');
+  }
+
+  List<String> _buildHubCandidates(String rawServerUrl, String accessToken) {
+    var normalized = rawServerUrl.trim();
+
+    if (normalized.startsWith('wss://')) {
+      normalized = normalized.replaceFirst('wss://', 'https://');
+    } else if (normalized.startsWith('ws://')) {
+      normalized = normalized.replaceFirst('ws://', 'http://');
+    }
+
+    final uri = Uri.parse(normalized);
+    final origin = uri.replace(path: '', query: null, fragment: null).toString().replaceFirst(RegExp(r'/$'), '');
+    final inputPath = uri.path.replaceFirst(RegExp(r'/$'), '');
+    final tokenQuery = 'access_token=${Uri.encodeComponent(accessToken)}';
+    final candidates = <String>[];
+
+    void addCandidate(String path) {
+      final value = '$origin$path?$tokenQuery';
+      if (!candidates.contains(value)) {
+        candidates.add(value);
+      }
+    }
+
+    if (inputPath.isNotEmpty && inputPath != '/') {
+      addCandidate(inputPath);
+    }
+
+    addCandidate('/hubs/chat');
+    addCandidate('/chat');
+
+    return candidates;
   }
 
   Future<void> _connect(String hubUrl, String accessToken) async {

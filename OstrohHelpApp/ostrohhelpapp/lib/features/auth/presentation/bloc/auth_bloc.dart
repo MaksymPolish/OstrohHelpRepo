@@ -65,7 +65,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       if (googleAuth.idToken != null) {
-        final userData = await _apiService.googleLogin(googleAuth.idToken!);
+        final userData = await _apiService.googleLogin(
+          idToken: googleAuth.idToken!,
+          googleToken: googleAuth.accessToken ?? '',
+        );
         final user = _mapApiUser(userData);
         await _userStorage.saveUser(user);
         emit(Authenticated(user));
