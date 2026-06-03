@@ -136,6 +136,7 @@ class QuestionnaireApiService {
 
   Future<void> submitQuestionnaireResult({
     required QuestionnaireResult result,
+    bool isAnonymous = false,
   }) async {
     try {
       final userStorage = UserStorage();
@@ -152,7 +153,7 @@ class QuestionnaireApiService {
       final questionnaireData = {
         'userId': userId,
         'description': description,
-        'isAnonymous': false,
+        'isAnonymous': isAnonymous,
         'submittedAt': DateTime.now().toUtc().toIso8601String(),
       };
 

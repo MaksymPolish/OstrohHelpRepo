@@ -9,6 +9,7 @@ import '../../../auth/data/services/auth_api_service.dart';
 import '../../../../core/auth/role_checker.dart';
 import 'admin_panel_page.dart';
 import '../../../../core/theme/app_theme_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -215,6 +216,45 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       );
                     },
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text('profile.language.title'.tr()),
+                            subtitle: Text('profile.language.subtitle'.tr(), style: Theme.of(context).textTheme.bodyMedium),
+                          ),
+                          RadioListTile<Locale>(
+                            value: const Locale('uk'),
+                            groupValue: context.locale,
+                            onChanged: (value) async {
+                              if (value == null) return;
+                              await context.setLocale(value);
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setString('app_locale', value.languageCode);
+                              setState(() {});
+                            },
+                            title: Text('profile.language.ukrainian'.tr()),
+                          ),
+                          RadioListTile<Locale>(
+                            value: const Locale('en'),
+                            groupValue: context.locale,
+                            onChanged: (value) async {
+                              if (value == null) return;
+                              await context.setLocale(value);
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setString('app_locale', value.languageCode);
+                              setState(() {});
+                            },
+                            title: Text('profile.language.english'.tr()),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   if (RoleChecker.isAdminOrPsychologist(user.roleId))

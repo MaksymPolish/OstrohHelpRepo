@@ -19,8 +19,6 @@ class AppTheme {
         onSecondary: Colors.white,
         error: Color(0xFFB00020),
         onError: Colors.white,
-        background: background,
-        onBackground: onSurface,
         surface: surface,
         onSurface: onSurface,
       ),
@@ -85,8 +83,6 @@ class AppTheme {
         onSecondary: Color(0xFF102026),
         error: Color(0xFFCF6679),
         onError: Color(0xFF102026),
-        background: background,
-        onBackground: onSurface,
         surface: surface,
         onSurface: onSurface,
       ),
@@ -133,4 +129,3 @@ class AppTheme {
     );
   }
 }
-

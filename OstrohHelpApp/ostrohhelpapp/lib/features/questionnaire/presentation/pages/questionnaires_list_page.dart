@@ -6,6 +6,7 @@ import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
 import '../../../../core/auth/token_storage.dart';
+import '../../../../core/status/status_constants.dart';
 import '../../data/services/questionnaire_api_service.dart';
 import 'questionnaire_page.dart';
 import 'questionnaire_details_page.dart';
@@ -24,11 +25,49 @@ class QuestionnairesListPage extends StatelessWidget {
     }
   }
 
-  Color _statusColor(BuildContext context, String? status) {
+  Color _statusColor(BuildContext context, Map<String, dynamic>? questionnaire) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (status == null) return colorScheme.secondary;
-    if (status == 'questionnaires.status.processing'.tr()) return Colors.orange;
-    return Colors.green;
+    if (questionnaire == null) return colorScheme.secondary;
+    final statusId = questionnaire['statusId'] as String?;
+    switch (statusId) {
+      case QuestionnaireStatusIds.pending:
+        return Colors.orange;
+      case QuestionnaireStatusIds.accepted:
+        return Colors.green;
+      case QuestionnaireStatusIds.rejected:
+        return Colors.red;
+      default:
+        return colorScheme.secondary;
+    }
+  }
+
+  String _localizedStatusName(BuildContext context, Map<String, dynamic>? questionnaire) {
+    if (questionnaire == null) return 'common.unknown'.tr();
+    final statusId = questionnaire['statusId'] as String?;
+    if (statusId != null) {
+      if (statusId == QuestionnaireStatusIds.pending) return 'questionnaires.status.processing'.tr();
+      if (statusId == QuestionnaireStatusIds.accepted) return 'questionnaires.status.accepted'.tr();
+      if (statusId == QuestionnaireStatusIds.rejected) return 'questionnaires.status.rejected'.tr();
+    }
+    final statusName = questionnaire['statusName'] as String?;
+    if (statusName == null || statusName.isEmpty) return 'common.unknown'.tr();
+    // If server returned a localization key, try translating it
+    if (statusName.contains('.')) {
+      final translated = statusName.tr();
+      return translated != statusName ? translated : statusName;
+    }
+    // If the app is in English and server returned Ukrainian text, map common values
+    if (context.locale.languageCode == 'en') {
+      switch (statusName.trim()) {
+        case 'Обробляється':
+          return 'questionnaires.status.processing'.tr();
+        case 'Прийнято':
+          return 'questionnaires.status.accepted'.tr();
+        case 'Відхилено':
+          return 'questionnaires.status.rejected'.tr();
+      }
+    }
+    return statusName;
   }
 
   @override
@@ -103,8 +142,8 @@ class QuestionnairesListPage extends StatelessWidget {
                 itemCount: snapshot.data!.length,
                 itemBuilder: (context, index) {
                   final questionnaire = snapshot.data![index];
-                  final statusName = questionnaire['statusName'] as String?;
-                  final statusColor = _statusColor(context, statusName);
+                  final statusColor = _statusColor(context, questionnaire);
+                  final statusName = _localizedStatusName(context, questionnaire);
                   final submittedAt = _formatDate(questionnaire['submittedAt'] as String?);
 
                   return Card(

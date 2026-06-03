@@ -246,6 +246,7 @@ export default function QuestionnairesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const questions = useMemo(() => {
     const flattened = [];
@@ -297,12 +298,12 @@ export default function QuestionnairesPage() {
     const userId = getUserId();
     const payload = {
       description,
-      isAnonymous: false,
+      isAnonymous,
       userId,
 
       // Compatibility aliases
       Description: description,
-      IsAnonymous: false,
+      IsAnonymous: isAnonymous,
       UserId: userId,
     };
 
@@ -386,6 +387,7 @@ export default function QuestionnairesPage() {
     setRequestDetails("");
     setSubmitError("");
     setMode("assessment");
+    setIsAnonymous(false);
   };
 
   if (isCompleted) {
@@ -450,6 +452,24 @@ export default function QuestionnairesPage() {
                 {submitError}
               </div>
             )}
+            
+            {/* Anonymous Toggle */}
+            <div className="mb-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {t("questionnairesIsAnonymous") || "Анонімна анкета"}
+                </span>
+                <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                  ({t("questionnairesAnonymousHint") || "Ваше ім'я не буде видно психологам"})
+                </span>
+              </label>
+            </div>
             
             {/* Progress Bar */}
             <div className="mt-6">
@@ -523,6 +543,24 @@ export default function QuestionnairesPage() {
               {submitError}
             </div>
           )}
+
+          {/* Anonymous Toggle */}
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={(e) => setIsAnonymous(e.target.checked)}
+                className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 cursor-pointer"
+              />
+              <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t("questionnairesIsAnonymous") || "Анонімна анкета"}
+              </span>
+              <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                ({t("questionnairesAnonymousHint") || "Ваше ім'я не буде видно психологам"})
+              </span>
+            </label>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">{t("questionnairesRequestTopic")}</label>

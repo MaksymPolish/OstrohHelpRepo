@@ -81,6 +81,27 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
     }
   }
 
+  String _localizePossibleKey(BuildContext context, dynamic value) {
+    if (value == null) return '';
+    final s = value.toString();
+    if (s.contains('.')) {
+      final translated = s.tr();
+      return translated != s ? translated : s;
+    }
+    // map Ukrainian raw names to localized strings when app is English
+    if (context.locale.languageCode == 'en') {
+      switch (s.trim()) {
+        case 'Обробляється':
+          return 'questionnaires.status.processing'.tr();
+        case 'Прийнято':
+          return 'questionnaires.status.accepted'.tr();
+        case 'Відхилено':
+          return 'questionnaires.status.rejected'.tr();
+      }
+    }
+    return s;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,7 +153,7 @@ class _AdminQuestionnairesPageState extends State<AdminQuestionnairesPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('admin.questionnaires.description'.tr(args: [q['description']?.toString() ?? ''])),
-                          Text('admin.questionnaires.status'.tr(args: [q['statusName']?.toString() ?? ''])),
+                                Text('admin.questionnaires.status'.tr(args: [_localizePossibleKey(context, q['statusName'])])),
                           if (q['submittedAt'] != null)
                             Text('admin.questionnaires.date'.tr(args: [DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(q['submittedAt']))])),
                         ],

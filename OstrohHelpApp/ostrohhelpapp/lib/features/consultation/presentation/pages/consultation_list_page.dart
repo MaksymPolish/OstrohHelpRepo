@@ -7,11 +7,13 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../features/home/presentation/widgets/bottom_nav_bar.dart';
 import '../notifiers/online_users_notifier.dart';
 import '../../data/services/consultation_api_service.dart';
+import '../../../../core/status/status_constants.dart';
 
 class Consultation {
   final String id;
   final String studentId;
   final String psychologistId;
+  final String? statusId;
   final String statusName;
   final String studentName;
   final String psychologistName;
@@ -24,6 +26,7 @@ class Consultation {
     required this.id,
     required this.studentId,
     required this.psychologistId,
+    this.statusId,
     required this.statusName,
     required this.studentName,
     required this.psychologistName,
@@ -38,6 +41,7 @@ class Consultation {
       id: json['id'],
       studentId: json['studentId'],
       psychologistId: json['psychologistId'],
+      statusId: json['statusId'] as String?,
       statusName: json['statusName'],
       studentName: json['studentName'],
       psychologistName: json['psychologistName'],
@@ -48,6 +52,37 @@ class Consultation {
     );
   }
 }
+
+  String _localizedStatusName(BuildContext context, String statusId, String statusName) {
+    if (statusId.isNotEmpty) {
+      switch (statusId) {
+        case ConsultationStatusIds.scheduled:
+          return 'consultations.statuses.scheduled'.tr();
+        case ConsultationStatusIds.rejected:
+          return 'consultations.statuses.rejected'.tr();
+        case ConsultationStatusIds.completed:
+          return 'consultations.statuses.completed'.tr();
+        case ConsultationStatusIds.pendingConfirmation:
+          return 'consultations.statuses.pendingConfirmation'.tr();
+        default:
+          return statusName;
+      }
+    }
+    // If app is English and server returned Ukrainian label, map it
+    if (context.locale.languageCode == 'en') {
+      switch (statusName.trim()) {
+        case 'Заплановано':
+          return 'consultations.statuses.scheduled'.tr();
+        case 'Відхилено':
+          return 'consultations.statuses.rejected'.tr();
+        case 'Завершено':
+          return 'consultations.statuses.completed'.tr();
+        case 'Очікує підтвердження':
+          return 'consultations.statuses.pendingConfirmation'.tr();
+      }
+    }
+    return statusName;
+  }
 
 class ConsultationListPage extends StatelessWidget {
   const ConsultationListPage({super.key});
@@ -199,7 +234,9 @@ class ConsultationListPage extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'consultations.status'.tr(args: [consultation.statusName]),
+                                      'consultations.status'.tr(args: [
+                                        _localizedStatusName(context, consultation.statusId ?? '', consultation.statusName)
+                                      ]),
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         color: colorScheme.onSurface.withOpacity(0.7),
                                       ),

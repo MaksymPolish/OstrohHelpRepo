@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/token_storage.dart';
 import 'core/config/app_config.dart';
@@ -41,11 +42,15 @@ Future<void> main() async {
   await initializeDateFormatting('uk_UA', null);
   await AppThemeController.instance.loadTheme();
 
+  final prefs = await SharedPreferences.getInstance();
+  final savedLocale = prefs.getString('app_locale');
+  final startLocale = savedLocale == null ? const Locale('uk') : Locale(savedLocale);
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('uk'), Locale('en')],
       fallbackLocale: const Locale('uk'),
-      startLocale: const Locale('uk'),
+      startLocale: startLocale,
       path: 'assets/translations',
       child: const MyApp(),
     ),

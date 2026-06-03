@@ -954,7 +954,34 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       builder: (context, snapshot) {
         final data = snapshot.data;
         final name = (data?['psychologistName'] as String?)?.trim();
-        final statusName = (data?['statusName'] as String?)?.trim();
+        final statusRaw = (data?['statusName'] as String?)?.trim();
+        String? statusName;
+        if (statusRaw != null && statusRaw.isNotEmpty) {
+          // If server sent a localization key, use it
+          final translated = statusRaw.tr();
+          if (translated != statusRaw) {
+            statusName = translated;
+          } else {
+            // If app locale is English and server sent Ukrainian text, map common values
+            if (context.locale.languageCode == 'en') {
+              switch (statusRaw) {
+                case 'Обробляється':
+                  statusName = 'questionnaires.status.processing'.tr();
+                  break;
+                case 'Прийнято':
+                  statusName = 'questionnaires.status.accepted'.tr();
+                  break;
+                case 'Відхилено':
+                  statusName = 'questionnaires.status.rejected'.tr();
+                  break;
+                default:
+                  statusName = statusRaw;
+              }
+            } else {
+              statusName = statusRaw;
+            }
+          }
+        }
         final photoUrl = data?['psychologistPhotoUrl'] as String?;
         final initials = (name != null && name.isNotEmpty)
             ? name

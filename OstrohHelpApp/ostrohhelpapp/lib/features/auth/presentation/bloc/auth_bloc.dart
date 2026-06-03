@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    signInOption: SignInOption.standard,
+    scopes: const ['email'],
     serverClientId: AppConfig.googleServerClientId,
   );
   final AuthApiService _apiService = sl<AuthApiService>();
@@ -67,7 +67,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (googleAuth.idToken != null) {
         final userData = await _apiService.googleLogin(
           idToken: googleAuth.idToken!,
-          googleToken: googleAuth.accessToken ?? '',
+          googleToken: googleAuth.idToken!,
         );
         final user = _mapApiUser(userData);
         await _userStorage.saveUser(user);

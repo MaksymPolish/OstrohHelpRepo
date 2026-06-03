@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/questionnaire_api_service.dart';
+import '../../../../core/status/status_constants.dart';
 
 class QuestionnaireDetailsPage extends StatelessWidget {
   final String questionnaireId;
@@ -22,11 +23,47 @@ class QuestionnaireDetailsPage extends StatelessWidget {
     }
   }
 
-  Color _statusColor(BuildContext context, String? status) {
+  Color _statusColor(BuildContext context, Map<String, dynamic>? questionnaire) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (status == null) return colorScheme.secondary;
-    if (status == 'questionnaires.status.processing'.tr()) return Colors.orange;
-    return Colors.green;
+    if (questionnaire == null) return colorScheme.secondary;
+    final statusId = questionnaire['statusId'] as String?;
+    switch (statusId) {
+      case QuestionnaireStatusIds.pending:
+        return Colors.orange;
+      case QuestionnaireStatusIds.accepted:
+        return Colors.green;
+      case QuestionnaireStatusIds.rejected:
+        return Colors.red;
+      default:
+        return colorScheme.secondary;
+    }
+  }
+
+  String _localizedStatusName(BuildContext context, Map<String, dynamic>? questionnaire) {
+    if (questionnaire == null) return 'common.unknown'.tr();
+    final statusId = questionnaire['statusId'] as String?;
+    if (statusId != null) {
+      if (statusId == QuestionnaireStatusIds.pending) return 'questionnaires.status.processing'.tr();
+      if (statusId == QuestionnaireStatusIds.accepted) return 'questionnaires.status.accepted'.tr();
+      if (statusId == QuestionnaireStatusIds.rejected) return 'questionnaires.status.rejected'.tr();
+    }
+    final raw = questionnaire['statusName'] as String?;
+    if (raw == null || raw.isEmpty) return 'common.unknown'.tr();
+    if (raw.contains('.')) {
+      final translated = raw.tr();
+      return translated != raw ? translated : raw;
+    }
+    if (context.locale.languageCode == 'en') {
+      switch (raw.trim()) {
+        case 'Обробляється':
+          return 'questionnaires.status.processing'.tr();
+        case 'Прийнято':
+          return 'questionnaires.status.accepted'.tr();
+        case 'Відхилено':
+          return 'questionnaires.status.rejected'.tr();
+      }
+    }
+    return raw;
   }
 
   @override
@@ -53,8 +90,8 @@ class QuestionnaireDetailsPage extends StatelessWidget {
           final questionnaire = snapshot.data!;
           final theme = Theme.of(context);
           final colorScheme = theme.colorScheme;
-          final statusName = questionnaire['statusName'] as String?;
-          final statusColor = _statusColor(context, statusName);
+          final statusColor = _statusColor(context, questionnaire);
+          final statusName = _localizedStatusName(context, questionnaire);
           final submittedAt = _formatDate(questionnaire['submittedAt'] as String?);
 
           return SingleChildScrollView(
@@ -77,7 +114,7 @@ class QuestionnaireDetailsPage extends StatelessWidget {
                               ),
                             ),
                             Chip(
-                              label: Text(statusName ?? 'РќРµРІС–РґРѕРјРѕ'),
+                              label: Text(statusName),
                               labelStyle: theme.textTheme.bodyMedium?.copyWith(
                                 color: statusColor,
                                 fontWeight: FontWeight.w600,

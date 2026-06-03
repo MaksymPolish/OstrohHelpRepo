@@ -22,6 +22,7 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
   int currentBlock = 1;
   bool isSubmitting = false;
   QuestionnaireResult? result;
+  bool _isAnonymous = false;
 
   @override
   void initState() {
@@ -77,9 +78,6 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
       final calculatedResult =
           QuestionnaireCalculationService.calculateResult(answers);
 
-      final apiService = QuestionnaireApiService();
-      await apiService.submitQuestionnaireResult(result: calculatedResult);
-
       setState(() {
         result = calculatedResult;
         isSubmitting = false;
@@ -103,44 +101,91 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text('health.result.title'.tr()),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildResultSection(
-                'health.result.emotionalState'.tr(),
-                result.depressionLevel,
-                result.depressionScore,
-                27,
-              ),
-              const SizedBox(height: 16),
-              _buildResultSection(
-                'health.result.burnout'.tr(),
-                result.burnoutLevel,
-                result.burnoutScore,
-                24,
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              Text(
-                'health.result.recommendations'.tr(),
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(result.recommendation),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('health.result.title'.tr()),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildResultSection(
+                  'health.result.emotionalState'.tr(),
+                  result.depressionLevel,
+                  result.depressionScore,
+                  27,
+                ),
+                const SizedBox(height: 16),
+                _buildResultSection(
+                  'health.result.burnout'.tr(),
+                  result.burnoutLevel,
+                  result.burnoutScore,
+                  24,
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  'health.result.recommendations'.tr(),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(result.recommendation),
+                const SizedBox(height: 12),
+                SwitchListTile.adaptive(
+                  title: Text('questionnaire.anonymous'.tr()),
+                  subtitle: Text('questionnaire.anonymousSubtitle'.tr()),
+                  value: _isAnonymous,
+                  onChanged: (v) => setState(() => _isAnonymous = v),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('common.close'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        isSubmitting = true;
+                      });
+                      try {
+                        final apiService = QuestionnaireApiService();
+                        await apiService.submitQuestionnaireResult(result: result, isAnonymous: _isAnonymous);
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                              content: Text('questionnaire.success'.tr()),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                              content: Text('common.errorWithDetails'.tr(args: [e.toString()])),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            isSubmitting = false;
+                          });
+                        }
+                      }
+                    },
+              child: Text('common.submit'.tr()),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common.close'.tr()),
-          ),
-        ],
       ),
     );
   }
@@ -392,29 +437,42 @@ class _HealthQuestionnairePageState extends State<HealthQuestionnairePage> {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (currentBlock > 1)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _previousBlock,
-                      child: Text('common.back'.tr()),
+                SwitchListTile.adaptive(
+                  title: Text('questionnaire.anonymous'.tr()),
+                  subtitle: Text('questionnaire.anonymousSubtitle'.tr()),
+                  value: _isAnonymous,
+                  onChanged: (v) => setState(() => _isAnonymous = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (currentBlock > 1)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _previousBlock,
+                          child: Text('common.back'.tr()),
+                        ),
+                      ),
+                    if (currentBlock > 1) const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: currentBlock < 2 ? _nextBlock : _submitQuestionnaire,
+                        child: isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(currentBlock < 2 ? 'health.next'.tr() : 'health.done'.tr()),
+                      ),
                     ),
-                  ),
-                if (currentBlock > 1) const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: currentBlock < 2 ? _nextBlock : _submitQuestionnaire,
-                    child: isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(currentBlock < 2 ? 'health.next'.tr() : 'health.done'.tr()),
-                  ),
+                  ],
                 ),
               ],
             ),

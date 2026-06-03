@@ -1,10 +1,192 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Paperclip, Send, Activity } from "lucide-react";
+import { Paperclip, Send, Activity, Mic } from "lucide-react";
 import Button from "../components/Common/Button";
-import Card from "../components/Common/Card";
 
 export default function ChatPage() {
   const [msg, setMsg] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const [silenceDelayMs, setSilenceDelayMs] = useState(2500);
+  const [speechError, setSpeechError] = useState("");
+  const [language, setLanguage] = useState("uk-UA");
+  const recognitionRef = useRef(null);
+  const silenceTimeoutRef = useRef(null);
+  const baseMessageRef = useRef('');
+  const silenceDelayRef = useRef(2500);
+  const languageRef = useRef("uk-UA");
+
+  useEffect(() => {
+    silenceDelayRef.current = silenceDelayMs;
+  }, [silenceDelayMs]);
+
+  useEffect(() => {
+    languageRef.current = language;
+    // if recognition exists and is active, apply change by restarting
+    if (recognitionRef.current) {
+      try {
+        const wasListening = isListening;
+        recognitionRef.current.stop();
+        recognitionRef.current.lang = languageRef.current;
+        if (wasListening) {
+          setTimeout(() => {
+            try { recognitionRef.current.start(); } catch (e) {}
+          }, 200);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [language]);
+
+  // Persist language selection
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('chat_speech_language');
+      if (saved) setLanguage(saved);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('chat_speech_language', language);
+    } catch (e) {
+      // ignore
+    }
+  }, [language]);
+
+  useEffect(() => {
+    if (!speechError) {
+      return undefined;
+    }
+
+    const toastTimer = setTimeout(() => {
+      setSpeechError("");
+    }, 3500);
+
+    return () => clearTimeout(toastTimer);
+  }, [speechError]);
+
+  const clearSilenceTimer = () => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+  };
+
+  const startSilenceTimer = () => {
+    clearSilenceTimer();
+    silenceTimeoutRef.current = setTimeout(() => {
+      recognitionRef.current?.stop();
+    }, silenceDelayRef.current);
+  };
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      setSpeechError("Браузер не підтримує голосове введення.");
+      return undefined;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = languageRef.current || "uk-UA";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsUserSpeaking(false);
+      setSpeechError("");
+      clearSilenceTimer();
+    };
+
+    recognition.onresult = (event) => {
+      setIsUserSpeaking(true);
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript || "")
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const base = baseMessageRef.current.trim();
+      const merged = [base, transcript].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+      setMsg(merged);
+      startSilenceTimer();
+    };
+
+    recognition.onspeechstart = () => {
+      setIsUserSpeaking(true);
+      clearSilenceTimer();
+    };
+
+    recognition.onspeechend = () => {
+      setIsUserSpeaking(false);
+      startSilenceTimer();
+    };
+
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      clearSilenceTimer();
+
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setSpeechError("Немає доступу до мікрофона. Дозвольте його в браузері.");
+        return;
+      }
+
+      if (event.error === "no-speech") {
+        setSpeechError("Не вдалося розпізнати мовлення. Спробуйте ще раз.");
+        return;
+      }
+
+      setSpeechError("Сталася помилка голосового введення.");
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      clearSilenceTimer();
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      clearSilenceTimer();
+      recognition.stop();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const toggleSpeechToText = () => {
+    if (!recognitionRef.current) {
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      clearSilenceTimer();
+      return;
+    }
+
+    baseMessageRef.current = msg;
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      setSpeechError("Не вдалося запустити мікрофон. Спробуйте ще раз.");
+    }
+  };
+
+  const silenceDelayOptions = [
+    { label: "2с", value: 2000 },
+    { label: "3с", value: 3000 },
+    { label: "5с", value: 5000 },
+  ];
   
   const messages = [
     { id: 1, text: "Доброго дня! Як ви себе почуваєте сьогодні?", sender: 'doctor', time: '10:00' },
@@ -85,17 +267,93 @@ export default function ChatPage() {
 
         {/* Input Area */}
         <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
+          {speechError && (
+            <div className="mb-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-200">
+              {speechError}
+            </div>
+          )}
+          <div className="mb-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span>Автостоп після тиші:</span>
+            <div className="flex items-center gap-1">
+              {silenceDelayOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSilenceDelayMs(option.value)}
+                  className={`rounded-full px-2.5 py-1 transition-colors ${
+                    silenceDelayMs === option.value
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="ml-4 flex items-center gap-2">
+              <span>Мова:</span>
+              <button
+                type="button"
+                onClick={() => setLanguage('uk-UA')}
+                className={`rounded-full px-2.5 py-1 transition-colors ${
+                  language === 'uk-UA'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                }`}
+              >
+                UA
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en-US')}
+                className={`rounded-full px-2.5 py-1 transition-colors ${
+                  language === 'en-US'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                }`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
           <div className="flex items-center space-x-2">
             <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
               <Paperclip size={20} />
             </button>
-            <input 
-              type="text" 
-              value={msg}
-              onChange={(e) => setMsg(e.target.value)}
-              placeholder="Введіть повідомлення..." 
-              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-            />
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                value={msg}
+                onChange={(e) => setMsg(e.target.value)}
+                placeholder="Введіть повідомлення..." 
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={toggleSpeechToText}
+              disabled={!speechSupported}
+              aria-label="Speech to text"
+              title={isListening ? 'Зупинити запис' : `Розпізнати мову (${language === 'uk-UA' ? 'UA' : 'EN'})`}
+              className={`p-2 rounded-full transition-colors relative ${
+                speechSupported
+                  ? isListening
+                    ? 'text-rose-500 bg-rose-50 dark:bg-rose-900/30'
+                    : 'text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
+                  : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              {isListening && (
+                <>
+                  <span className="absolute inset-0 rounded-full border border-rose-300/70 dark:border-rose-400/40 animate-ping" />
+                  <span className="absolute inset-[-5px] rounded-full border border-rose-300/50 dark:border-rose-400/30 animate-pulse" />
+                </>
+              )}
+              <Mic size={18} className={isUserSpeaking ? "animate-pulse" : ""} />
+            </button>
+            <div className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+              {isListening ? 'Запис...' : 'Клікніть мікрофон для голосу'}
+            </div>
             <Button className="rounded-full w-11 h-11 p-0 flex items-center justify-center">
               <Send size={18} className="ml-1" />
             </Button>

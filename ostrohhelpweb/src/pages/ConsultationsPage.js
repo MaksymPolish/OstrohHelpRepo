@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Send, Activity, Pencil, Trash2, X, Check, MailWarning } from "lucide-react";
+import { Send, Activity, Pencil, Trash2, X, Check, MailWarning, Mic } from "lucide-react";
 import { IoCheckmarkDone, IoCheckmark } from "react-icons/io5";
 import Button from "../components/Common/Button";
 import FilePickerPopover from "../components/Common/FilePickerPopover";
@@ -440,6 +440,13 @@ export default function ConsultationsPage() {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const messageInputRef = useRef(null);
   const consultationKeysRef = useRef({});
+  // Speech-to-text state
+  const [isListening, setIsListening] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const recognitionRef = useRef(null);
+  const silenceTimeoutRef = useRef(null);
+  const baseMessageRef = useRef('');
 
   const addSelectedFiles = (selectedFiles) => {
     if (!Array.isArray(selectedFiles) || selectedFiles.length === 0) {
@@ -461,6 +468,101 @@ export default function ConsultationsPage() {
 
       return [...prev, ...nextFiles];
     });
+  };
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+  }, []);
+
+  const startSilenceTimer = useCallback((delay = 2500) => {
+    clearSilenceTimer();
+    silenceTimeoutRef.current = setTimeout(() => {
+      recognitionRef.current?.stop();
+    }, delay);
+  }, [clearSilenceTimer]);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return undefined;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = language === 'uk' ? 'uk-UA' : 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsUserSpeaking(false);
+      clearSilenceTimer();
+    };
+
+    recognition.onresult = (event) => {
+      setIsUserSpeaking(true);
+      const transcript = Array.from(event.results)
+        .map((r) => r[0]?.transcript || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const base = baseMessageRef.current.trim();
+      const merged = [base, transcript].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      setMsg(merged);
+      startSilenceTimer();
+    };
+
+    recognition.onspeechstart = () => {
+      setIsUserSpeaking(true);
+      clearSilenceTimer();
+    };
+
+    recognition.onspeechend = () => {
+      setIsUserSpeaking(false);
+      startSilenceTimer();
+    };
+
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      clearSilenceTimer();
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+      clearSilenceTimer();
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      clearSilenceTimer();
+      recognition.stop();
+      recognitionRef.current = null;
+    };
+  }, [language, startSilenceTimer, clearSilenceTimer]);
+
+  const toggleSpeechToText = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      clearSilenceTimer();
+      return;
+    }
+
+    baseMessageRef.current = msg;
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      setIsListening(false);
+      setIsUserSpeaking(false);
+    }
   };
   const normalizedCurrentUserId = useMemo(() => normalizeId(currentUser?.id), [currentUser?.id]);
 
@@ -1385,6 +1487,28 @@ export default function ConsultationsPage() {
               rows={1}
               className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none overflow-y-auto min-h-12 max-h-40 leading-6"
             />
+
+            <button
+              type="button"
+              onClick={toggleSpeechToText}
+              disabled={!speechSupported}
+              title={isListening ? 'Зупинити запис' : `Розпізнати мову (${language === 'uk' ? 'UA' : 'EN'})`}
+              className={`p-2 rounded-full transition-colors ${
+                speechSupported
+                  ? isListening
+                    ? 'text-rose-500 bg-rose-50 dark:bg-rose-900/30'
+                    : 'text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
+                  : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              {isListening && (
+                <>
+                  <span className="absolute inset-0 rounded-full border border-rose-300/70 dark:border-rose-400/40 animate-ping" />
+                  <span className="absolute inset-[-5px] rounded-full border border-rose-300/50 dark:border-rose-400/30 animate-pulse" />
+                </>
+              )}
+              <Mic size={18} className={isUserSpeaking ? "animate-pulse" : ""} />
+            </button>
 
             <Button
               className="rounded-full w-11 h-11 p-0 flex items-center justify-center"
