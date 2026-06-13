@@ -182,82 +182,93 @@ class ConsultationListPage extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              CircleAvatar(
-                                radius: 26,
-                                backgroundColor: colorScheme.primary.withOpacity(0.15),
-                                backgroundImage: peerPhotoUrl != null && peerPhotoUrl.isNotEmpty
-                                    ? NetworkImage(peerPhotoUrl)
-                                    : null,
-                                child: (peerPhotoUrl == null || peerPhotoUrl.isEmpty)
-                                    ? Text(
-                                        initials.toUpperCase(),
-                                        style: theme.textTheme.titleMedium?.copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      peerName,
-                                      style: theme.textTheme.headlineSmall,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: colorScheme.primary.withOpacity(0.15),
+                                    backgroundImage: peerPhotoUrl != null && peerPhotoUrl.isNotEmpty
+                                        ? NetworkImage(peerPhotoUrl)
+                                        : null,
+                                    child: (peerPhotoUrl == null || peerPhotoUrl.isEmpty)
+                                        ? Text(
+                                            initials.toUpperCase(),
+                                            style: theme.textTheme.titleMedium?.copyWith(
+                                              color: colorScheme.primary,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: isPeerOnline ? Colors.green : Colors.grey,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
                                         Text(
-                                          isPeerOnline ? 'common.online'.tr() : 'common.offline'.tr(),
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: isPeerOnline
-                                                ? Colors.green
-                                                : colorScheme.onSurface.withOpacity(0.7),
-                                          ),
+                                          peerName,
+                                          style: theme.textTheme.headlineSmall,
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'consultations.status'.tr(args: [
-                                        _localizedStatusName(context, consultation.statusId ?? '', consultation.statusName)
-                                      ]),
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: colorScheme.onSurface.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.calendar_today, size: 14, color: colorScheme.primary),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: isPeerOnline ? Colors.green : Colors.grey,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                isPeerOnline ? 'common.online'.tr() : 'common.offline'.tr(),
+                                                style: theme.textTheme.bodyMedium?.copyWith(
+                                                  color: isPeerOnline
+                                                      ? Colors.green
+                                                      : colorScheme.onSurface.withOpacity(0.7),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
                                         Text(
-                                          DateFormat('dd.MM.yyyy HH:mm').format(consultation.scheduledTime),
+                                          'consultations.status'.tr(args: [
+                                            _localizedStatusName(context, consultation.statusId ?? '', consultation.statusName)
+                                          ]),
                                           style: theme.textTheme.bodyMedium?.copyWith(
                                             color: colorScheme.onSurface.withOpacity(0.7),
                                           ),
                                         ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.calendar_today, size: 14, color: colorScheme.primary),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                DateFormat('dd.MM.yyyy HH:mm').format(consultation.scheduledTime),
+                                                style: theme.textTheme.bodyMedium?.copyWith(
+                                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(height: 16),
                               ElevatedButton.icon(
                                 onPressed: isChatAvailable
                                     ? () {

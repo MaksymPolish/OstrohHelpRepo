@@ -501,9 +501,22 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       return;
     }
 
+    // Wait up to 3 seconds for connection and key to be restored
+    // (Picking an image pauses the app, which temporarily closes SignalR)
+    int retries = 0;
+    while ((!_isConnected || _encryptionKey == null) && retries < 15) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      retries++;
+    }
+
     if (!_isConnected || _receiverId == null || _encryptionKey == null) {
+      final reason = [
+        if (!_isConnected) 'No connection',
+        if (_receiverId == null) 'No receiverId',
+        if (_encryptionKey == null) 'No encryptionKey'
+      ].join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('chat.noConnectionOrKey'.tr())),
+        SnackBar(content: Text('Помилка: $reason')),
       );
       return;
     }
@@ -521,6 +534,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       final createdMessage = await _messageApiService.sendMessage(
         consultationId: widget.consultationId,
         receiverId: _receiverId!,
+        senderId: userId,
         encryptedContent: encryptedData['encryptedContent']!,
         iv: encryptedData['iv']!,
         authTag: encryptedData['authTag']!,
@@ -780,6 +794,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
            _textBeforeListening = _controller.text;
         });
         _speechToText.listen(
+          listenMode: stt.ListenMode.dictation,
+          pauseFor: const Duration(seconds: 10),
+          partialResults: true,
           onResult: (val) {
             if (mounted) {
               setState(() {
@@ -803,14 +820,13 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   Future<void> _sendMessage() async {
     if (!_isConnected || _receiverId == null || _encryptionKey == null) {
+      final reason = [
+        if (!_isConnected) 'No connection',
+        if (_receiverId == null) 'No receiverId',
+        if (_encryptionKey == null) 'No encryptionKey'
+      ].join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            !_isConnected ? 'Немає з\'єднання' : 
-            _receiverId == null ? 'Не знайдено одержувача' : 
-            'Ключ шифрування не отриманий',
-          ),
-        ),
+        SnackBar(content: Text('Помилка: $reason')),
       );
       return;
     }
@@ -1280,62 +1296,85 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        onPressed: _isUploading ? null : () => _pickImageFromGallery(userId),
-                        icon: const Icon(Icons.image_outlined),
-                        tooltip: 'chat.imageTooltip'.tr(),
-                      ),
-                      IconButton(
-                        onPressed: _isUploading ? null : () => _pickImageFromCamera(userId),
-                        icon: const Icon(Icons.photo_camera_outlined),
-                        tooltip: 'chat.photoTooltip'.tr(),
-                      ),
-                      IconButton(
-                        onPressed: _isUploading ? null : () => _pickFile(userId),
-                        icon: const Icon(Icons.attach_file),
-                        tooltip: 'chat.fileTooltip'.tr(),
-                      ),
-                      IconButton(
-                        onPressed: _isUploading ? null : _toggleListening,
-                        icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : null),
-                        tooltip: 'chat.sttTooltip'.tr(),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          minLines: 1,
-                          maxLines: 4,
-                          enabled: _isConnected && !_isUploading,
-                          decoration: InputDecoration(
-                            hintText: 'chat.messageHint'.tr(),
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              minLines: 1,
+                              maxLines: 6,
+                              enabled: _isConnected && !_isUploading,
+                              decoration: InputDecoration(
+                                hintText: 'chat.messageHint'.tr(),
+                                filled: true,
+                                fillColor: theme.brightness == Brightness.dark 
+                                    ? Colors.grey[800] 
+                                    : Colors.grey[200],
+                                suffixIcon: IconButton(
+                                  onPressed: _isUploading ? null : _toggleListening,
+                                  icon: Icon(_isListening ? Icons.mic : Icons.mic_none, 
+                                             color: _isListening ? Colors.red : null),
+                                  tooltip: 'chat.sttTooltip'.tr(),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: _handleTextChanged,
                             ),
                           ),
-                          onChanged: _handleTextChanged,
-                        ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: FloatingActionButton.small(
+                              onPressed: _isUploading ? null : _sendMessage,
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              shape: const CircleBorder(),
+                              elevation: 0,
+                              child: _isUploading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.send, size: 20),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      FloatingActionButton.small(
-                        onPressed: _isUploading ? null : _sendMessage,
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        child: _isUploading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.send),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            onPressed: _isUploading ? null : () => _pickImageFromGallery(userId),
+                            icon: const Icon(Icons.image_outlined),
+                            tooltip: 'chat.imageTooltip'.tr(),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          IconButton(
+                            onPressed: _isUploading ? null : () => _pickImageFromCamera(userId),
+                            icon: const Icon(Icons.photo_camera_outlined),
+                            tooltip: 'chat.photoTooltip'.tr(),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          IconButton(
+                            onPressed: _isUploading ? null : () => _pickFile(userId),
+                            icon: const Icon(Icons.attach_file),
+                            tooltip: 'chat.fileTooltip'.tr(),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
                       ),
                     ],
                   ),

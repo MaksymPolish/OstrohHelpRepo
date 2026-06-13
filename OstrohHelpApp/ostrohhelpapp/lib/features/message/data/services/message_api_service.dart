@@ -40,6 +40,7 @@ class MessageApiService {
   Future<Map<String, dynamic>> sendMessage({
     required String consultationId,
     required String receiverId,
+    required String senderId,
     required String encryptedContent,
     required String iv,
     required String authTag,
@@ -49,6 +50,7 @@ class MessageApiService {
     final body = {
       'consultationId': consultationId,
       'receiverId': receiverId,
+      'senderId': senderId,
       'encryptedContent': encryptedContent,
       'iv': iv,
       'authTag': authTag,
@@ -106,7 +108,7 @@ class MessageApiService {
 
     for (var filePath in filePaths) {
       request.files.add(
-        await http.MultipartFile.fromPath('file', filePath),
+        await http.MultipartFile.fromPath('files', filePath),
       );
     }
 
