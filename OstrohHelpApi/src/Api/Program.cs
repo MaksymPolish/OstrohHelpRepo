@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.FileProviders;
 using DotNetEnv;
@@ -278,42 +277,6 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddMaps(typeof(Program).Assembly, typeof(Application.ApplicationAssemblyMarker).Assembly);
 });
 
-// Ініціалізація Firebase Admin SDK
-var firebaseProjectId = DotNetEnv.Env.GetString("FIREBASE_PROJECT_ID");
-var firebasePrivateKey = DotNetEnv.Env.GetString("FIREBASE_PRIVATE_KEY");
-var firebaseClientEmail = DotNetEnv.Env.GetString("FIREBASE_CLIENT_EMAIL");
-
-if (!string.IsNullOrEmpty(firebaseProjectId) && !string.IsNullOrEmpty(firebasePrivateKey) && !string.IsNullOrEmpty(firebaseClientEmail))
-{
-    // Використовуємо значення з .env
-    // Примітка: Firebase потребує специфічного формату приватного ключа
-    // Переконайтеся, що FIREBASE_PRIVATE_KEY містить правильно форматований PEM ключ
-    Console.WriteLine("✓ Firebase credentials detected in .env - will use these for authentication");
-}
-else
-{
-    // Fallback - читаємо з файлу ostrohhelpapp.json
-    var firebaseJsonPath = Path.Combine(builder.Environment.ContentRootPath, "ostrohhelpapp.json");
-    if (File.Exists(firebaseJsonPath))
-    {
-        try
-        {
-            FirebaseApp.Create(new AppOptions()
-            {
-                Credential = GoogleCredential.FromFile(firebaseJsonPath)
-            });
-            Console.WriteLine("✓ Firebase credentials loaded from ostrohhelpapp.json");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠ Firebase initialization from file failed: {ex.Message}");
-        }
-    }
-    else
-    {
-        Console.WriteLine("⚠ Firebase credentials not found in .env or ostrohhelpapp.json file");
-    }
-}
 
 // Configure Hangfire for background job processing
 var connectionString = builder.Configuration.GetConnectionString("Default");

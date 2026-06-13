@@ -65,3 +65,5 @@ ostrohhelpweb/QUICKSTART.md
 **/docker-compose.yml
 OstrohHelpApi/docker-compose.yml
 OstrohHelpApi/docker-compose.yml
+SSL_CERTIFICATE_GUIDE.md
+OstrohHelpApi/docker-compose.yml

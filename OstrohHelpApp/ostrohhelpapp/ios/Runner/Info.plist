@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Цей додаток потребує доступу до мікрофона для розпізнавання мови.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Цей додаток потребує дозволу на розпізнавання мови для перетворення вашого голосу на текст.</string>
 </dict>
 </plist>

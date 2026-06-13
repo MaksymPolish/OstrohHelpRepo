@@ -70,10 +70,6 @@
               "target": "Package",
               "version": "[2.5.0, )"
             },
-            "FirebaseAdmin": {
-              "target": "Package",
-              "version": "[3.2.0, )"
-            },
             "FluentValidation.AspNetCore": {
               "target": "Package",
               "version": "[11.3.0, )"
@@ -203,10 +199,6 @@
               "target": "Package",
               "version": "[16.1.1, )"
             },
-            "FirebaseAdmin": {
-              "target": "Package",
-              "version": "[3.2.0, )"
-            },
             "FluentValidation.DependencyInjectionExtensions": {
               "target": "Package",
               "version": "[11.9.2, )"
@@ -323,10 +315,6 @@
               "target": "Package",
               "version": "[16.1.1, )"
             },
-            "FirebaseAdmin": {
-              "target": "Package",
-              "version": "[3.2.0, )"
-            },
             "Google.Apis.Auth": {
               "target": "Package",
               "version": "[1.69.0, )"
@@ -417,10 +405,6 @@
             "EFCore.NamingConventions": {
               "target": "Package",
               "version": "[8.0.3, )"
-            },
-            "FirebaseAdmin": {
-              "target": "Package",
-              "version": "[3.2.0, )"
             },
             "Google.Apis.Auth": {
               "target": "Package",

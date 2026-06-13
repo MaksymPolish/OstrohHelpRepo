@@ -20,6 +20,8 @@ import 'package:ostrohhelpapp/core/config/app_config.dart';
 import 'package:ostrohhelpapp/core/services/encryption_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:video_player/video_player.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatPage extends StatefulWidget {
   final String consultationId;
@@ -61,6 +63,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   Timer? _typingIndicatorTimer;
   bool _didInitChat = false;
   late final VoidCallback _onlineUsersListener;
+
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  bool _isListening = false;
+  String _textBeforeListening = "";
 
   @override
   void initState() {
@@ -740,6 +746,61 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> _toggleListening() async {
+    if (!_isListening) {
+      final status = await Permission.microphone.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+         if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('chat.micPermissionDenied'.tr())),
+            );
+         }
+         return;
+      }
+      
+      bool available = await _speechToText.initialize(
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            if (mounted) setState(() => _isListening = false);
+          }
+        },
+        onError: (val) {
+          if (mounted) {
+            setState(() => _isListening = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Помилка: ${val.errorMsg}')),
+            );
+          }
+        },
+      );
+      
+      if (available) {
+        setState(() {
+           _isListening = true;
+           _textBeforeListening = _controller.text;
+        });
+        _speechToText.listen(
+          onResult: (val) {
+            if (mounted) {
+              setState(() {
+                _controller.text = _textBeforeListening.isEmpty 
+                  ? val.recognizedWords 
+                  : '$_textBeforeListening ${val.recognizedWords}';
+                _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
+              });
+            }
+          },
+          localeId: context.locale.languageCode == 'uk' ? 'uk_UA' : 'en_US',
+        );
+      } else {
+        if (mounted) setState(() => _isListening = false);
+      }
+    } else {
+      if (mounted) setState(() => _isListening = false);
+      _speechToText.stop();
+    }
+  }
+
   Future<void> _sendMessage() async {
     if (!_isConnected || _receiverId == null || _encryptionKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1235,6 +1296,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         onPressed: _isUploading ? null : () => _pickFile(userId),
                         icon: const Icon(Icons.attach_file),
                         tooltip: 'chat.fileTooltip'.tr(),
+                      ),
+                      IconButton(
+                        onPressed: _isUploading ? null : _toggleListening,
+                        icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : null),
+                        tooltip: 'chat.sttTooltip'.tr(),
                       ),
                       Expanded(
                         child: TextField(

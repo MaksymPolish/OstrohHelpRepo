@@ -65,13 +65,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       if (googleAuth.idToken != null) {
-        final userData = await _apiService.googleLogin(
-          idToken: googleAuth.idToken!,
-          googleToken: googleAuth.idToken!,
-        );
-        final user = _mapApiUser(userData);
-        await _userStorage.saveUser(user);
-        emit(Authenticated(user));
+        try {
+          final userData = await _apiService.googleLogin(
+            idToken: googleAuth.idToken!,
+            googleToken: googleAuth.idToken!,
+          );
+          final user = _mapApiUser(userData);
+          await _userStorage.saveUser(user);
+          emit(Authenticated(user));
+        } catch (apiError) {
+          // Якщо бекенд відхилив токен (наприклад, він протермінований), 
+          // очищуємо кеш Google SignIn, щоб наступна спроба гарантовано дала новий токен
+          await _googleSignIn.signOut();
+          throw Exception(apiError.toString());
+        }
       } else {
         throw Exception('Failed to get ID token from Google');
       }
