@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Send, Activity, Pencil, Trash2, X, Check, MailWarning, Mic } from "lucide-react";
+import { Send, Activity, Pencil, Trash2, X, Check, MailWarning, Mic, ChevronLeft } from "lucide-react";
 import { IoCheckmarkDone, IoCheckmark } from "react-icons/io5";
 import Button from "../components/Common/Button";
 import FilePickerPopover from "../components/Common/FilePickerPopover";
@@ -1215,9 +1215,9 @@ export default function ConsultationsPage() {
   const canSend = !isSending && (msg.trim().length > 0 || pendingFiles.length > 0);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+    <div className="h-[calc(100dvh-12rem)] md:h-[calc(100vh-8rem)] min-h-[400px] flex bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
       {/* Sidebar - Contacts */}
-      <div className="w-80 border-r border-slate-100 dark:border-slate-700 hidden md:flex flex-col bg-slate-50/50 dark:bg-slate-800/50">
+      <div className={`w-full md:w-80 border-r border-slate-100 dark:border-slate-700 flex-col bg-slate-50/50 dark:bg-slate-800/50 ${selectedConsultationId ? "hidden md:flex" : "flex"}`}>
         <div className="p-4 border-b border-slate-100 dark:border-slate-700">
           <h2 className="font-bold text-lg text-slate-800 dark:text-white">{t("messages")}</h2>
         </div>
@@ -1293,10 +1293,17 @@ export default function ConsultationsPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex-col overflow-hidden ${selectedConsultationId ? "flex" : "hidden md:flex"}`}>
         {/* Chat Header */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 z-10">
           <div className="flex items-center">
+            <button
+              type="button"
+              className="md:hidden mr-3 p-2 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={() => setSelectedConsultationId(null)}
+            >
+              <ChevronLeft size={24} />
+            </button>
             {selectedPeer.photoUrl ? (
               <img
                 src={selectedPeer.photoUrl}
@@ -1316,29 +1323,29 @@ export default function ConsultationsPage() {
               </p>
             </div>
           </div>
-          <Button variant="ghost" className="p-2 rounded-full">
+          <Button variant="ghost" className="p-2 rounded-full hidden sm:flex">
             <Activity size={20} />
           </Button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-50 dark:bg-slate-900/50">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/50 break-words">
           {error && (
-            <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl">
+            <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl mx-2 mt-2">
               {error}
             </div>
           )}
 
-          {isLoadingMessages && <p className="text-sm text-slate-500">Завантаження повідомлень...</p>}
+          {isLoadingMessages && <p className="text-sm text-slate-500 text-center py-4">Завантаження повідомлень...</p>}
 
           {!isLoadingMessages && selectedConsultation && decryptedMessages.length === 0 && (
-            <p className="text-sm text-slate-500">Поки що немає повідомлень у цьому чаті.</p>
+            <p className="text-sm text-slate-500 text-center py-4">Поки що немає повідомлень у цьому чаті.</p>
           )}
 
-          {isDecrypting && <p className="text-sm text-slate-500">Розшифровка повідомлень...</p>}
+          {isDecrypting && <p className="text-sm text-slate-500 text-center py-2">Розшифровка повідомлень...</p>}
 
           {!selectedConsultation && (
-            <p className="text-sm text-slate-500">Оберіть чат із лівої панелі, щоб почати спілкування.</p>
+            <p className="text-sm text-slate-500 flex items-center justify-center h-full">Оберіть чат із лівої панелі, щоб почати спілкування.</p>
           )}
 
           {decryptedMessages.map((m, index) => {
@@ -1351,7 +1358,7 @@ export default function ConsultationsPage() {
             return (
               <React.Fragment key={`${m.id}-${index}`}>
                 {showDateSeparator && (
-                  <div className="flex items-center gap-3 my-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-3 my-4 text-xs text-slate-400 px-2">
                     <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                     <span className="whitespace-nowrap font-medium">
                       {formatMessageSeparatorDate(m.createdAt, language)}
@@ -1360,9 +1367,9 @@ export default function ConsultationsPage() {
                   </div>
                 )}
 
-                <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                <div className={`flex w-full ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] relative rounded-2xl px-5 py-3 ${
+                    className={`max-w-[85%] sm:max-w-[75%] relative rounded-2xl px-4 py-3 ${
                       isMine
                         ? "bg-blue-600 text-white rounded-br-sm shadow-sm"
                         : "bg-[#a4a6a7] dark:bg-slate-800 text-white dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-bl-sm shadow-sm"
@@ -1378,13 +1385,13 @@ export default function ConsultationsPage() {
                         disabled={isDeletingMessage}
                       />
                     ) : (
-                      <>
+                      <div className="min-w-0">
                         {m.isDeleted ? (
                           <p className={`text-sm italic ${isMine ? "text-blue-100" : "text-white dark:text-slate-200"}`}>
                             {t("messageDeleted")}
                           </p>
                         ) : (
-                          m.content && <p>{m.content}</p>
+                          m.content && <p className="break-words">{m.content}</p>
                         )}
 
                         {Array.isArray(m.attachments) && m.attachments.length > 0 && (
@@ -1397,40 +1404,40 @@ export default function ConsultationsPage() {
                           </div>
                         )}
 
-                        <div className={`text-[10px] mt-1 ${isMine ? "text-blue-100 text-right" : "text-slate-400"}`}>
+                        <div className={`text-[10px] mt-1.5 flex flex-wrap gap-1 items-end ${isMine ? "justify-end" : "justify-start"}`}>
                           {isMine && !m.isDeleted && (
-                            <span className="block text-[11px] mb-1">
+                            <div className="flex flex-wrap gap-2 mr-1">
                               <button
                                 type="button"
-                                className={`inline-flex items-center gap-1 mr-3 ${isMine ? "text-blue-100" : "text-slate-400"}`}
+                                className={`inline-flex items-center gap-1 transition-opacity hover:opacity-80 ${isMine ? "text-blue-100" : "text-slate-400"}`}
                                 onClick={() => handleStartEditing(m)}
                                 disabled={isSending || isDeletingMessage}
                               >
-                                <Pencil size={12} /> Edit
+                                <Pencil size={12} /> <span className="hidden sm:inline">Edit</span>
                               </button>
                               <button
                                 type="button"
-                                className={`inline-flex items-center gap-1 ${isMine ? "text-blue-100" : "text-white"}`}
+                                className={`inline-flex items-center gap-1 transition-opacity hover:opacity-80 ${isMine ? "text-blue-100" : "text-white"}`}
                                 onClick={() => handleDeleteMessage(m)}
                                 disabled={isSending || isDeletingMessage}
                               >
-                                <Trash2 size={12} /> Delete
+                                <Trash2 size={12} /> <span className="hidden sm:inline">Delete</span>
                               </button>
-                            </span>
+                            </div>
                           )}
 
                           {isMine ? (
-                            <div className="inline-flex items-center gap-1 justify-end">
-                              <span className="text-blue-100 text-[11px]">{formatMessageTime(m.createdAt)}</span>
-                              <span className={`${m.isRead ? "text-white/90" : "text-white/80"} inline-flex items-center`}>
-                                {m.isRead ? <IoCheckmarkDone size={17} /> : <IoCheckmark size={17} />}
+                            <div className="inline-flex items-center gap-1 ml-auto">
+                              <span className="text-blue-100 whitespace-nowrap">{formatMessageTime(m.createdAt)}</span>
+                              <span className={`${m.isRead ? "text-white/90" : "text-white/80"} inline-flex items-center shrink-0`}>
+                                {m.isRead ? <IoCheckmarkDone size={15} /> : <IoCheckmark size={15} />}
                               </span>
                             </div>
                           ) : (
-                            <div className="text-white text-[11px]">{formatMessageTime(m.createdAt)}</div>
+                            <div className="text-white whitespace-nowrap">{formatMessageTime(m.createdAt)}</div>
                           )}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>

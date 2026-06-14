@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Brain, ChevronDown, Moon, ShieldCheck, Sun } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Brain, ChevronDown, Moon, ShieldCheck, Sun, Menu, X } from "lucide-react";
 import { useLanguage } from "../../App";
 
 export default function Header({
@@ -17,8 +18,10 @@ export default function Header({
   const { t } = useLanguage();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isQuestionnairesMenuOpen, setIsQuestionnairesMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const questionnairesMenuRef = useRef(null);
+  const mobileSidebarRef = useRef(null);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -26,7 +29,10 @@ export default function Header({
         setIsProfileMenuOpen(false);
       }
 
-      if (!questionnairesMenuRef.current?.contains(event.target)) {
+      if (
+        !questionnairesMenuRef.current?.contains(event.target) &&
+        !mobileSidebarRef.current?.contains(event.target)
+      ) {
         setIsQuestionnairesMenuOpen(false);
       }
     };
@@ -68,9 +74,16 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-3">
-      <div className="relative flex items-center justify-between gap-3 sm:gap-4">
+    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
+      <div className="px-4 sm:px-6 py-3 relative flex items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center space-x-2 min-w-0 shrink-0">
+          <button
+            type="button"
+            className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
             <Brain size={18} />
           </div>
@@ -79,7 +92,8 @@ export default function Header({
           </h2>
         </div>
 
-        <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[52vw] sm:max-w-[58vw] md:max-w-[62vw]">
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="flex items-center justify-center gap-2">
             {navItems
               .filter((item) => item.id !== "profile")
@@ -89,11 +103,11 @@ export default function Header({
 
                 if (item.id === "questionnaires") {
                   return (
-                    <div key={item.id} className="relative" ref={questionnairesMenuRef}>
+                    <div key={item.id} className="relative shrink-0" ref={questionnairesMenuRef}>
                       <button
                         type="button"
                         onClick={() => setIsQuestionnairesMenuOpen((prev) => !prev)}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                        className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                           isActive
                             ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold"
                             : "bg-slate-100/80 text-slate-600 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
@@ -131,7 +145,7 @@ export default function Header({
                     key={item.id}
                     type="button"
                     onClick={() => onNavigate(item.id)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    className={`inline-flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                       isActive
                         ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold"
                         : "bg-slate-100/80 text-slate-600 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
@@ -214,6 +228,104 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* Mobile Nav Sidebar */}
+      {isMobileMenuOpen && createPortal(
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div 
+            ref={mobileSidebarRef}
+            className="md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 shadow-xl overflow-y-auto animate-in slide-in-from-left duration-300"
+          >
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10">
+              <div className="flex items-center space-x-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Brain size={18} />
+                </div>
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white truncate">
+                  OA Mind Care
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="p-2 -mr-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="px-4 py-4 space-y-2">
+              {navItems
+                .filter((item) => item.id !== "profile")
+                .map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+
+                  if (item.id === "questionnaires") {
+                    return (
+                      <div key={item.id} className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsQuestionnairesMenuOpen((prev) => !prev)}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
+                            isActive
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold"
+                              : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {Icon && <Icon size={18} />}
+                            <span>{item.label}</span>
+                          </div>
+                          <ChevronDown size={16} className={`transition-transform ${isQuestionnairesMenuOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        {isQuestionnairesMenuOpen && (
+                          <div className="pl-11 pr-4 py-1 space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <button
+                              type="button"
+                              onClick={() => { setIsMobileMenuOpen(false); handleOpenQuestionnaires(); }}
+                              className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              {t("questionnairesTakeAssessment")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setIsMobileMenuOpen(false); handleOpenMyQuestionnaires(); }}
+                              className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              {t("questionnairesMyList")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => { setIsMobileMenuOpen(false); onNavigate(item.id); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                        isActive
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {Icon && <Icon size={18} />}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </header>
   );
 }

@@ -133,31 +133,16 @@ public class UserGoogleAuthenticationHandler(
         try
         {
             var settings = new GoogleJsonWebSignature.ValidationSettings();
-            var clientId = (_configuration["GOOGLE_CLIENT_ID"] ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID"))?.Trim();
-
-            // Для дебагу: читаємо реальні Audience з токена
-            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-            if (handler.CanReadToken(idToken))
-            {
-                var jwt = handler.ReadJwtToken(idToken);
-                _logger.LogInformation("Real Token Audiences: {Audiences}", string.Join(", ", jwt.Audiences));
-                _logger.LogInformation("Expected ClientId: {ClientId}", clientId);
-                _logger.LogInformation("Token Valid From: {ValidFrom:O} UTC, Valid To: {ValidTo:O} UTC. Backend Current Time: {UtcNow:O} UTC", 
-                    jwt.ValidFrom, jwt.ValidTo, DateTime.UtcNow);
-            }
-
+            var clientId = _configuration["GOOGLE_CLIENT_ID"];
             if (!string.IsNullOrEmpty(clientId))
             {
                 settings.Audience = new[] { 
                     clientId,
+                    // Додаємо Android Client ID з google-services.json на випадок, якщо токен має цей Audience
                     "930738005847-7q4c0aavnniv1mncbg4lsgbfkkkbnsht.apps.googleusercontent.com",
-                    "930738005847-sab62t3hnkmu4ihrfa63rt86msin9c60.apps.googleusercontent.com",
-                    "930738005847-kols9m8s95kpg9her0cekfn38u0bvi6q.apps.googleusercontent.com" // Web frontend Client ID
+                    "930738005847-sab62t3hnkmu4ihrfa63rt86msin9c60.apps.googleusercontent.com"
                 };
             }
-            
-
-
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return payload;
         }

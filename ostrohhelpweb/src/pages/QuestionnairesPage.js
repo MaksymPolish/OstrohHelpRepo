@@ -407,7 +407,7 @@ export default function QuestionnairesPage() {
 
   return (
     <div className="max-w-3xl mx-auto animate-in slide-in-from-right-8 duration-300">
-      <div className="mb-8 flex items-center justify-between gap-3">
+      <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
             {mode === "assessment" ? t("emotionalState") : t("questionnairesRequestForm")}
@@ -418,11 +418,11 @@ export default function QuestionnairesPage() {
               : t("questionnairesRequestDescription")}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+        <div className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 self-start md:self-auto w-full md:w-auto overflow-x-auto hide-scrollbar">
           <button
             type="button"
             onClick={() => setMode("assessment")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex-1 md:flex-none px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
               mode === "assessment"
                 ? "bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300"
                 : "text-slate-600 dark:text-slate-300"
@@ -433,7 +433,7 @@ export default function QuestionnairesPage() {
           <button
             type="button"
             onClick={() => setMode("request")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex-1 md:flex-none px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
               mode === "request"
                 ? "bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300"
                 : "text-slate-600 dark:text-slate-300"
@@ -455,19 +455,21 @@ export default function QuestionnairesPage() {
             
             {/* Anonymous Toggle */}
             <div className="mb-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-              <label className="flex items-center cursor-pointer">
+              <label className="flex items-start cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isAnonymous}
                   onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 cursor-pointer"
+                  className="mt-0.5 w-5 h-5 rounded border-slate-300 dark:border-slate-600 cursor-pointer shrink-0"
                 />
-                <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {t("questionnairesIsAnonymous") || "Анонімна анкета"}
-                </span>
-                <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
-                  ({t("questionnairesAnonymousHint") || "Ваше ім'я не буде видно психологам"})
-                </span>
+                <div className="ml-3 flex flex-col">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {t("questionnairesIsAnonymous") || "Анонімна анкета"}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    ({t("questionnairesAnonymousHint") || "Ваше ім'я не буде видно психологам"})
+                  </span>
+                </div>
               </label>
             </div>
             

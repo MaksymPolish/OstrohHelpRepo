@@ -368,7 +368,7 @@ function AppContent() {
       <PresenceContext.Provider value={presence}>
         <LanguageContext.Provider value={contextValue}>
           <div
-            className={`flex flex-col min-h-screen bg-white dark:bg-slate-900 pb-20`}
+            className={`flex flex-col min-h-[100dvh] bg-white dark:bg-slate-900`}
           >
             <Header
               isDarkMode={isDarkMode}
