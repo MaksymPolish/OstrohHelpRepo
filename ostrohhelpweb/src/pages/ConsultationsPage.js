@@ -3,6 +3,7 @@ import { Send, Activity, Pencil, Trash2, X, Check, MailWarning, Mic, ChevronLeft
 import { IoCheckmarkDone, IoCheckmark } from "react-icons/io5";
 import Button from "../components/Common/Button";
 import FilePickerPopover from "../components/Common/FilePickerPopover";
+import CachedImage from "../components/Common/CachedImage";
 import { useLanguage, usePresence, useSecurity } from "../App";
 import {
   getConsultationMessages,
@@ -22,6 +23,7 @@ import {
   subscribeToMessageUpdates,
 } from "../services/signalrChat";
 import { decryptMessage, encryptMessage } from "../services/encryptionService";
+import { getCachedConsultations, getCachedMessages } from "../services/cacheService";
 
 const readFirstDefined = (...values) => {
   for (const value of values) {
@@ -195,12 +197,12 @@ const MessageAttachment = ({ url, isMine }) => {
   if (isImageUrl(url) && !imageFailed) {
     return (
       <a href={url} target="_blank" rel="noreferrer">
-        <img
+        <CachedImage
           src={url}
           alt="attachment"
-          className="max-h-48 rounded-lg object-cover"
-          referrerPolicy="no-referrer"
+          className="max-w-full max-h-60 rounded-xl object-contain bg-slate-100 dark:bg-slate-800"
           onError={() => setImageFailed(true)}
+          referrerPolicy="no-referrer"
         />
       </a>
     );
@@ -741,9 +743,19 @@ export default function ConsultationsPage() {
         return;
       }
 
-      setIsLoadingConsultations(true);
-      setError("");
       try {
+        const cached = await getCachedConsultations(currentUser.id);
+        if (cached && cached.length > 0) {
+          const normalizedCached = cached.map(normalizeConsultation).filter((item) => item.id);
+          setConsultations(normalizedCached);
+          if (normalizedCached.length > 0) {
+            setSelectedConsultationId((prevId) => prevId || normalizedCached[0].id);
+          }
+        } else {
+          setIsLoadingConsultations(true);
+        }
+        setError("");
+        
         const response = await getUserConsultations(currentUser.id);
         const normalizedConsultations = (response || [])
           .map(normalizeConsultation)
@@ -780,9 +792,16 @@ export default function ConsultationsPage() {
         return;
       }
 
-      setIsLoadingMessages(true);
-      setError("");
       try {
+        const cached = await getCachedMessages(selectedConsultationId);
+        if (cached && cached.length > 0) {
+          const normalizedCached = sortMessagesOldToNew(cached.map(normalizeMessage));
+          setMessages(normalizedCached);
+        } else {
+          setIsLoadingMessages(true);
+        }
+        setError("");
+
         const response = await getConsultationMessages(selectedConsultationId);
         const normalized = sortMessagesOldToNew((response || []).map(normalizeMessage));
         setMessages(normalized);
@@ -1253,7 +1272,7 @@ export default function ConsultationsPage() {
               >
                 <div className="relative mr-3">
                   {peer.photoUrl ? (
-                    <img
+                    <CachedImage
                       src={peer.photoUrl}
                       alt={peer.name}
                       className="w-10 h-10 rounded-full object-cover"
@@ -1305,7 +1324,7 @@ export default function ConsultationsPage() {
               <ChevronLeft size={24} />
             </button>
             {selectedPeer.photoUrl ? (
-              <img
+              <CachedImage
                 src={selectedPeer.photoUrl}
                 alt={selectedPeer.name}
                 className="w-10 h-10 rounded-full object-cover mr-3"

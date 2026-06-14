@@ -1,4 +1,5 @@
 import api from "./api";
+import { setCachedConsultations, setCachedMessages } from "./cacheService";
 
 const MAX_BATCH_UPLOAD_FILES = 6;
 
@@ -32,14 +33,18 @@ const unwrapCollection = (payload) => {
 
 export const getUserConsultations = async (userId) => {
   const response = await api.get(`/consultations/get-all-consultations-by-userid/${userId}`);
-  return unwrapCollection(response.data);
+  const data = unwrapCollection(response.data);
+  setCachedConsultations(userId, data).catch(console.error);
+  return data;
 };
 
 export const getConsultationMessages = async (consultationId) => {
   const response = await api.get("/Message/Recive", {
     params: { idConsultation: consultationId },
   });
-  return unwrapCollection(response.data);
+  const data = unwrapCollection(response.data);
+  setCachedMessages(consultationId, data).catch(console.error);
+  return data;
 };
 
 const normalizeUploadedItems = (payload) => {
